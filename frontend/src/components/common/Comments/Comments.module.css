@@ -1,0 +1,225 @@
+.section {
+  margin-top: var(--space-8);
+  border-top: 1px solid var(--color-gray-200);
+  padding-top: var(--space-7);
+}
+
+.header { margin-bottom: var(--space-5); }
+
+.title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.count {
+  background: var(--color-accent);
+  color: white;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.loading, .empty {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--color-gray-400);
+  font-style: italic;
+  padding: var(--space-5) 0;
+}
+
+/* Comentarios */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin-bottom: var(--space-7);
+}
+
+.comment, .reply {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.commentAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: white;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.commentBody { flex: 1; min-width: 0; }
+
+.commentHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: 6px;
+}
+
+.commentAuthor {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.commentDate {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--color-gray-400);
+}
+
+.commentText {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--color-gray-600);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.replyBtn {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  padding: 0;
+  text-transform: uppercase;
+  transition: opacity 0.2s;
+}
+.replyBtn:hover { opacity: 0.7; }
+
+.replies {
+  margin-top: var(--space-4);
+  padding-left: var(--space-4);
+  border-left: 2px solid var(--color-gray-200);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Formulario */
+.formWrap {
+  background: var(--color-gray-100);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  margin-top: var(--space-6);
+}
+
+.formTitle {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--color-primary);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.cancelReply {
+  background: none;
+  border: none;
+  color: var(--color-gray-400);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.form { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.formGroup { display: flex; flex-direction: column; gap: 6px; }
+
+.formLabel {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--color-gray-500);
+}
+
+.input, .textarea {
+  padding: 10px 14px;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 15px;
+  background: white;
+  outline: none;
+  transition: border-color 0.2s;
+  resize: vertical;
+}
+
+.input:focus, .textarea:focus {
+  border-color: var(--color-accent);
+}
+
+.charCount {
+  text-align: right;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--color-gray-400);
+}
+
+.submitBtn {
+  align-self: flex-start;
+  padding: 12px 28px;
+  background: var(--color-accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.submitBtn:hover { background: var(--color-accent-light); }
+.submitBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.note {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--color-gray-400);
+  font-style: italic;
+}
+
+.sentMsg {
+  background: #E8F5EE;
+  border: 1px solid #2D7A4F;
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: #2D7A4F;
+}
+
+@media (max-width: 600px) {
+  .formRow { grid-template-columns: 1fr; }
+}

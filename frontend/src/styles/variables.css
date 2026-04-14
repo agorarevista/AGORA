@@ -1,0 +1,80 @@
+:root {
+  --color-primary:     #1A1A1A;
+  --color-accent:      #8B1A4A;
+  --color-accent-light:#B8486A;
+  --color-gold:        #C9A84C;
+  --color-cream:       #F5F0E8;
+  --color-cream-dark:  #EDE8DF;
+  --color-white:       #FFFFFF;
+  --color-gray-100:    #F7F5F1;
+  --color-gray-200:    #E8E4DC;
+  --color-gray-300:    #D4CFC6;
+  --color-gray-400:    #A8A39A;
+  --color-gray-500:    #6B6B6B;
+  --color-gray-600:    #4A4A4A;
+  --color-gray-700:    #2A2A2A;
+  --font-serif:   'Georgia', 'Times New Roman', serif;
+  --font-sans:    'Arial', 'Helvetica', sans-serif;
+  --text-xs:   11px;
+  --text-sm:   13px;
+  --text-base: 16px;
+  --text-md:   18px;
+  --text-lg:   22px;
+  --text-xl:   28px;
+  --text-2xl:  36px;
+  --text-3xl:  48px;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  24px;
+  --space-6:  32px;
+  --space-7:  48px;
+  --space-8:  64px;
+  --space-9:  96px;
+  --max-width:        1200px;
+  --max-width-narrow:  760px;
+  --navbar-height:      64px;
+  --radius-sm:  2px;
+  --radius-md:  4px;
+  --radius-lg:  8px;
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.10);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.14);
+  --transition: 0.2s ease;
+
+  /* ── Variables de Navbar/Footer que cambian con el tema ── */
+  --nav-bg:           #F5F0E8;       /* claro: crema */
+  --nav-border:       #E8E4DC;
+  --nav-text:         #1A1A1A;       /* claro: texto oscuro */
+  --nav-text-muted:   #6B6B6B;
+  --nav-text-hover:   #8B1A4A;
+  --nav-dropdown-bg:  #FDFAF4;
+  --nav-dropdown-border: #E8E4DC;
+}
+
+html.dark {
+  /* ── Página ──────────────────────────────────────────── */
+  --color-cream:      #111111;
+  --color-cream-dark: #1A1A1A;
+  --color-white:      #1E1E1E;
+  --color-gray-100:   #222222;
+  --color-gray-200:   #2A2A2A;
+  --color-gray-300:   #A8A39A;
+  --color-gray-400:   #888480;
+  --color-gray-500:   #B0ACA8;
+  --color-gray-600:   #C8C4C0;
+  --color-gray-700:   #E0DCD8;
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
+
+  /* ── Navbar/Footer en oscuro ─────────────────────────── */
+  --nav-bg:           #111111;
+  --nav-border:       #2A2A2A;
+  --nav-text:         #E0DCD8;
+  --nav-text-muted:   #888480;
+  --nav-text-hover:   #FFFFFF;
+  --nav-dropdown-bg:  #1A1A1A;
+  --nav-dropdown-border: #2A2A2A;
+}

@@ -1,0 +1,215 @@
+.overlay {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.alert {
+  pointer-events: all;
+  width: 340px;
+  background: #FDFAF4;
+  border-radius: 4px;
+  padding: 0;
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.18),
+    0 2px 8px rgba(0,0,0,0.10);
+  animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  position: relative;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(60px) scale(0.95); }
+  to   { opacity: 1; transform: translateX(0)    scale(1); }
+}
+
+@keyframes slideOut {
+  from { opacity: 1; transform: translateX(0); max-height: 200px; }
+  to   { opacity: 0; transform: translateX(60px); max-height: 0; }
+}
+
+/* Franja superior con meandro griego */
+.topBar {
+  height: 6px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.topBar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    currentColor 0px, currentColor 6px,
+    transparent 6px, transparent 8px
+  );
+  opacity: 0.4;
+}
+
+/* Colores por tipo */
+.success .topBar { background-color: #2D7A4F; color: #2D7A4F; }
+.warning .topBar { background-color: #B8860B; color: #B8860B; }
+.error   .topBar { background-color: #8B1A1A; color: #8B1A1A; }
+.info    .topBar { background-color: #1A3A6B; color: #1A3A6B; }
+
+/* Borde lateral izquierdo */
+.alert::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 0;
+  width: 4px;
+}
+.success::before { background: #2D7A4F; }
+.warning::before { background: #B8860B; }
+.error::before   { background: #8B1A1A; }
+.info::before    { background: #1A3A6B; }
+
+.body {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 16px 16px 20px;
+}
+
+/* Ícono griego */
+.iconWrap {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-top: 2px;
+}
+
+.success .iconWrap { background: #E8F5EE; border: 2px solid #2D7A4F; }
+.warning .iconWrap { background: #FDF6E3; border: 2px solid #B8860B; }
+.error   .iconWrap { background: #FAE8E8; border: 2px solid #8B1A1A; }
+.info    .iconWrap { background: #E8EEF8; border: 2px solid #1A3A6B; }
+
+/* Laurel decorativo alrededor del ícono */
+.iconWrap::before,
+.iconWrap::after {
+  content: '❧';
+  position: absolute;
+  font-size: 14px;
+  opacity: 0.5;
+}
+.iconWrap::before { left: -8px; top: 50%; transform: translateY(-50%) scaleX(-1); }
+.iconWrap::after  { right: -8px; top: 50%; transform: translateY(-50%); }
+
+.success .iconWrap::before,
+.success .iconWrap::after { color: #2D7A4F; }
+.warning .iconWrap::before,
+.warning .iconWrap::after { color: #B8860B; }
+.error   .iconWrap::before,
+.error   .iconWrap::after { color: #8B1A1A; }
+.info    .iconWrap::before,
+.info    .iconWrap::after { color: #1A3A6B; }
+
+.icon {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: 'Georgia', serif;
+  line-height: 1;
+}
+
+.success .icon { color: #2D7A4F; }
+.warning .icon { color: #B8860B; }
+.error   .icon { color: #8B1A1A; }
+.info    .icon { color: #1A3A6B; }
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.type {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-family: 'Georgia', serif;
+  margin-bottom: 2px;
+  opacity: 0.55;
+}
+
+.success .type { color: #2D7A4F; }
+.warning .type { color: #B8860B; }
+.error   .type { color: #8B1A1A; }
+.info    .type { color: #1A3A6B; }
+
+.title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1A1A1A;
+  font-family: 'Georgia', serif;
+  margin-bottom: 3px;
+  line-height: 1.3;
+}
+
+.message {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.5;
+  font-family: 'Georgia', serif;
+}
+
+.close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #999;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 2px;
+  transition: color 0.2s;
+}
+.close:hover { color: #333; }
+
+/* Barra de progreso */
+.progress {
+  height: 3px;
+  width: 100%;
+  animation: shrink linear forwards;
+}
+.success .progress { background: #2D7A4F; }
+.warning .progress { background: #B8860B; }
+.error   .progress { background: #8B1A1A; }
+.info    .progress { background: #1A3A6B; }
+
+@keyframes shrink {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+/* Ornamento inferior — clave griega (meandro) */
+.footer {
+  padding: 4px 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.25;
+  font-size: 11px;
+  letter-spacing: 3px;
+  font-family: monospace;
+}
+.success .footer { color: #2D7A4F; }
+.warning .footer { color: #B8860B; }
+.error   .footer { color: #8B1A1A; }
+.info    .footer { color: #1A3A6B; }

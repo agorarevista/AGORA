@@ -1,0 +1,162 @@
+@import './variables.css';
+@import './typography.css';
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-cream);
+  color: var(--color-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  /* Transición suave entre modos */
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: var(--text-base);
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--color-cream-dark); }
+::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-5);
+}
+
+.container--narrow {
+  max-width: var(--max-width-narrow);
+  margin: 0 auto;
+  padding: 0 var(--space-5);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  border: 0;
+}
+
+/* ── Meandro griego (divisor horizontal) ─────────────────────────────────── */
+.meander {
+  height: 8px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--color-gold) 0px,
+    var(--color-gold) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  opacity: 0.3;
+  width: 100%;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-gray-300);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  margin: var(--space-5) 0;
+}
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-gray-200);
+}
+
+/* ── Dark mode — texto y headings ────────────────────────────────────────── */
+/* ── Modo claro: texto completamente negro ───────────── */
+h1, h2, h3, h4, h5, h6 {
+  color: #000000;
+}
+
+p {
+  color: #111111;
+}
+
+a {
+  color: var(--color-accent);
+}
+
+/* ── Modo oscuro: texto blanco ───────────────────────── */
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4,
+html.dark h5,
+html.dark h6 {
+  color: #FFFFFF;
+}
+
+html.dark p {
+  color: #E0DCD8;
+}
+
+/* Inputs en dark mode */
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background: #2A2A2A;
+  color: var(--color-gray-700);
+  border-color: var(--color-gray-200);
+}
+
+/* Cards y superficies */
+html.dark .card,
+html.dark [class*="card"],
+html.dark [class*="Card"] {
+  transition: background-color 0.35s ease;
+}
+
+/* Transición en todos los elementos que usan bg y color */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 0.3s;
+  transition-timing-function: ease;
+}
+
+/* Excepciones — elementos que NO deben transicionarse */
+button,
+a,
+img,
+svg,
+[class*="btn"],
+[class*="Btn"] {
+  transition-property: color, background-color, border-color, opacity, transform, box-shadow;
+  transition-duration: 0.2s;
+}

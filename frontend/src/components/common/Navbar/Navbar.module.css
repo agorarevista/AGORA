@@ -1,0 +1,325 @@
+/* ── Navbar usa variables de tema ─────────────────────── */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--nav-bg);
+  height: var(--navbar-height);
+  border-bottom: 2px solid var(--color-accent);
+  transition: background-color 0.35s ease;
+}
+
+.inner {
+  width: 100%;
+  height: 100%;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* ── Logo con imágenes ────────────────────────────────── */
+.logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  flex-shrink: 0;
+  height: 40px;
+  padding-left: 0;
+}
+/* Logo completo — desktop */
+.logoImg {
+  height: 52px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+  margin-left: 70px;
+}
+
+.logoIcon {
+  height: 44px;
+  width: auto;
+  display: none;
+  object-fit: contain;
+  margin-left: 18px;
+}
+
+/* ── Nav ──────────────────────────────────────────────── */
+.nav {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  justify-content: center;
+  gap: 0;
+}
+
+.navItem { position: relative; }
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 9px;
+  color: var(--nav-text);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transition: color 0.2s;
+  white-space: nowrap;
+  background: none;
+  border: none;
+  cursor: pointer;
+  height: var(--navbar-height);
+  font-weight: 600;
+}
+
+.navLink:hover  { color: var(--nav-text-hover); }
+.navLink.active { color: var(--nav-text); position: relative; }
+
+.navLink.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 9px;
+  right: 9px;
+  height: 2px;
+  background: var(--color-accent);
+}
+
+.chevron {
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+.navItem:hover .chevron { transform: rotate(180deg); }
+
+/* ── Dropdown ─────────────────────────────────────────── */
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 210px;
+  background: var(--nav-dropdown-bg);
+  border: 1px solid var(--nav-dropdown-border);
+  border-top: 2px solid var(--color-accent);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  padding: 6px 0;
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s;
+  pointer-events: none;
+}
+
+/* Puente invisible */
+.navItem::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0; right: 0;
+  height: 12px;
+}
+
+.navItem:hover .dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: all;
+}
+
+.dropdownLink {
+  display: block;
+  padding: 10px 18px;
+  color: var(--nav-text-muted);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+  position: relative;
+}
+
+.dropdownLink::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 0;
+  background: var(--color-accent);
+  transition: width 0.18s ease;
+}
+
+.dropdownLink:hover {
+  color: var(--nav-text-hover);
+  background: rgba(139,26,74,0.06);
+  padding-left: 24px;
+}
+.dropdownLink:hover::before { width: 3px; }
+
+.dropdownAll {
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--nav-text) !important;
+}
+
+.dropdownSub {
+  padding-left: 28px !important;
+  font-size: 11px;
+  color: var(--nav-text-muted) !important;
+}
+
+.dropdownDivider {
+  height: 1px;
+  background: var(--nav-dropdown-border);
+  margin: 4px 12px;
+}
+
+/* ── Acciones ─────────────────────────────────────────── */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.searchBtn {
+  background: none;
+  border: none;
+  color: var(--nav-text-muted);
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.searchBtn:hover { color: var(--nav-text-hover); }
+
+.editionBadge {
+  background: var(--color-accent);
+  color: white;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.editionBadge:hover { background: var(--color-accent-light); color: white; }
+
+/* ── Meandro ──────────────────────────────────────────── */
+.meander {
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-gold) 0px, var(--color-gold) 4px,
+    transparent 4px, transparent 8px
+  );
+  opacity: 0.35;
+}
+
+/* ── Hamburguesa ──────────────────────────────────────── */
+.menuBtn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--nav-text);
+  padding: 6px;
+  cursor: pointer;
+  align-items: center;
+}
+
+/* ── Menú móvil ───────────────────────────────────────── */
+.mobileMenu {
+  position: fixed;
+  top: var(--navbar-height);
+  left: 0; right: 0; bottom: 0;
+  background: var(--nav-bg);
+  z-index: 99;
+  overflow-y: auto;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  animation: slideDown 0.25s ease;
+  border-top: 1px solid var(--nav-border);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.mobileLink {
+  display: block;
+  padding: 15px 24px;
+  color: var(--nav-text-muted);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--nav-border);
+  transition: all 0.18s;
+}
+
+.mobileLink:hover,
+.mobileActive {
+  color: var(--color-accent);
+  background: rgba(139,26,74,0.06);
+  border-left: 3px solid var(--color-accent);
+  padding-left: 21px;
+}
+
+.mobileSectionRow { display: flex; align-items: center; }
+.mobileSectionRow .mobileLink { flex: 1; }
+
+.mobileToggle {
+  background: none;
+  border: none;
+  color: var(--nav-text-muted);
+  padding: 15px 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--nav-border);
+}
+
+.mobileSubs {
+  background: var(--color-gray-100);
+  animation: slideDown 0.2s ease;
+}
+
+.mobileSub {
+  display: block;
+  padding: 12px 24px 12px 36px;
+  color: var(--nav-text-muted);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--nav-border);
+  transition: all 0.18s;
+}
+.mobileSub:hover { color: var(--color-accent); padding-left: 40px; }
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .menuBtn { display: flex; }
+  /* En móvil: ocultar logo completo, mostrar ícono */
+  .logoImg  { display: none; }
+  .logoIcon { display: block; }
+}
+
+@media (max-width: 480px) {
+  .editionBadge { display: none; }
+}

@@ -1,0 +1,39 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: white;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-gray-500);
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.btn.liked {
+  background: rgba(139,26,74,0.08);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.heart {
+  font-size: 18px;
+  line-height: 1;
+  transition: transform 0.2s;
+}
+
+.btn:hover .heart,
+.btn.liked .heart {
+  transform: scale(1.2);
+}
+
+.count { font-weight: 700; }
+.label { letter-spacing: 0.5px; }
