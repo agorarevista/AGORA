@@ -17,10 +17,7 @@ import {
   ArrowRight,
   Maximize2,
   Globe,
-  Instagram,
-  Facebook,
-  Mail,
-  Linkedin
+  Mail
 } from 'lucide-react';
 import ImageViewer from '../../components/common/ImageViewer/ImageViewer';
 import agoraIcon from '../../assets/ICON.png';
@@ -365,37 +362,37 @@ function CollaboratorsCarousel({ collaborators }) {
 
   if (!collaborators.length) return <EmptySlot />;
 
-  const getSocialLinks = (col) => {
-    const links = [
-      {
-        key: 'instagram',
-        href: col.instagram_url || col.instagram || col.social_instagram,
-        icon: <Instagram size={17} />
-      },
-      {
-        key: 'facebook',
-        href: col.facebook_url || col.facebook || col.social_facebook,
-        icon: <Facebook size={17} />
-      },
-      {
-        key: 'linkedin',
-        href: col.linkedin_url || col.linkedin || col.social_linkedin,
-        icon: <Linkedin size={17} />
-      },
-      {
-        key: 'website',
-        href: col.website_url || col.website || col.portfolio_url,
-        icon: <Globe size={17} />
-      },
-      {
-        key: 'email',
-        href: col.email ? `mailto:${col.email}` : null,
-        icon: <Mail size={17} />
-      },
-    ].filter((item) => !!item.href);
+const getSocialLinks = (col) => {
+  const links = [
+    {
+      key: 'instagram',
+      href: col.instagram_url || col.instagram || col.social_instagram,
+      label: 'IG'
+    },
+    {
+      key: 'facebook',
+      href: col.facebook_url || col.facebook || col.social_facebook,
+      label: 'f'
+    },
+    {
+      key: 'linkedin',
+      href: col.linkedin_url || col.linkedin || col.social_linkedin,
+      label: 'in'
+    },
+    {
+      key: 'website',
+      href: col.website_url || col.website || col.portfolio_url,
+      icon: <Globe size={17} />
+    },
+    {
+      key: 'email',
+      href: col.email ? `mailto:${col.email}` : null,
+      icon: <Mail size={17} />
+    },
+  ].filter((item) => !!item.href);
 
-    return links;
-  };
+  return links;
+};
 
   return (
     <div className={styles.collabCarousel}>
@@ -446,18 +443,18 @@ function CollaboratorsCarousel({ collaborators }) {
                         className={styles.collabSocials}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {socialLinks.map((item) => (
-                          <a
-                            key={item.key}
-                            href={item.href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.collabSocial}
-                            aria-label={item.key}
-                          >
-                            {item.icon}
-                          </a>
-                        ))}
+{socialLinks.map((item) => (
+  <a
+    key={item.key}
+    href={item.href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className={styles.collabSocial}
+    aria-label={item.key}
+  >
+    {item.icon || <span className={styles.collabSocialText}>{item.label}</span>}
+  </a>
+))}
                       </div>
                     )}
                   </div>

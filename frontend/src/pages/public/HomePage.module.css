@@ -691,9 +691,12 @@
   transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
 }
 
-.collabSocial:hover {
-  transform: translateY(-1px);
-  background: rgba(255,255,255,0.22);
+.collabSocialText {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  line-height: 1;
 }
 
 .collabArrow {
