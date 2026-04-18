@@ -97,32 +97,17 @@ input, textarea, select {
   background: var(--color-gray-200);
 }
 
-/* ── Dark mode — texto y headings ────────────────────────────────────────── */
-/* ── Modo claro: texto completamente negro ───────────── */
+/* ── Tema global de headings y texto ───────────────────────────────────── */
 h1, h2, h3, h4, h5, h6 {
-  color: #000000;
+  color: var(--text-heading-global);
 }
 
 p {
-  color: #111111;
+  color: var(--text-body-global);
 }
 
 a {
   color: var(--color-accent);
-}
-
-/* ── Modo oscuro: texto blanco ───────────────────────── */
-html.dark h1,
-html.dark h2,
-html.dark h3,
-html.dark h4,
-html.dark h5,
-html.dark h6 {
-  color: #FFFFFF;
-}
-
-html.dark p {
-  color: #E0DCD8;
 }
 
 /* Inputs en dark mode */

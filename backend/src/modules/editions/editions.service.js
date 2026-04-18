@@ -17,17 +17,21 @@ const getCurrent = async () => {
       *,
       articles (
         id, title, slug, cover_image_url, excerpt,
-        published_at, is_featured, featured_order,
+        published_at, is_featured, featured_order, status,
         collaborators ( name, slug, photo_url ),
         article_categories ( categories ( name, slug ) )
       )
     `)
     .eq('is_current', true)
-    .eq('articles.status', 'published')
-    .single();
+    .maybeSingle();
 
-  if (error) throw { status: 404, message: 'No hay edición actual' };
-  return data;
+  if (error) throw error;
+  if (!data) throw { status: 404, message: 'No hay edición actual' };
+
+  return {
+    ...data,
+    articles: (data.articles || []).filter(article => article.status === 'published'),
+  };
 };
 
 const getByNumber = async (number) => {
@@ -36,17 +40,21 @@ const getByNumber = async (number) => {
     .select(`
       *,
       articles (
-        id, title, slug, cover_image_url, excerpt, published_at,
+        id, title, slug, cover_image_url, excerpt, published_at, status,
         collaborators ( name, slug, photo_url ),
         article_categories ( categories ( name, slug ) )
       )
     `)
     .eq('number', number)
-    .eq('articles.status', 'published')
-    .single();
+    .maybeSingle();
 
-  if (error) throw { status: 404, message: 'Edición no encontrada' };
-  return data;
+  if (error) throw error;
+  if (!data) throw { status: 404, message: 'Edición no encontrada' };
+
+  return {
+    ...data,
+    articles: (data.articles || []).filter(article => article.status === 'published'),
+  };
 };
 
 const create = async (body) => {

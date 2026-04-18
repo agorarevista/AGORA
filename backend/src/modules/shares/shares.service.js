@@ -7,11 +7,20 @@ const registerShare = async (article_id, platform) => {
     throw { status: 400, message: 'Plataforma no válida' };
   }
 
-  await supabase
+  const { error: insertError } = await supabase
     .from('article_shares')
     .insert({ article_id, platform });
 
-  return { ok: true };
+  if (insertError) throw insertError;
+
+  const { count, error: countError } = await supabase
+    .from('article_shares')
+    .select('*', { count: 'exact', head: true })
+    .eq('article_id', article_id);
+
+  if (countError) throw countError;
+
+  return { ok: true, total: count || 0 };
 };
 
 const getSharesByArticle = async (article_id) => {

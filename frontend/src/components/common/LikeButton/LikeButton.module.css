@@ -1,39 +1,106 @@
 .btn {
+  position: relative;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: white;
-  border: 1px solid var(--color-gray-200);
-  border-radius: 999px;
+  justify-content: center;
+  gap: 6px;
+  min-width: 54px;
+  background: none;
+  border: none;
   cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 18px;
+  color: var(--color-gray-400);
   font-family: var(--font-sans);
   font-size: 13px;
-  color: var(--color-gray-500);
-  transition: all 0.2s;
+  transition: color 0.2s, background 0.2s;
+  outline: none;
 }
 
 .btn:hover {
-  border-color: var(--color-accent);
+  background: rgba(139,26,74,0.06);
   color: var(--color-accent);
 }
 
-.btn.liked {
-  background: rgba(139,26,74,0.08);
-  border-color: var(--color-accent);
-  color: var(--color-accent);
+.liked {
+  color: var(--color-accent) !important;
 }
 
-.heart {
-  font-size: 18px;
+.iconWrap {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon {
+  width: 22px;
+  height: 22px;
   line-height: 1;
-  transition: transform 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s;
+  flex-shrink: 0;
 }
 
-.btn:hover .heart,
-.btn.liked .heart {
-  transform: scale(1.2);
+.heartSvg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+/* Animación del corazón al hacer click */
+.burst .icon {
+  animation: heartPop 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
 }
 
-.count { font-weight: 700; }
-.label { letter-spacing: 0.5px; }
+@keyframes heartPop {
+  0%   { transform: scale(1);    }
+  20%  { transform: scale(1.5);  }
+  40%  { transform: scale(0.85); }
+  60%  { transform: scale(1.25); }
+  80%  { transform: scale(0.95); }
+  100% { transform: scale(1);    }
+}
+
+.count {
+  font-size: 11px;
+  font-weight: 700;
+  color: inherit;
+  min-width: 14px;
+  line-height: 1;
+}
+
+/* Partículas */
+.particles {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  opacity: 0;
+}
+
+.p0 { animation: burst0 0.5s ease-out forwards; }
+.p1 { animation: burst1 0.5s ease-out forwards; }
+.p2 { animation: burst2 0.5s ease-out forwards; }
+.p3 { animation: burst3 0.5s ease-out forwards; }
+.p4 { animation: burst4 0.5s ease-out forwards; }
+.p5 { animation: burst5 0.5s ease-out forwards; }
+
+@keyframes burst0 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(-24px,-20px) scale(0)} }
+@keyframes burst1 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(0,-28px) scale(0)} }
+@keyframes burst2 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(24px,-20px) scale(0)} }
+@keyframes burst3 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(28px,10px) scale(0)} }
+@keyframes burst4 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(0,26px) scale(0)} }
+@keyframes burst5 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(-28px,10px) scale(0)} }

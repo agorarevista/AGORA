@@ -2,6 +2,7 @@ import api from './axios';
 
 export const getArticles = (params) => api.get('/articles', { params }).then(r => r.data);
 export const getArticle = (slug) => api.get(`/articles/${slug}`).then(r => r.data);
+export const getArticleById = (id) => api.get(`/articles/by-id/${id}`).then(r => r.data);
 export const getFeatured = () => api.get('/articles/featured').then(r => r.data);
 export const searchArticles = (q, params) => api.get('/articles/search', { params: { q, ...params } }).then(r => r.data);
 export const getByCategory = (slug, params) => api.get(`/articles/category/${slug}`, { params }).then(r => r.data);

@@ -1,12 +1,31 @@
 import { create } from 'zustand';
 
+const shouldRememberSession = () =>
+  localStorage.getItem('agora_remember_session') === 'true';
+
+const getInitialToken = () => {
+  if (!shouldRememberSession()) return null;
+  return localStorage.getItem('agora_token') || null;
+};
+
+const getInitialUser = () => {
+  if (!shouldRememberSession()) return null;
+  return JSON.parse(localStorage.getItem('agora_user') || 'null');
+};
+
 const useAuthStore = create((set) => ({
-  token: localStorage.getItem('agora_token') || null,
-  user: JSON.parse(localStorage.getItem('agora_user') || 'null'),
+  token: getInitialToken(),
+  user: getInitialUser(),
 
   login: (token, user) => {
-    localStorage.setItem('agora_token', token);
-    localStorage.setItem('agora_user', JSON.stringify(user));
+    if (shouldRememberSession()) {
+      localStorage.setItem('agora_token', token);
+      localStorage.setItem('agora_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('agora_token');
+      localStorage.removeItem('agora_user');
+    }
+
     set({ token, user });
   },
 
@@ -17,7 +36,9 @@ const useAuthStore = create((set) => ({
   },
 
   updateUser: (user) => {
-    localStorage.setItem('agora_user', JSON.stringify(user));
+    if (shouldRememberSession()) {
+      localStorage.setItem('agora_user', JSON.stringify(user));
+    }
     set({ user });
   },
 }));

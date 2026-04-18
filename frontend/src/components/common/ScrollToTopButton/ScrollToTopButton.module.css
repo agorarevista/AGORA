@@ -1,0 +1,60 @@
+.btn {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  width: 58px;
+  height: 58px;
+  border: none;
+  border-radius: 999px;
+  background: #b01263;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 14px 30px rgba(176, 18, 99, 0.30),
+    0 6px 14px rgba(0, 0, 0, 0.14);
+  cursor: pointer;
+  z-index: 1300;
+}
+
+.btn svg {
+  display: block;
+  stroke: currentColor;
+}
+
+.btn:hover {
+  background: #c2186d;
+  box-shadow:
+    0 18px 34px rgba(176, 18, 99, 0.36),
+    0 8px 18px rgba(0, 0, 0, 0.16);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 4px rgba(176, 18, 99, 0.18),
+    0 14px 30px rgba(176, 18, 99, 0.30),
+    0 6px 14px rgba(0, 0, 0, 0.14);
+}
+
+:global(html.dark) .btn {
+  background: #b01263;
+  color: #ffffff;
+  box-shadow:
+    0 16px 34px rgba(176, 18, 99, 0.34),
+    0 8px 18px rgba(0, 0, 0, 0.28);
+}
+
+:global(html.dark) .btn:hover {
+  background: #c2186d;
+}
+
+@media (max-width: 768px) {
+  .btn {
+    right: 16px;
+    bottom: 16px;
+    width: 54px;
+    height: 54px;
+  }
+}

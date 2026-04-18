@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const {
-  getAll, getBySlug, getByCategory, getByCollaborator,
+  getAll, getBySlug, getById, getByCategory, getByCollaborator,
   getByEdition, getFeatured, search, create, update, remove, publish
 } = require('./articles.controller');
 const { authMiddleware, requireRole } = require('../../middleware/auth');
@@ -12,6 +12,7 @@ router.get('/search', search);
 router.get('/category/:slug', getByCategory);
 router.get('/collaborator/:slug', getByCollaborator);
 router.get('/edition/:number', getByEdition);
+router.get('/by-id/:id', getById);
 router.get('/:slug', getBySlug);
 
 // Protegidas

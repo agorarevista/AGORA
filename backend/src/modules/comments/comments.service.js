@@ -49,10 +49,12 @@ const create = async (body) => {
   const { data, error } = await supabase
     .from('article_comments')
     .insert({
-      article_id, parent_id: parent_id || null,
-      author_name, author_email: author_email || null,
+      article_id,
+      parent_id: parent_id || null,
+      author_name,
+      author_email: author_email || null,
       content: content.trim(),
-      status: 'pending'
+      status: 'approved'
     })
     .select()
     .single();

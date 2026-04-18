@@ -13,6 +13,10 @@
   --color-gray-500:    #6B6B6B;
   --color-gray-600:    #4A4A4A;
   --color-gray-700:    #2A2A2A;
+
+  --text-heading-global: #000000;
+  --text-body-global:    #111111;
+
   --font-serif:   'Georgia', 'Times New Roman', serif;
   --font-sans:    'Arial', 'Helvetica', sans-serif;
   --text-xs:   11px;
@@ -44,9 +48,9 @@
   --transition: 0.2s ease;
 
   /* ── Variables de Navbar/Footer que cambian con el tema ── */
-  --nav-bg:           #F5F0E8;       /* claro: crema */
+  --nav-bg:           #F5F0E8;
   --nav-border:       #E8E4DC;
-  --nav-text:         #1A1A1A;       /* claro: texto oscuro */
+  --nav-text:         #1A1A1A;
   --nav-text-muted:   #6B6B6B;
   --nav-text-hover:   #8B1A4A;
   --nav-dropdown-bg:  #FDFAF4;
@@ -65,6 +69,10 @@ html.dark {
   --color-gray-500:   #B0ACA8;
   --color-gray-600:   #C8C4C0;
   --color-gray-700:   #E0DCD8;
+
+  --text-heading-global: #FFFFFF;
+  --text-body-global:    #E0DCD8;
+
   --shadow-sm: 0 1px 4px rgba(0,0,0,0.4);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);

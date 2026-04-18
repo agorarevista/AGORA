@@ -72,7 +72,13 @@ const remove = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const getById = async (req, res, next) => {
+  try {
+    res.json(await service.getById(req.params.id));
+  } catch (err) { next(err); }
+};
+
 module.exports = {
-  getAll, getBySlug, getByCategory, getByCollaborator,
+  getAll, getBySlug, getById, getByCategory, getByCollaborator,
   getByEdition, getFeatured, search, create, update, publish, remove
 };

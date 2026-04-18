@@ -13,13 +13,28 @@ const BASE_SELECT = `
   article_tags ( tag, tag_type )
 `;
 
-// Campos completos para artículo individual
-const FULL_SELECT = `
-  *,
-  collaborators ( * ),
-  editions ( * ),
-  article_categories ( categories ( * ) ),
-  article_tags ( * )
+// Campos completos para edición individual
+const EDITOR_SELECT = `
+  id,
+  title,
+  slug,
+  subtitle,
+  excerpt,
+  content,
+  content_html,
+  cover_image_url,
+  collaborator_id,
+  edition_id,
+  published_at,
+  status,
+  views,
+  reading_time,
+  is_featured,
+  featured_order,
+  collaborators ( id, name, slug, photo_url, type, section_name, section_slug, social_links ),
+  editions ( id, number, name ),
+  article_categories ( categories ( id, name, slug, color ) ),
+  article_tags ( id, tag, tag_type )
 `;
 
 const getAll = async ({ page = 1, limit = 12, status = 'published' } = {}) => {
@@ -40,12 +55,19 @@ const getAll = async ({ page = 1, limit = 12, status = 'published' } = {}) => {
 const getBySlug = async (slug) => {
   const { data, error } = await supabase
     .from('articles')
-    .select(FULL_SELECT)
+    .select(BASE_SELECT + ', content_html')
     .eq('slug', slug)
     .eq('status', 'published')
-    .single();
+    .maybeSingle();
 
-  if (error) throw { status: 404, message: 'Artículo no encontrado' };
+  if (error) {
+    console.error('articles.service.getBySlug error:', error);
+    throw error;
+  }
+
+  if (!data) {
+    throw { status: 404, message: 'Artículo no encontrado' };
+  }
 
   // Incrementar vistas
   await supabase
@@ -56,6 +78,24 @@ const getBySlug = async (slug) => {
   return data;
 };
 
+const getById = async (id) => {
+  const { data, error } = await supabase
+    .from('articles')
+    .select(EDITOR_SELECT)
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) {
+    console.error('articles.service.getById error:', error);
+    throw error;
+  }
+
+  if (!data) {
+    throw { status: 404, message: 'Artículo no encontrado' };
+  }
+
+  return data;
+};
 const getByCategory = async (slug, { page = 1, limit = 12 } = {}) => {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
@@ -294,6 +334,6 @@ const remove = async (id) => {
 };
 
 module.exports = {
-  getAll, getBySlug, getByCategory, getByCollaborator,
+  getAll, getBySlug, getById, getByCategory, getByCollaborator,
   getByEdition, getFeatured, search, create, update, publish, remove
 };
