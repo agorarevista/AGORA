@@ -76,43 +76,67 @@ export default function HomePage() {
 
     const load = async () => {
       try {
-        const [f, l, collabs] = await Promise.all([
-          (async () => {
-            const c = cacheGet('featured');
-            if (c) return c;
-            const d = await getFeatured();
-            cacheSet('featured', d, 10*60*1000);
-            return d;
-          })(),
-          (async () => {
-            const c = cacheGet('latest_home');
-            if (c) return c;
-            const d = await getArticles({ limit: 24 });
-            cacheSet('latest_home', d.data, 10*60*1000);
-            return d.data;
-          })(),
-          (async () => {
-            const c = cacheGet('collabs_home');
-            if (c) return c;
-            const d = await getCollaborators();
-            cacheSet('collabs_home', d, 15*60*1000);
-            return d;
-          })(),
-        ]);
+const [f, l, collabs] = await Promise.all([
+  (async () => {
+    try {
+      const c = cacheGet('featured');
+      if (c) return c;
+      const d = await getFeatured();
+      cacheSet('featured', d, 10 * 60 * 1000);
+      return d;
+    } catch (err) {
+      console.error('ERROR getFeatured()', err);
+      return [];
+    }
+  })(),
+  (async () => {
+    try {
+      const c = cacheGet('latest_home');
+      if (c) return c;
+      const d = await getArticles({ limit: 24 });
+      cacheSet('latest_home', d.data, 10 * 60 * 1000);
+      return d.data;
+    } catch (err) {
+      console.error('ERROR getArticles()', err);
+      return [];
+    }
+  })(),
+  (async () => {
+    try {
+      const c = cacheGet('collabs_home');
+      if (c) return c;
+      const d = await getCollaborators();
+      cacheSet('collabs_home', d, 15 * 60 * 1000);
+      return d;
+    } catch (err) {
+      console.error('ERROR getCollaborators()', err);
+      return [];
+    }
+  })(),
+]);
         setFeatured(f);
         setLatest(l);
         setCollaborators(collabs);
 
-        try {
-          const c = cacheGet('current_edition');
-          if (c) setEdition(c);
-          else { const e = await getCurrentEdition(); setEdition(e); cacheSet('current_edition', e); }
-        } catch {}
+try {
+  const c = cacheGet('current_edition');
+  if (c) {
+    setEdition(c);
+  } else {
+    const e = await getCurrentEdition();
+    setEdition(e);
+    cacheSet('current_edition', e);
+  }
+} catch (err) {
+  console.error('ERROR getCurrentEdition()', err);
+}
 
-        try {
-          const convs = await getActiveConvocatorias();
-          if (convs?.length > 0) setConvocatoria(convs[0]);
-        } catch {}
+try {
+  const convs = await getActiveConvocatorias();
+  if (convs?.length > 0) setConvocatoria(convs[0]);
+} catch (err) {
+  console.error('ERROR getActiveConvocatorias()', err);
+}
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     };
