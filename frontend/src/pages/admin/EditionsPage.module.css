@@ -457,3 +457,19 @@
 
 @media (max-width: 900px) { .grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 600px) { .grid { grid-template-columns: repeat(2, 1fr); } .currentInner { flex-direction: column; } }
+
+.confirmText {
+  margin: 0 0 10px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--color-primary);
+}
+
+.confirmSubtext {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-gray-500);
+}

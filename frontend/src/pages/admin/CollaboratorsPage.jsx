@@ -7,9 +7,24 @@ import { Plus, Edit, Trash2, X, Check, Upload, User } from 'lucide-react';
 import styles from './CollaboratorsPage.module.css';
 
 const EMPTY_FORM = {
-  name: '', bio: '', email: '', phone: '',
-  type: 'occasional', section_name: '', section_description: '',
-  photo_url: '', social_links: { instagram: '', twitter: '', facebook: '', website: '' }
+  name: '',
+  bio: '',
+  email: '',
+  phone: '',
+  type: 'occasional',
+  section_name: '',
+  section_description: '',
+  photo_url: '',
+  social_links: {
+    instagram: '',
+    facebook: '',
+    twitter: '',
+    x: '',
+    tiktok: '',
+    youtube: '',
+    website: '',
+    extra_link: '',
+  }
 };
 
 export default function CollaboratorsPage() {
@@ -50,9 +65,13 @@ export default function CollaboratorsPage() {
       photo_url: c.photo_url || '',
       social_links: {
         instagram: c.social_links?.instagram || '',
-        twitter: c.social_links?.twitter || '',
         facebook: c.social_links?.facebook || '',
+        twitter: c.social_links?.twitter || '',
+        x: c.social_links?.x || '',
+        tiktok: c.social_links?.tiktok || '',
+        youtube: c.social_links?.youtube || '',
         website: c.social_links?.website || '',
+        extra_link: c.social_links?.extra_link || '',
       }
     });
     setShowForm(true);
@@ -234,19 +253,31 @@ export default function CollaboratorsPage() {
 
                 {/* Redes sociales */}
                 <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
-                  <label className={styles.label}>Redes sociales</label>
+                  <label className={styles.label}>Redes sociales y enlaces</label>
                   <div className={styles.socialsGrid}>
-                    {['instagram', 'twitter', 'facebook', 'website'].map(net => (
+                    {[
+                      { key: 'instagram', label: 'Instagram URL' },
+                      { key: 'facebook', label: 'Facebook URL' },
+                      { key: 'twitter', label: 'Twitter URL' },
+                      { key: 'x', label: 'X URL' },
+                      { key: 'tiktok', label: 'TikTok URL' },
+                      { key: 'youtube', label: 'YouTube URL' },
+                      { key: 'website', label: 'Website URL' },
+                      { key: 'extra_link', label: 'Link extra URL' },
+                    ].map(({ key, label }) => (
                       <input
-                        key={net}
+                        key={key}
                         type="text"
-                        value={form.social_links[net]}
+                        value={form.social_links[key] || ''}
                         onChange={e => setForm(f => ({
                           ...f,
-                          social_links: { ...f.social_links, [net]: e.target.value }
+                          social_links: {
+                            ...f.social_links,
+                            [key]: e.target.value
+                          }
                         }))}
                         className={styles.input}
-                        placeholder={`${net.charAt(0).toUpperCase() + net.slice(1)} URL`}
+                        placeholder={label}
                       />
                     ))}
                   </div>

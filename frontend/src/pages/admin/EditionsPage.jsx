@@ -21,6 +21,8 @@ export default function EditionsPage() {
   const [form, setForm]           = useState(EMPTY_FORM);
   const [saving, setSaving]       = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [confirmCurrentOpen, setConfirmCurrentOpen] = useState(false);
+  const [editionToConfirm, setEditionToConfirm] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -90,14 +92,32 @@ export default function EditionsPage() {
     }
   };
 
-  const handleSetCurrent = async (ed) => {
+  const handleSetCurrent = (ed) => {
     if (ed.is_current) return;
-    if (!window.confirm(`¿Establecer la edición №${ed.number} como la edición actual?`)) return;
+    setEditionToConfirm(ed);
+    setConfirmCurrentOpen(true);
+  };
+
+  const confirmSetCurrent = async () => {
+    if (!editionToConfirm) return;
+
     try {
-      await setCurrentEdition(ed.id);
-      alert.success('Edición actual', `№${ed.number} — ${ed.name} es ahora la edición actual`);
+      await setCurrentEdition(editionToConfirm.id);
+      alert.success(
+        'Edición actual',
+        `№${editionToConfirm.number} — ${editionToConfirm.name} es ahora la edición actual`
+      );
+      setConfirmCurrentOpen(false);
+      setEditionToConfirm(null);
       load();
-    } catch { alert.error('Error', 'No se pudo actualizar'); }
+    } catch {
+      alert.error('Error', 'No se pudo actualizar');
+    }
+  };
+
+  const cancelSetCurrent = () => {
+    setConfirmCurrentOpen(false);
+    setEditionToConfirm(null);
   };
 
   const current    = editions.find(e => e.is_current);
@@ -215,6 +235,44 @@ export default function EditionsPage() {
               <button onClick={handleSave} disabled={saving} className={styles.saveBtn}>
                 <Check size={14} />
                 {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Crear edición'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modal confirmación edición actual */}
+      {confirmCurrentOpen && editionToConfirm && (
+        <div className={styles.modalOverlay} onClick={cancelSetCurrent}>
+          <motion.div
+            className={styles.modal}
+            onClick={(e) => e.stopPropagation()}
+            initial={{ opacity: 0, scale: 0.94, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+          >
+            <div className={styles.modalHeader}>
+              <h3>Establecer como edición actual</h3>
+              <button onClick={cancelSetCurrent} className={styles.modalClose}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <p className={styles.confirmText}>
+                ¿Establecer la edición <strong>№{editionToConfirm.number}</strong> como la edición actual?
+              </p>
+              <p className={styles.confirmSubtext}>
+                Esto reemplazará la edición actual visible en la portada del sitio.
+              </p>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button onClick={cancelSetCurrent} className={styles.cancelBtn}>
+                Cancelar
+              </button>
+              <button onClick={confirmSetCurrent} className={styles.saveBtn}>
+                <Star size={14} />
+                Confirmar
               </button>
             </div>
           </motion.div>

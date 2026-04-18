@@ -4,7 +4,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getArticle } from '../../api/articles.api';
 import { getComments } from '../../api/comments.api';
 import { formatDate } from '../../utils/formatDate';
-import { Clock, Eye, ArrowLeft, MessageCircle, Maximize2 } from 'lucide-react';
+import {
+  Clock,
+  Eye,
+  ArrowLeft,
+  MessageCircle,
+  Maximize2
+} from 'lucide-react';
+import {
+  FaInstagram,
+  FaFacebookF,
+  FaYoutube,
+  FaTiktok,
+  FaGlobe,
+  FaLink
+} from 'react-icons/fa6';
 import LikeButton from '../../components/common/LikeButton/LikeButton';
 import ShareButtons from '../../components/common/ShareButtons/ShareButtons';
 import Comments from '../../components/common/Comments/Comments';
@@ -95,6 +109,29 @@ export default function ArticlePage() {
   const collab = article.collaborators;
   const cats   = article.article_categories?.map(ac => ac.categories).filter(Boolean) || [];
   const tags   = article.article_tags || [];
+
+  const renderSocialIcon = (net) => {
+    const key = String(net || '').toLowerCase();
+
+    if (key === 'instagram') return <FaInstagram size={26} />;
+    if (key === 'facebook') return <FaFacebookF size={24} />;
+    if (key === 'youtube') return <FaYoutube size={26} />;
+    if (key === 'tiktok') return <FaTiktok size={24} />;
+    if (key === 'website') return <FaGlobe size={24} />;
+
+    if (key === 'twitter' || key === 'x') {
+      return (
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+        </svg>
+      );
+    }
+
+    return <FaLink size={24} />;
+  };
+  const socialEntries = Object.entries(collab?.social_links || {}).filter(
+    ([, url]) => Boolean(url)
+  );
 
   return (
     <div className={styles.page}>
@@ -219,45 +256,58 @@ export default function ArticlePage() {
             transition={{ duration: 0.4 }}
             className={styles.authorCard}
           >
-            {collab.photo_url && (
-              <img src={collab.photo_url} alt={collab.name} className={styles.authorCardAvatar} />
-            )}
-            <div className={styles.authorCardInfo}>
-<div className={styles.authorCardLabel}>Sobre el autor</div>
-<Link to={`/colaborador/${collab.slug}`} className={styles.authorCardName}>
-  {collab.name}
-</Link>
-{collab.section_name && (
-  <div className={styles.authorCardSection}>{collab.section_name}</div>
-)}
-<div style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: 'var(--color-gray-400)' }}>
-  {formatDate(article.published_at)}
-</div>
-{collab.bio && <p className={styles.authorCardBio}>{collab.bio}</p>}
-<Link to={`/colaborador/${collab.slug}`} className={styles.authorCardProfileLink}>
-  Ver perfil completo →
-</Link>
-              {collab.social_links && (
-                <div className={styles.authorSocials}>
-                  {Object.entries(collab.social_links).map(([net, url], index) =>
-                    url ? (
-                      <a
-                        key={`${net}-${index}`}
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.socialLink}
-                      >
-                        {net}
-                      </a>
-                    ) : null
-                  )}
+            <Link to={`/colaborador/${collab.slug}`} className={styles.authorCardMain}>
+              <div className={styles.authorCardAvatarWrap}>
+                {collab.photo_url ? (
+                  <img
+                    src={collab.photo_url}
+                    alt={collab.name}
+                    className={styles.authorCardAvatar}
+                  />
+                ) : (
+                  <div className={styles.authorCardAvatarFallback}>
+                    {collab.name?.[0]?.toUpperCase()}
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.authorCardInfo}>
+                <div className={styles.authorCardLabel}>Sobre el autor</div>
+
+                <div className={styles.authorCardName}>
+                  {collab.name}
                 </div>
-              )}
-            </div>
+
+                {collab.section_name && (
+                  <div className={styles.authorCardSection}>{collab.section_name}</div>
+                )}
+
+                {collab.bio && (
+                  <p className={styles.authorCardBio}>{collab.bio}</p>
+                )}
+              </div>
+            </Link>
+
+            {socialEntries.length > 0 && (
+              <div className={styles.authorSocials}>
+                {socialEntries.map(([net, url], index) => (
+                  <a
+                    key={`${net}-${index}`}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.socialIconLink}
+                    aria-label={net}
+                    title={net}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {renderSocialIcon(net)}
+                  </a>
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
-
         {/* ── Barra de acciones centrada ─────────────────── */}
         <div className={styles.actionsBar}>
           {/* Like */}

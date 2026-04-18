@@ -103,13 +103,21 @@
   align-items: center;
   gap: 10px;
   text-decoration: none;
-  color: var(--color-gray-300);
+  color: #111111;
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 600;
   transition: color 0.2s;
 }
-.author:hover { color: white; }
+.author:hover { color: var(--color-accent); }
+
+/* Dark mode */
+:global(html.dark) .author {
+  color: var(--color-gray-700);
+}
+:global(html.dark) .author:hover {
+  color: #ffffff;
+}
 
 .authorAvatar {
   width: 36px;
@@ -119,7 +127,15 @@
   border: 2px solid var(--color-accent);
 }
 
-.authorSection { color: var(--color-gray-500); font-weight: 400; }
+.authorSection {
+  color: #6B6B6B;
+  font-weight: 400;
+}
+
+/* Dark mode */
+:global(html.dark) .authorSection {
+  color: var(--color-gray-500);
+}
 
 .metaRight {
   display: flex;
@@ -331,106 +347,199 @@
 
 /* ── Autor card ───────────────────────────────────────── */
 .authorCard {
+  margin-bottom: var(--space-7);
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.authorCardMain {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: var(--space-3);
-  background: white;
-  border: 1px solid var(--color-gray-200);
-  border-top: 3px solid var(--color-accent);
-  border-radius: var(--radius-md);
-  padding: var(--space-6) var(--space-5);
-  margin-bottom: var(--space-7);
+  text-decoration: none;
+  color: inherit;
+  padding: 6px 0 0;
+  background: transparent;
+}
+
+.authorCardMain:hover .authorCardName {
+  color: var(--color-accent);
+}
+
+.authorCardAvatarWrap {
+  width: 126px;
+  height: 158px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--color-gray-100);
   box-shadow: var(--shadow-sm);
+  margin-bottom: 16px;
 }
 
 .authorCardAvatar {
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border: 3px solid var(--color-accent);
-  box-shadow: 0 4px 16px rgba(139,26,74,0.2);
+  display: block;
+}
+
+.authorCardAvatarFallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 42px;
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-light) 100%);
+}
+
+.authorCardInfo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .authorCardLabel {
   font-family: var(--font-sans);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--color-accent);
-  margin-bottom: 2px;
+  margin-bottom: 8px;
 }
 
 .authorCardName {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 34px;
   font-weight: 700;
+  line-height: 1.05;
   color: var(--color-primary);
-  text-decoration: none;
-  display: block;
-  transition: color 0.2s;
+  margin-bottom: 6px;
+  transition: color 0.2s ease;
 }
-.authorCardName:hover { color: var(--color-accent); }
 
 .authorCardSection {
   font-family: var(--font-sans);
   font-size: 11px;
-  color: var(--color-accent);
-  letter-spacing: 1px;
-  font-style: italic;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--color-gray-500);
+  margin-bottom: 12px;
 }
 
 .authorCardBio {
   font-family: var(--font-body);
-  font-size: 14px;
-  color: var(--color-gray-500);
-  line-height: 1.65;
-  max-width: 520px;
+  font-size: 15px;
+  line-height: 1.72;
+  color: var(--color-gray-600);
   margin: 0;
+  max-width: 620px;
+  text-align: center;
 }
-
-.authorCardProfileLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: var(--space-2);
-  padding: 8px 20px;
-  background: var(--color-accent);
-  color: white;
-  text-decoration: none;
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  border-radius: 999px;
-  transition: background 0.2s;
-}
-.authorCardProfileLink:hover { background: var(--color-accent-light); color: white; }
 
 .authorSocials {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 16px;
 }
 
-.socialLink {
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+.socialIconLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--color-accent);
   text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.2s;
+  line-height: 1;
+  padding: 2px;
+  transition:
+    transform 0.18s ease,
+    color 0.18s ease,
+    opacity 0.18s ease;
 }
-.socialLink:hover { border-color: var(--color-accent); }
 
+.socialIconLink svg {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.socialIconLink:hover {
+  transform: translateY(-2px) scale(1.08);
+  color: var(--color-accent-light);
+}
+
+/* Dark mode */
+:global(html.dark) .authorCardName {
+  color: var(--color-gray-700);
+}
+
+:global(html.dark) .authorCardSection {
+  color: var(--color-gray-400);
+}
+
+:global(html.dark) .authorCardBio {
+  color: var(--color-gray-600);
+}
+
+:global(html.dark) .authorCardAvatarWrap {
+  background: var(--color-gray-100);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.28);
+}
+
+:global(html.dark) .socialIconLink {
+  color: #ff8db3;
+}
+
+:global(html.dark) .socialIconLink:hover {
+  color: #ffffff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .authorCardAvatarWrap {
+    width: 120px;
+    height: 150px;
+  }
+
+  .authorCardName {
+    font-size: 28px;
+  }
+
+  .authorCardBio {
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .authorCardAvatarWrap {
+    width: 110px;
+    height: 138px;
+  }
+
+  .authorCardName {
+    font-size: 24px;
+  }
+
+  .authorCardBio {
+    font-size: 14px;
+  }
+
+  .authorSocials {
+    gap: 12px;
+  }
+}
 /* ── Barra de acciones centrada ───────────────────────── */
 .actionsBar {
   display: flex;
