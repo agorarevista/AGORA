@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getFeatured, getArticles } from '../../api/articles.api';
-import { getCurrentEdition } from '../../api/editions.api';
-import { getActiveConvocatorias } from '../../api/convocatorias.api';
-import { getCollaborators } from '../../api/collaborators.api';
+import { getHome } from '../../api/articles.api';
 import { cacheGet, cacheSet } from '../../utils/cache';
 import { formatDate } from '../../utils/formatDate';
 import {
@@ -52,6 +49,8 @@ export default function HomePage() {
   const [isDark, setIsDark]             = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+
     const syncTheme = () => {
       const isDarkMode =
         document.documentElement.classList.contains('dark') ||
@@ -59,7 +58,7 @@ export default function HomePage() {
         document.documentElement.getAttribute('data-theme') === 'dark' ||
         document.body.getAttribute('data-theme') === 'dark';
 
-      setIsDark(isDarkMode);
+      if (mounted) setIsDark(isDarkMode);
     };
 
     syncTheme();
@@ -76,74 +75,49 @@ export default function HomePage() {
 
     const load = async () => {
       try {
-const [f, l, collabs] = await Promise.all([
-  (async () => {
-    try {
-      const c = cacheGet('featured');
-      if (c) return c;
-      const d = await getFeatured();
-      cacheSet('featured', d, 10 * 60 * 1000);
-      return d;
-    } catch (err) {
-      console.error('ERROR getFeatured()', err);
-      return [];
-    }
-  })(),
-  (async () => {
-    try {
-      const c = cacheGet('latest_home');
-      if (c) return c;
-      const d = await getArticles({ limit: 24 });
-      cacheSet('latest_home', d.data, 10 * 60 * 1000);
-      return d.data;
-    } catch (err) {
-      console.error('ERROR getArticles()', err);
-      return [];
-    }
-  })(),
-  (async () => {
-    try {
-      const c = cacheGet('collabs_home');
-      if (c) return c;
-      const d = await getCollaborators();
-      cacheSet('collabs_home', d, 15 * 60 * 1000);
-      return d;
-    } catch (err) {
-      console.error('ERROR getCollaborators()', err);
-      return [];
-    }
-  })(),
-]);
-        setFeatured(f);
-        setLatest(l);
-        setCollaborators(collabs);
+        const cachedHome = cacheGet('home_payload');
 
-try {
-  const c = cacheGet('current_edition');
-  if (c) {
-    setEdition(c);
-  } else {
-    const e = await getCurrentEdition();
-    setEdition(e);
-    cacheSet('current_edition', e);
-  }
-} catch (err) {
-  console.error('ERROR getCurrentEdition()', err);
-}
+        if (cachedHome && mounted) {
+          setFeatured(Array.isArray(cachedHome.featured) ? cachedHome.featured : []);
+          setLatest(Array.isArray(cachedHome.latest) ? cachedHome.latest : []);
+          setEdition(cachedHome.edition || null);
+          setConvocatoria(cachedHome.convocatoria || null);
+          setCollaborators(Array.isArray(cachedHome.collaborators) ? cachedHome.collaborators : []);
+          setLoading(false);
+        }
 
-try {
-  const convs = await getActiveConvocatorias();
-  if (convs?.length > 0) setConvocatoria(convs[0]);
-} catch (err) {
-  console.error('ERROR getActiveConvocatorias()', err);
-}
-      } catch (e) { console.error(e); }
-      finally { setLoading(false); }
+        const data = await getHome();
+
+        if (!mounted) return;
+
+        const safePayload = {
+          featured: Array.isArray(data?.featured) ? data.featured : [],
+          latest: Array.isArray(data?.latest) ? data.latest : [],
+          edition: data?.edition || null,
+          convocatoria: data?.convocatoria || null,
+          collaborators: Array.isArray(data?.collaborators) ? data.collaborators : [],
+        };
+
+        setFeatured(safePayload.featured);
+        setLatest(safePayload.latest);
+        setEdition(safePayload.edition);
+        setConvocatoria(safePayload.convocatoria);
+        setCollaborators(safePayload.collaborators);
+
+        cacheSet('home_payload', safePayload, 5 * 60 * 1000);
+      } catch (e) {
+        console.error('ERROR getHome()', e);
+      } finally {
+        if (mounted) setLoading(false);
+      }
     };
 
     load();
 
-    return () => observer.disconnect();
+    return () => {
+      mounted = false;
+      observer.disconnect();
+    };
   }, []);
 
   const recentArticles = latest.slice(0, 9);
@@ -157,7 +131,9 @@ const mostRead = useMemo(() =>
   [...latest].sort((a,b) => (b.views||0)-(a.views||0)).slice(0,8)
 , [latest]);
 
-if (loading) return <PageSkeleton />;
+if (loading && !featured.length && !latest.length && !edition && !collaborators.length) {
+  return <PageSkeleton />;
+}
 
 return (
   <div className={styles.page}>

@@ -25,7 +25,7 @@ export default function CategoriesPage() {
       const data = await getCategories();
       setCategories(data);
     } catch { alert.error('Error', 'No se pudieron cargar las categorías'); }
-    finally { setLoading(false); }
+    setLoading(false);
   };
 
   useEffect(() => { load(); }, []);

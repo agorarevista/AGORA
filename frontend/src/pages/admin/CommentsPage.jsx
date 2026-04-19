@@ -25,7 +25,7 @@ const load = async () => {
     const data = await getAllComments({ status: filter });
     setComments(data || []);
   } catch { alert.error('Error', 'No se pudieron cargar los comentarios'); }
-  finally { setLoading(false); }
+  setLoading(false);
 };
 
   useEffect(() => { load(); }, [filter]);

@@ -1,12 +1,13 @@
 const router = require('express').Router();
 const {
   getAll, getBySlug, getById, getByCategory, getByCollaborator,
-  getByEdition, getFeatured, search, create, update, remove, publish
+  getByEdition, getFeatured, getHome, search, create, update, remove, publish
 } = require('./articles.controller');
 const { authMiddleware, requireRole } = require('../../middleware/auth');
 
 // Públicas
 router.get('/', getAll);
+router.get('/home', getHome);
 router.get('/featured', getFeatured);
 router.get('/search', search);
 router.get('/category/:slug', getByCategory);

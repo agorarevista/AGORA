@@ -32,7 +32,7 @@ const load = async () => {
   setLoading(true);
   try { setUsers(await getUsers()); }
   catch { alert.error('Error', 'No se pudieron cargar los usuarios'); }
-  finally { setLoading(false); }
+  setLoading(false);
 };
 
   useEffect(() => { load(); }, []);

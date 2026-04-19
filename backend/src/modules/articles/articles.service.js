@@ -2,6 +2,8 @@ const supabase = require('../../config/supabase');
 const { slugify } = require('../../utils/slugify');
 const { readingTime } = require('../../utils/readingTime');
 const { publishToSubstack } = require('../substack/substack.service');
+const { getCache, setCache } = require('../../middleware/cache');
+const { CACHE_KEYS, CACHE_TTL } = require('../../utils/cacheKeys');
 
 // Campos base para listados
 const BASE_SELECT = `
@@ -192,6 +194,85 @@ const getFeatured = async () => {
   return data;
 };
 
+const getHome = async () => {
+  const cached = getCache(CACHE_KEYS.HOME_PAYLOAD);
+  if (cached) return cached;
+
+  const [
+    featuredResult,
+    latestResult,
+    editionResult,
+    convocatoriaResult,
+    collaboratorsResult,
+  ] = await Promise.allSettled([
+    supabase
+      .from('articles')
+      .select(BASE_SELECT)
+      .eq('status', 'published')
+      .eq('is_featured', true)
+      .order('featured_order', { ascending: true })
+      .limit(6),
+
+    supabase
+      .from('articles')
+      .select(BASE_SELECT)
+      .eq('status', 'published')
+      .order('published_at', { ascending: false })
+      .limit(24),
+
+    supabase
+      .from('editions')
+      .select('*')
+      .eq('is_current', true)
+      .maybeSingle(),
+
+    supabase
+      .from('convocatorias')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+
+    supabase
+      .from('collaborators')
+      .select('id, name, slug, photo_url, bio, description, short_bio, type, section_name, email, instagram_url, instagram, social_instagram, facebook_url, facebook, social_facebook, linkedin_url, linkedin, social_linkedin, website_url, website, portfolio_url')
+      .eq('is_active', true)
+      .order('name', { ascending: true })
+      .limit(12),
+  ]);
+
+  const payload = {
+    featured:
+      featuredResult.status === 'fulfilled' && !featuredResult.value.error
+        ? featuredResult.value.data || []
+        : [],
+
+    latest:
+      latestResult.status === 'fulfilled' && !latestResult.value.error
+        ? latestResult.value.data || []
+        : [],
+
+    edition:
+      editionResult.status === 'fulfilled' && !editionResult.value.error
+        ? editionResult.value.data || null
+        : null,
+
+    convocatoria:
+      convocatoriaResult.status === 'fulfilled' && !convocatoriaResult.value.error
+        ? convocatoriaResult.value.data || null
+        : null,
+
+    collaborators:
+      collaboratorsResult.status === 'fulfilled' && !collaboratorsResult.value.error
+        ? collaboratorsResult.value.data || []
+        : [],
+  };
+
+  setCache(CACHE_KEYS.HOME_PAYLOAD, payload, CACHE_TTL.HOME_PAYLOAD);
+  return payload;
+};
+
 const search = async (query, { page = 1, limit = 12 } = {}) => {
   if (!query || query.trim().length < 2) {
     throw { status: 400, message: 'La búsqueda debe tener al menos 2 caracteres' };
@@ -332,8 +413,18 @@ const remove = async (id) => {
 
   if (error) throw error;
 };
-
 module.exports = {
-  getAll, getBySlug, getById, getByCategory, getByCollaborator,
-  getByEdition, getFeatured, search, create, update, publish, remove
+  getAll,
+  getBySlug,
+  getById,
+  getByCategory,
+  getByCollaborator,
+  getByEdition,
+  getFeatured,
+  getHome,
+  search,
+  create,
+  update,
+  publish,
+  remove
 };

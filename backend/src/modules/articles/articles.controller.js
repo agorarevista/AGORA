@@ -40,6 +40,12 @@ const getFeatured = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const getHome = async (req, res, next) => {
+  try {
+    res.json(await service.getHome());
+  } catch (err) { next(err); }
+};
+
 const search = async (req, res, next) => {
   try {
     const { q, page, limit } = req.query;
@@ -79,6 +85,17 @@ const getById = async (req, res, next) => {
 };
 
 module.exports = {
-  getAll, getBySlug, getById, getByCategory, getByCollaborator,
-  getByEdition, getFeatured, search, create, update, publish, remove
+  getAll,
+  getBySlug,
+  getById,
+  getByCategory,
+  getByCollaborator,
+  getByEdition,
+  getFeatured,
+  getHome,
+  search,
+  create,
+  update,
+  publish,
+  remove
 };

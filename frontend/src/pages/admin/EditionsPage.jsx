@@ -28,7 +28,7 @@ export default function EditionsPage() {
     setLoading(true);
     try { setEditions(await getEditions()); }
     catch { alert.error('Error', 'No se pudieron cargar las ediciones'); }
-    finally { setLoading(false); }
+    setLoading(false);
   };
 
   useEffect(() => { load(); }, []);

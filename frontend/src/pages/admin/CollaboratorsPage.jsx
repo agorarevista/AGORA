@@ -41,7 +41,7 @@ export default function CollaboratorsPage() {
     setLoading(true);
     try { setCollaborators(await getCollaborators()); }
     catch { alert.error('Error', 'No se pudieron cargar los colaboradores'); }
-    finally { setLoading(false); }
+    setLoading(false);
   };
 
   useEffect(() => { load(); }, []);

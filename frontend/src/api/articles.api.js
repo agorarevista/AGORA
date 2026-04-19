@@ -1,5 +1,6 @@
 import api from './axios';
 
+export const getHome = () => api.get('/articles/home').then(r => r.data);
 export const getArticles = (params) => api.get('/articles', { params }).then(r => r.data);
 export const getArticle = (slug) => api.get(`/articles/${slug}`).then(r => r.data);
 export const getArticleById = (id) => api.get(`/articles/by-id/${id}`).then(r => r.data);
