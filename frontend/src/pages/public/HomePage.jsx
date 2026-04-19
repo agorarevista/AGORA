@@ -693,22 +693,26 @@ function SubstackPanel() {
         className={styles.substackLogo}
       />
 
-      <h3 className={styles.substackTitleClean}>
-        Agorá Revista
-      </h3>
+      <div className={styles.substackCleanContent}>
 
-      <p className={styles.substackTextClean}>
-        Revista digital dedicada a la difusión cultural y artística
-      </p>
+        <h3 className={styles.substackTitleClean}>
+          Agorá Revista
+        </h3>
 
-      <a
-        href="https://agorarevista.substack.com"
-        target="_blank"
-        rel="noopener noreferrer"
-        className={styles.substackBtnClean}
-      >
-        Suscribirme →
-      </a>
+        <p className={styles.substackTextClean}>
+          Revista digital dedicada a la difusión cultural y artística
+        </p>
+
+        <a
+          href="https://agorarevista.substack.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.substackBtnClean}
+        >
+          Suscribirme →
+        </a>
+
+      </div>
 
     </div>
   );

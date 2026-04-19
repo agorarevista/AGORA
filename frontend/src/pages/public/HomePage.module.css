@@ -58,6 +58,16 @@
   min-height: 0;
 }
 
+.collabsBlock {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.substackBlock {
+  min-height: 0;
+}
 .newsWideBlock {
   padding-bottom: 22px;
 }
@@ -162,6 +172,12 @@
   align-items: stretch;
   min-height: 0;
   flex: 1 1 0;
+}
+
+.block2Col > .block,
+.block2Col > .substackBlock {
+  min-width: 0;
+  min-height: 0;
 }
 
 .blockHeader {
@@ -535,7 +551,8 @@
   flex-direction: column;
   gap: 10px;
   min-height: 0;
-  height: 100%;
+  flex: 1;
+  overflow: hidden;
 }
 
 .collabViewport {
@@ -543,13 +560,13 @@
   overflow: hidden;
   min-height: 0;
   flex: 1;
-  height: 100%;
   border-radius: 18px;
 }
 
 .collabPage {
   display: block;
   height: 100%;
+  min-height: 0;
 }
 
 .collabCard {
@@ -557,7 +574,7 @@
   display: block;
   width: 100%;
   height: 100%;
-  min-height: 100%;
+  min-height: 0;
   text-decoration: none;
   overflow: hidden;
   border-radius: 18px;
@@ -899,10 +916,11 @@
   height: 100%;
   min-height: 0;
   display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .rightCol > .block2Col > .block,
 .rightCol > .block2Col > .substackBlock {
-  height: 100%;
   min-height: 0;
 }
 .substackSymbol {
@@ -1052,47 +1070,206 @@
 
 @media (max-width: 1024px) {
   .mainGrid { grid-template-columns: 1fr; }
-  .editionCol { position: relative; top: auto; }
-  .rightCol { height: auto; min-height: 0; }
-  .lowerGrid { grid-template-columns: 1fr; }
-  .aboutAgoraRich { grid-template-columns: 1fr; }
-  .newsWideBlock .newsPage { grid-template-columns: 1fr; }
-  .newsWideBlock .newsCard { min-height: 240px; }
-  .editionImgWrap { height: 520px; }
-  .editionEmpty { height: 520px; }
-  .block2Col { grid-template-columns: 1fr 1fr; }
-  .carouselPage { grid-template-columns: repeat(3, 1fr); }
+
+  .editionCol {
+    position: relative;
+    top: auto;
+  }
+
+  .rightCol {
+    height: auto;
+    min-height: 0;
+  }
+
+  .block2Col {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    flex: 0 0 auto;
+  }
+
+  .block2Col > .block,
+  .block2Col > .substackBlock {
+    height: auto;
+  }
+
+  .collabsBlock {
+    min-height: 440px;
+    height: auto;
+  }
+
+  .collabCarousel {
+    min-height: 400px;
+    height: auto;
+    flex: 0 0 auto;
+  }
+
+  .collabViewport {
+    min-height: 400px;
+    height: 400px;
+    flex: 0 0 auto;
+  }
+
   .collabPage {
     display: block;
     height: 100%;
   }
+
+  .collabCard {
+    min-height: 400px;
+    height: 400px;
+    max-height: 400px;
+  }
+
+  .substackBlock {
+    min-height: 320px;
+    height: auto;
+  }
+
+  .substackClean {
+    min-height: 320px;
+    height: auto;
+  }
+
+  .lowerGrid { grid-template-columns: 1fr; }
+  .aboutAgoraRich { grid-template-columns: 1fr; }
+  .newsWideBlock .newsPage { grid-template-columns: 1fr; }
+  .newsWideBlock .newsCard { min-height: 240px; }
+
+  .editionImgWrap { height: 520px; }
+  .editionEmpty { height: 520px; }
+
+  .carouselPage { grid-template-columns: repeat(2, 1fr); }
+
   .skeleton { grid-template-columns: 1fr; }
   .skeletonLeft { height: 260px; }
+
+
+  /* SUBSTACK CENTRADO TAMBIÉN EN TABLET */
+  .substackClean {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 16px;
+    padding: 22px 24px;
+  }
+
+  .substackLogo {
+    width: 96px;
+    height: 96px;
+    flex-shrink: 0;
+    margin: 0 auto;
+  }
+
+  .substackCleanContent {
+    display: flex;
+    flex: 0 1 auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  .substackTitleClean {
+    font-size: 24px;
+    text-align: center;
+  }
+
+  .substackTextClean {
+    font-size: 14px;
+    max-width: 280px;
+    text-align: center;
+    margin: 0 auto;
+  }
+
+  .substackBtnClean {
+    align-self: center;
+    margin-top: 4px;
+  }
 }
 @media (max-width: 768px) {
   .shell { padding: 16px 16px 48px; }
-  .block2Col { grid-template-columns: 1fr; }
+
+  .rightCol {
+    height: auto;
+    min-height: 0;
+  }
+
+  .block2Col {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    flex: 0 0 auto;
+  }
+
+  .block2Col > .block,
+  .block2Col > .substackBlock {
+    height: auto;
+  }
+
   .lowerGrid { grid-template-columns: 1fr; }
   .carouselPage { grid-template-columns: repeat(2, 1fr); }
   .newsPage { grid-template-columns: 1fr; }
   .newsWideBlock .newsCardImg { height: 150px; }
   .newsWideBlock .newsCardTitle { font-size: 22px; }
+
+  .collabsBlock {
+    min-height: 420px;
+    height: auto;
+  }
+
+  .collabCarousel {
+    min-height: 380px;
+    height: auto;
+    flex: 0 0 auto;
+  }
+
+  .collabViewport {
+    min-height: 380px;
+    height: 380px;
+    flex: 0 0 auto;
+  }
+
   .collabPage {
     display: block;
     height: 100%;
   }
+
   .collabCard {
-    min-height: 420px;
-    height: 420px;
-    max-height: 420px;
+    min-height: 380px;
+    height: 380px;
+    max-height: 380px;
   }
+
   .collabName {
     font-size: 28px;
   }
+
   .collabBio {
     font-size: 13px;
     -webkit-line-clamp: 4;
   }
+
+  .substackBlock {
+    min-height: 320px;
+    height: auto;
+  }
+
+  .substackClean {
+    min-height: 320px;
+    height: auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px 16px;
+  }
+
+  .substackCleanContent {
+    align-items: center;
+  }
+
   .mostReadTitle { font-size: 22px; }
   .aboutAgoraTitle { font-size: 24px; }
   .aboutAgoraText { font-size: 17px; }
@@ -1101,24 +1278,86 @@
 }
 @media (max-width: 480px) {
   .carouselPage { grid-template-columns: 1fr; }
+
+  .rightCol {
+    height: auto;
+    min-height: 0;
+  }
+
+  .block2Col {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    flex: 0 0 auto;
+  }
+
+  .block2Col > .block,
+  .block2Col > .substackBlock {
+    height: auto;
+  }
+
+  .collabsBlock {
+    min-height: 360px;
+    height: auto;
+  }
+
+  .collabCarousel {
+    min-height: 360px;
+    height: auto;
+    flex: 0 0 auto;
+  }
+
+  .collabViewport {
+    min-height: 360px;
+    height: 360px;
+    flex: 0 0 auto;
+  }
+
   .collabPage {
     display: block;
     height: 100%;
   }
+
   .collabCard {
-    min-height: 380px;
-    height: 380px;
-    max-height: 380px;
+    min-height: 360px;
+    height: 360px;
+    max-height: 360px;
   }
+
   .collabInfo {
     padding: 18px 16px 16px;
   }
+
   .collabName {
     font-size: 24px;
   }
+
   .collabSection {
     font-size: 11px;
   }
+
+  .collabBio {
+    -webkit-line-clamp: 3;
+  }
+
+  .substackBlock {
+    min-height: 280px;
+    height: auto;
+  }
+
+  .substackClean {
+    min-height: 280px;
+    height: auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px 16px;
+  }
+
+  .substackCleanContent {
+    align-items: center;
+  }
+
   .newsWideBlock .newsCard { min-height: 220px; }
   .editionImgWrap { height: 340px; }
   .editionEmpty { height: 340px; }
@@ -1130,11 +1369,24 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* CENTRA VERTICAL */
+  justify-content: center;
   text-align: center;
   gap: 14px;
   padding: 20px 16px;
   height: 100%;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.substackCleanContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
 }
 
 .substackLogo {
@@ -1142,6 +1394,8 @@
   height: 120px;
   object-fit: contain;
   flex-shrink: 0;
+  display: block;
+  margin: 0 auto;
 }
 
 .substackTitleClean {
@@ -1150,6 +1404,7 @@
   font-weight: 700;
   color: var(--nav-text);
   margin: 0;
+  text-align: center;
 }
 
 .substackTextClean {
@@ -1157,9 +1412,11 @@
   font-size: 13px;
   line-height: 1.5;
   color: var(--nav-text-muted);
-  margin: 0;
+  margin: 0 auto;
   max-width: 240px;
+  text-align: center;
 }
+
 .substackBtnClean {
   margin-top: 10px;
   display: inline-flex;
@@ -1175,6 +1432,7 @@
   letter-spacing: 1px;
   text-transform: uppercase;
   transition: all 0.2s;
+  align-self: center;
 }
 
 .substackBtnClean:hover {
