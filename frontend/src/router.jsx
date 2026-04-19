@@ -1,6 +1,7 @@
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
 import PublicLayout from './layouts/PublicLayout';
 import AdminLayout from './layouts/AdminLayout';
+import PageTitleManager from './components/common/PageTitleManager/PageTitleManager';
 
 // Páginas públicas
 import HomePage from './pages/public/HomePage';
@@ -35,49 +36,64 @@ const RequireAuth = ({ children }) => {
   return children;
 };
 
+function TitleLayout() {
+  return (
+    <>
+      <PageTitleManager />
+      <Outlet />
+    </>
+  );
+}
+
 const router = createBrowserRouter([
-  // ── Rutas públicas ────────────────────────────────────────────
   {
     path: '/',
-    element: <PublicLayout />,
+    element: <TitleLayout />,
     children: [
-      { index: true,                      element: <HomePage /> },
-      { path: 'articulos/:slug',          element: <ArticlePage /> },
-      { path: 'categoria/:slug',          element: <CategoryPage /> },
-      { path: 'colaborador/:slug',        element: <CollaboratorPage /> },
-      { path: 'edicion/:number',          element: <EditionPage /> },
-      { path: 'buscar',                   element: <SearchPage /> },
-      { path: 'convocatoria/:id',         element: <ConvocatoriaPage /> },
-    ]
+      // ── Rutas públicas ────────────────────────────────────────────
+      {
+        path: '/',
+        element: <PublicLayout />,
+        children: [
+          { index: true,                      element: <HomePage /> },
+          { path: 'articulos/:slug',          element: <ArticlePage /> },
+          { path: 'categoria/:slug',          element: <CategoryPage /> },
+          { path: 'colaborador/:slug',        element: <CollaboratorPage /> },
+          { path: 'edicion/:number',          element: <EditionPage /> },
+          { path: 'buscar',                   element: <SearchPage /> },
+          { path: 'convocatoria/:id',         element: <ConvocatoriaPage /> },
+        ]
+      },
+
+      // ── Login admin (sin layout admin) ────────────────────────────
+      { path: 'admin/login', element: <LoginPage /> },
+
+      // ── Rutas admin protegidas ────────────────────────────────────
+      {
+        path: 'admin',
+        element: <RequireAuth><AdminLayout /></RequireAuth>,
+        children: [
+          { index: true,                      element: <Navigate to="/admin/dashboard" replace /> },
+          { path: 'dashboard',                element: <DashboardPage /> },
+          { path: 'analytics',                element: <AnalyticsPage /> },
+          { path: 'articulos',                element: <ArticlesPage /> },
+          { path: 'articulos/nuevo',          element: <ArticleEditorPage /> },
+          { path: 'articulos/editar/:id',     element: <ArticleEditorPage /> },
+          { path: 'categorias',               element: <CategoriesPage /> },
+          { path: 'colaboradores',            element: <CollaboratorsPage /> },
+          { path: 'ediciones',                element: <EditionsPage /> },
+          { path: 'convocatorias',            element: <ConvocatoriasPage /> },
+          { path: 'convocatorias/:id/envios', element: <SubmissionsPage /> },
+          { path: 'comentarios',              element: <CommentsPage /> },
+          { path: 'usuarios',                 element: <UsersPage /> },
+          { path: 'configuracion',            element: <SettingsPage /> },
+        ]
+      },
+
+      // ── 404 ───────────────────────────────────────────────────────
+      { path: '*', element: <Navigate to="/" replace /> },
+    ],
   },
-
-  // ── Login admin (sin layout admin) ────────────────────────────
-  { path: '/admin/login', element: <LoginPage /> },
-
-  // ── Rutas admin protegidas ────────────────────────────────────
-  {
-    path: '/admin',
-    element: <RequireAuth><AdminLayout /></RequireAuth>,
-    children: [
-      { index: true,                      element: <Navigate to="/admin/dashboard" replace /> },
-      { path: 'dashboard',                element: <DashboardPage /> },
-      { path: 'analytics',                element: <AnalyticsPage /> },
-      { path: 'articulos',                element: <ArticlesPage /> },
-      { path: 'articulos/nuevo',          element: <ArticleEditorPage /> },
-      { path: 'articulos/editar/:id',     element: <ArticleEditorPage /> },
-      { path: 'categorias',               element: <CategoriesPage /> },
-      { path: 'colaboradores',            element: <CollaboratorsPage /> },
-      { path: 'ediciones',                element: <EditionsPage /> },
-      { path: 'convocatorias',            element: <ConvocatoriasPage /> },
-      { path: 'convocatorias/:id/envios', element: <SubmissionsPage /> },
-      { path: 'comentarios',             element: <CommentsPage /> },
-      { path: 'usuarios',                element: <UsersPage /> },
-      { path: 'configuracion',           element: <SettingsPage /> },
-    ]
-  },
-
-  // ── 404 ───────────────────────────────────────────────────────
-  { path: '*', element: <Navigate to="/" replace /> },
 ]);
 
 export default function Router() {
