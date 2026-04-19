@@ -32,8 +32,7 @@ export default function ArticlesPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const params = { page, limit: LIMIT };
-      if (statusFilter !== 'all') params.status = statusFilter;
+const params = { page, limit: LIMIT, status: statusFilter };
 
       const res = await getArticles(params);
       setArticles(res.data || []);

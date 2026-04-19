@@ -43,11 +43,16 @@ const getAll = async ({ page = 1, limit = 12, status = 'published' } = {}) => {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
-  const { data, error, count } = await supabase
+  let query = supabase
     .from('articles')
-    .select(BASE_SELECT, { count: 'exact' })
-    .eq('status', status)
-    .order('published_at', { ascending: false })
+    .select(BASE_SELECT, { count: 'exact' });
+
+  if (status && status !== 'all') {
+    query = query.eq('status', status);
+  }
+
+  const { data, error, count } = await query
+    .order('published_at', { ascending: false, nullsFirst: false })
     .range(from, to);
 
   if (error) throw error;

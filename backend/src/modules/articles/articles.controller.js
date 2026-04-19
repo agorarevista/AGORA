@@ -2,8 +2,8 @@ const service = require('./articles.service');
 
 const getAll = async (req, res, next) => {
   try {
-    const { page, limit } = req.query;
-    res.json(await service.getAll({ page, limit }));
+    const { page, limit, status } = req.query;
+    res.json(await service.getAll({ page, limit, status }));
   } catch (err) { next(err); }
 };
 
