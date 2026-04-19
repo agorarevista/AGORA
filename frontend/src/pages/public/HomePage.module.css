@@ -48,14 +48,30 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  align-items: stretch;
 }
 
+.lowerGrid > .block {
+  height: 100%;
+}
 .recentBlock,
 .collabsBlock,
-.newsWideBlock,
+.newsWideBlock {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .mostReadWideBlock,
 .aboutBlock {
-  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+.mostReadList {
+  gap: 0;
+}
+
+.mostReadItem {
+  padding: 10px 0;
 }
 
 .collabsBlock {
@@ -118,8 +134,8 @@
 
 .aboutAgoraTitle {
   font-family: var(--font-display);
-  font-size: 30px;
-  line-height: 1.08;
+  font-size: 22px;
+  line-height: 1.15;
   font-weight: 700;
   color: var(--nav-text);
   margin: 0;
@@ -127,8 +143,8 @@
 
 .aboutAgoraText {
   font-family: var(--font-body);
-  font-size: 18px;
-  line-height: 1.75;
+  font-size: 14px;
+  line-height: 1.6;
   font-weight: 500;
   color: var(--nav-text);
   margin: 0;
@@ -605,13 +621,15 @@
   content: "";
   position: absolute;
   inset: 0;
+
   background:
     linear-gradient(
       to top,
-      rgba(8, 10, 18, 0.86) 0%,
-      rgba(8, 10, 18, 0.42) 38%,
-      rgba(8, 10, 18, 0.12) 68%,
-      rgba(8, 10, 18, 0.02) 100%
+      rgba(8, 10, 18, 0.84) 0%,
+      rgba(8, 10, 18, 0.54) 24%,
+      rgba(8, 10, 18, 0.20) 42%,
+      rgba(8, 10, 18, 0.04) 60%,
+      rgba(8, 10, 18, 0) 74%
     );
 }
 
@@ -635,53 +653,65 @@
 
 .collabInfo {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 50%;
+  bottom: 56px;
+  transform: translateX(-50%);
   z-index: 2;
+
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 22px 20px 18px;
+  align-items: center;
+  text-align: center;
+  gap: 5px;
+
+  padding: 8px 12px 4px;
+
+  width: min(68%, 260px);
+  max-width: min(68%, 260px);
 }
 
 .collabTextGroup {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 3px;
+  max-width: 100%;
 }
 
 .collabName {
   font-family: var(--font-display);
-  font-size: 34px;
+  font-size: 21px;
   font-weight: 700;
   color: white;
-  line-height: 0.98;
-  text-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  line-height: 0.94;
+  text-align: center;
+  text-shadow: 0 3px 12px rgba(0,0,0,0.32);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  max-width: 100%;
 }
 
 .collabSection {
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: 9px;
   font-weight: 900;
-  color: rgba(255,255,255,0.92);
-  letter-spacing: 1.8px;
+  color: rgba(255,255,255,0.9);
+  letter-spacing: 1.3px;
   text-transform: uppercase;
+  text-align: center;
 }
 
 .collabBio {
   font-family: var(--font-body);
-  font-size: 14px;
-  line-height: 1.55;
-  color: rgba(255,255,255,0.88);
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(255,255,255,0.86);
   margin: 0;
-  max-width: 520px;
+  max-width: 300px;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -689,33 +719,37 @@
 .collabSocials {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
 
 .collabSocial {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: white;
-  background: rgba(255,255,255,0.14);
-  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.16);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+  flex-shrink: 0;
 }
 
-.collabSocialText {
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 0.3px;
-  line-height: 1;
+.collabSocial:hover {
+  transform: translateY(-2px);
+  background: rgba(255,255,255,0.2);
 }
 
+.collabSocialIcon {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
 .collabArrow {
   position: absolute;
   top: 50%;
@@ -768,7 +802,12 @@
   flex-direction: column;
   gap: 2px;
 }
-
+.lowerGrid > .mostReadWideBlock,
+.lowerGrid > .aboutBlock {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 .mostReadItem {
   display: grid;
   grid-template-columns: 40px minmax(0,1fr);
@@ -800,11 +839,11 @@
 
 .mostReadTitle {
   font-family: var(--font-display);
-  font-size: 30px;
-  line-height: 1.16;
+  font-size: 22px;
+  line-height: 1.2;
   font-weight: 700;
   color: var(--nav-text);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1130,7 +1169,7 @@
     height: auto;
   }
 
-  .lowerGrid { grid-template-columns: 1fr; }
+  .lowerGrid { grid-template-columns: 1fr 1fr; }
   .aboutAgoraRich { grid-template-columns: 1fr; }
   .newsWideBlock .newsPage { grid-template-columns: 1fr; }
   .newsWideBlock .newsCard { min-height: 240px; }
@@ -1243,12 +1282,13 @@
   }
 
   .collabName {
-    font-size: 28px;
+    font-size: 22px;
+    line-height: 0.95;
   }
 
   .collabBio {
-    font-size: 13px;
-    -webkit-line-clamp: 4;
+    font-size: 12px;
+    -webkit-line-clamp: 3;
   }
 
   .substackBlock {
@@ -1324,21 +1364,25 @@
   }
 
   .collabInfo {
-    padding: 18px 16px 16px;
+    bottom: 50px;
+    padding: 8px 10px 4px;
+    width: min(76%, 240px);
+    max-width: min(76%, 240px);
   }
 
   .collabName {
-    font-size: 24px;
+    font-size: 19px;
+    line-height: 0.93;
   }
 
   .collabSection {
-    font-size: 11px;
+    font-size: 8px;
+    letter-spacing: 1.1px;
   }
 
   .collabBio {
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
   }
-
   .substackBlock {
     min-height: 280px;
     height: auto;
@@ -1437,4 +1481,27 @@
 
 .substackBtnClean:hover {
   background: var(--color-accent-light);
+}
+.collabCardLink {
+  display: block;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+}
+
+.collabSocialsWrap {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  z-index: 4;
+  width: max-content;
+  max-width: calc(100% - 32px);
+}
+.aboutAgoraVisualImage {
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  object-fit: contain;
+  margin: 0 auto;
 }

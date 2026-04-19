@@ -104,7 +104,7 @@ export default function HomePage() {
         setConvocatoria(safePayload.convocatoria);
         setCollaborators(safePayload.collaborators);
 
-        cacheSet('home_payload', safePayload, 5 * 60 * 1000);
+        cacheSet('home_payload', safePayload, 60 * 1000);
       } catch (e) {
         console.error('ERROR getHome()', e);
       } finally {
@@ -119,7 +119,6 @@ export default function HomePage() {
       observer.disconnect();
     };
   }, []);
-
   const recentArticles = latest.slice(0, 9);
   const newsItems      = useMemo(() => {
     const items = [...latest.slice(9, 16)];
@@ -357,37 +356,103 @@ function RecentCarousel({ articles }) {
 /* ════════════════════════════════════════════════════════
    COLABORADORES GRID
 ════════════════════════════════════════════════════════ */
+function InstagramIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2Zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5a4.25 4.25 0 0 0 4.25-4.25v-8.5A4.25 4.25 0 0 0 16.25 3.5h-8.5Zm8.88 2.12a1.12 1.12 0 1 1 0 2.25 1.12 1.12 0 0 1 0-2.25ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 1.5A3.5 3.5 0 1 0 12 15.5 3.5 3.5 0 0 0 12 8.5Z" />
+    </svg>
+  );
+}
+
+function FacebookIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M13.5 22v-8.2h2.77l.42-3.22H13.5V8.5c0-.93.26-1.56 1.6-1.56h1.71V4.06c-.3-.04-1.3-.12-2.47-.12-2.44 0-4.11 1.49-4.11 4.22v2.4H7.97v3.22h2.26V22h3.27Z" />
+    </svg>
+  );
+}
+
+function LinkedInIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M6.94 8.5H3.56V20h3.38V8.5ZM5.25 3A2 2 0 1 0 5.3 7a2 2 0 0 0-.05-4ZM20.44 12.74c0-3.45-1.84-5.05-4.3-5.05-1.98 0-2.87 1.09-3.37 1.85V8.5H9.39c.04.69 0 11.5 0 11.5h3.38v-6.42c0-.34.02-.68.12-.92.27-.68.88-1.38 1.9-1.38 1.34 0 1.88 1.02 1.88 2.51V20H20v-6.86Z" />
+    </svg>
+  );
+}
+
+function XIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M18.9 2H21l-6.56 7.5L22.16 22h-6.04l-4.73-6.2L5.96 22H3.84l7.01-8.01L2 2h6.2l4.27 5.64L18.9 2Zm-1.06 18.2h1.68L7.3 3.7H5.5l12.34 16.5Z" />
+    </svg>
+  );
+}
+
 function CollaboratorsCarousel({ collaborators }) {
   const { page, idx, total, prev, next, setIdx } = useCarousel(collaborators, 1, 4500);
 
   if (!collaborators.length) return <EmptySlot />;
 
 const getSocialLinks = (col) => {
+  const social = col.social_links || {};
+
   const links = [
     {
       key: 'instagram',
-      href: col.instagram_url || col.instagram || col.social_instagram,
-      label: 'IG'
+      href:
+        social.instagram ||
+        social.instagram_url ||
+        col.instagram_url ||
+        col.instagram ||
+        col.social_instagram,
+      icon: <InstagramIcon className={styles.collabSocialIcon} />
     },
     {
       key: 'facebook',
-      href: col.facebook_url || col.facebook || col.social_facebook,
-      label: 'f'
+      href:
+        social.facebook ||
+        social.facebook_url ||
+        col.facebook_url ||
+        col.facebook ||
+        col.social_facebook,
+      icon: <FacebookIcon className={styles.collabSocialIcon} />
     },
     {
       key: 'linkedin',
-      href: col.linkedin_url || col.linkedin || col.social_linkedin,
-      label: 'in'
+      href:
+        social.linkedin ||
+        social.linkedin_url ||
+        col.linkedin_url ||
+        col.linkedin ||
+        col.social_linkedin,
+      icon: <LinkedInIcon className={styles.collabSocialIcon} />
+    },
+    {
+      key: 'x',
+      href:
+        social.x ||
+        social.twitter ||
+        social.twitter_url ||
+        col.x_url ||
+        col.twitter_url ||
+        col.twitter,
+      icon: <XIcon className={styles.collabSocialIcon} />
     },
     {
       key: 'website',
-      href: col.website_url || col.website || col.portfolio_url,
-      icon: <Globe size={17} />
+      href:
+        social.website ||
+        social.portfolio ||
+        social.portfolio_url ||
+        col.website_url ||
+        col.website ||
+        col.portfolio_url,
+      icon: <Globe size={18} className={styles.collabSocialIcon} />
     },
     {
       key: 'email',
       href: col.email ? `mailto:${col.email}` : null,
-      icon: <Mail size={17} />
+      icon: <Mail size={18} className={styles.collabSocialIcon} />
     },
   ].filter((item) => !!item.href);
 
@@ -410,55 +475,56 @@ const getSocialLinks = (col) => {
               const socialLinks = getSocialLinks(col);
 
               return (
-                <Link
+                <div
                   key={col.id}
-                  to={`/colaborador/${col.slug || col.id}`}
                   className={styles.collabCard}
                 >
-                  <div className={styles.collabAvatar}>
-                    {col.photo_url ? (
-                      <img src={col.photo_url} alt={col.name} />
-                    ) : (
-                      <span>{(col.name || '?')[0].toUpperCase()}</span>
-                    )}
-                  </div>
-
-                  <div className={styles.collabInfo}>
-                    <div className={styles.collabTextGroup}>
-                      <div className={styles.collabName}>{col.name}</div>
-
-                      {col.section_name && (
-                        <div className={styles.collabSection}>{col.section_name}</div>
-                      )}
-
-                      {(col.bio || col.description || col.short_bio) && (
-                        <p className={styles.collabBio}>
-                          {col.bio || col.description || col.short_bio}
-                        </p>
+                  <Link
+                    to={`/colaborador/${col.slug || col.id}`}
+                    className={styles.collabCardLink}
+                  >
+                    <div className={styles.collabAvatar}>
+                      {col.photo_url ? (
+                        <img
+                          src={`${col.photo_url}${col.photo_url.includes('?') ? '&' : '?'}v=${encodeURIComponent(col.updated_at || col.id || col.slug || '1')}`}
+                          alt={col.name}
+                        />
+                      ) : (
+                        <span>{(col.name || '?')[0].toUpperCase()}</span>
                       )}
                     </div>
 
-                    {socialLinks.length > 0 && (
-                      <div
-                        className={styles.collabSocials}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-{socialLinks.map((item) => (
-  <a
-    key={item.key}
-    href={item.href}
-    target="_blank"
-    rel="noopener noreferrer"
-    className={styles.collabSocial}
-    aria-label={item.key}
-  >
-    {item.icon || <span className={styles.collabSocialText}>{item.label}</span>}
-  </a>
-))}
+                    <div className={styles.collabInfo}>
+                      <div className={styles.collabTextGroup}>
+                        <div className={styles.collabName}>{col.name}</div>
+
+                        {col.section_name && (
+                          <div className={styles.collabSection}>{col.section_name}</div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </Link>
+                    </div>
+                  </Link>
+
+                  {socialLinks.length > 0 && (
+                    <div className={styles.collabSocialsWrap}>
+                      <div className={styles.collabSocials}>
+                        {socialLinks.map((item) => (
+                          <a
+                            key={item.key}
+                            href={item.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.collabSocial}
+                            aria-label={item.key}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {item.icon}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </motion.div>

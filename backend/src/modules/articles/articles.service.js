@@ -236,7 +236,7 @@ const getHome = async () => {
 
     supabase
       .from('collaborators')
-      .select('id, name, slug, photo_url, bio, description, short_bio, type, section_name, email, instagram_url, instagram, social_instagram, facebook_url, facebook, social_facebook, linkedin_url, linkedin, social_linkedin, website_url, website, portfolio_url')
+      .select('id, name, slug, photo_url, bio, email, type, section_name, social_links, is_active')
       .eq('is_active', true)
       .order('name', { ascending: true })
       .limit(12),
