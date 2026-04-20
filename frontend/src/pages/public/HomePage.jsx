@@ -116,6 +116,24 @@ export default function HomePage() {
         cacheSet(HOME_CACHE_KEY, safePayload, 10 * 1000);
       } catch (e) {
         console.error('ERROR getHome()', e);
+
+        if (!mounted) return;
+
+        const cachedHome = cacheGet('home_payload');
+
+        if (cachedHome) {
+          setFeatured(Array.isArray(cachedHome.featured) ? cachedHome.featured : []);
+          setLatest(Array.isArray(cachedHome.latest) ? cachedHome.latest : []);
+          setEdition(cachedHome.edition || null);
+          setConvocatoria(cachedHome.convocatoria || null);
+          setCollaborators(Array.isArray(cachedHome.collaborators) ? cachedHome.collaborators : []);
+        } else {
+          setFeatured([]);
+          setLatest([]);
+          setEdition(null);
+          setConvocatoria(null);
+          setCollaborators([]);
+        }
       } finally {
         if (mounted) setLoading(false);
       }
