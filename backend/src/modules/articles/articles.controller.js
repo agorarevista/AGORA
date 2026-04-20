@@ -42,10 +42,27 @@ const getFeatured = async (req, res, next) => {
 
 const getHome = async (req, res, next) => {
   try {
-    res.json(await service.getHome());
-  } catch (err) { next(err); }
-};
+    const payload = await service.getHome();
 
+    return res.json({
+      featured: Array.isArray(payload?.featured) ? payload.featured : [],
+      latest: Array.isArray(payload?.latest) ? payload.latest : [],
+      edition: payload?.edition || null,
+      convocatoria: payload?.convocatoria || null,
+      collaborators: Array.isArray(payload?.collaborators) ? payload.collaborators : [],
+    });
+  } catch (err) {
+    console.error('================ HOME ERROR ================');
+    console.error('message:', err?.message);
+    console.error('code:', err?.code);
+    console.error('details:', err?.details);
+    console.error('hint:', err?.hint);
+    console.error('stack:', err?.stack);
+    console.error('full error:', err);
+    console.error('============================================');
+    return next(err);
+  }
+};
 const search = async (req, res, next) => {
   try {
     const { q, page, limit } = req.query;

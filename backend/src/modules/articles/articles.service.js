@@ -3,8 +3,16 @@ const { slugify } = require('../../utils/slugify');
 const { readingTime } = require('../../utils/readingTime');
 const { publishToSubstack } = require('../substack/substack.service');
 const { getCache, setCache } = require('../../middleware/cache');
+const CACHE_KEYS = {
+  HOME_PAYLOAD: 'home_payload'
+};
+
+const CACHE_TTL = {
+  HOME_PAYLOAD: 10 // segundos
+};
+
 const invalidateHomeCache = () => {
-    invalidateHomeCache();
+  setCache(CACHE_KEYS.HOME_PAYLOAD, null, 0);
 };
 // Campos base para listados
 const BASE_SELECT = `
@@ -201,7 +209,14 @@ const getFeatured = async () => {
 };
 
 const getHome = async () => {
-  const cached = getCache(CACHE_KEYS.HOME_PAYLOAD);
+  let cached = null;
+
+  try {
+    cached = getCache(CACHE_KEYS.HOME_PAYLOAD);
+  } catch (e) {
+    console.warn('Cache error (get):', e);
+  }
+
   if (cached) return cached;
 
   const [
@@ -275,8 +290,13 @@ const getHome = async () => {
         : [],
   };
 
+try {
   setCache(CACHE_KEYS.HOME_PAYLOAD, payload, CACHE_TTL.HOME_PAYLOAD);
-  return payload;
+} catch (e) {
+  console.warn('Cache error (set):', e);
+}
+
+return payload;
 };
 
 const search = async (query, { page = 1, limit = 12 } = {}) => {

@@ -3,9 +3,6 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getHome } from '../../api/articles.api';
 import { cacheGet, cacheSet } from '../../utils/cache';
-
-const HOME_CACHE_KEY = 'home_payload';
-const HOME_CACHE_BUSTER_KEY = 'home_payload_version';
 import { formatDate } from '../../utils/formatDate';
 import {
   Clock,
@@ -24,6 +21,9 @@ import agoraIcon from '../../assets/ICON.png';
 import bookLight from '../../assets/BOOK.png';
 import bookDark from '../../assets/BOOKW.png';
 import styles from './HomePage.module.css';
+
+const HOME_CACHE_KEY = 'home_payload';
+const HOME_CACHE_BUSTER_KEY = 'home_payload_version';
 /* ── Carousel hook ───────────────────────────────────── */
 function useCarousel(items, perPage = 3, autoMs = 0) {
   const [idx, setIdx] = useState(0);
@@ -119,7 +119,7 @@ export default function HomePage() {
 
         if (!mounted) return;
 
-        const cachedHome = cacheGet('home_payload');
+               const cachedHome = cacheGet(HOME_CACHE_KEY);
 
         if (cachedHome) {
           setFeatured(Array.isArray(cachedHome.featured) ? cachedHome.featured : []);
