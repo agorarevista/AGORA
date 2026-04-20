@@ -3,8 +3,9 @@ const { slugify } = require('../../utils/slugify');
 const { readingTime } = require('../../utils/readingTime');
 const { publishToSubstack } = require('../substack/substack.service');
 const { getCache, setCache } = require('../../middleware/cache');
-const { CACHE_KEYS, CACHE_TTL } = require('../../utils/cacheKeys');
-
+const invalidateHomeCache = () => {
+    invalidateHomeCache();
+};
 // Campos base para listados
 const BASE_SELECT = `
   id, title, slug, subtitle, excerpt, cover_image_url,
@@ -311,10 +312,18 @@ const create = async (body) => {
   const { data: article, error } = await supabase
     .from('articles')
     .insert({
-      title, slug, subtitle, excerpt, content, content_html,
-      cover_image_url, collaborator_id, edition_id,
+      title,
+      slug,
+      subtitle,
+      excerpt,
+      content,
+      content_html,
+      cover_image_url,
+      collaborator_id,
+      edition_id,
       is_featured: is_featured || false,
-      featured_order, reading_time,
+      featured_order,
+      reading_time,
       status: 'draft'
     })
     .select()
@@ -341,13 +350,14 @@ const create = async (body) => {
     await supabase.from('article_tags').insert(tagRows);
   }
 
+    invalidateHomeCache();
+
   return article;
 };
 
 const update = async (id, body) => {
-  const { category_ids, tags, content_html, title, ...rest } = body;
+  const { category_ids, tags, content_html, ...rest } = body;
 
-  if (title) rest.slug = slugify(title) + '-' + Date.now();
   if (content_html) {
     rest.content_html = content_html;
     rest.reading_time = readingTime(content_html);
@@ -365,8 +375,12 @@ const update = async (id, body) => {
   // Actualizar categorías si vienen
   if (category_ids !== undefined) {
     await supabase.from('article_categories').delete().eq('article_id', id);
+
     if (category_ids.length > 0) {
-      const catRows = category_ids.map(cat_id => ({ article_id: id, category_id: cat_id }));
+      const catRows = category_ids.map(cat_id => ({
+        article_id: id,
+        category_id: cat_id
+      }));
       await supabase.from('article_categories').insert(catRows);
     }
   }
@@ -374,11 +388,18 @@ const update = async (id, body) => {
   // Actualizar tags si vienen
   if (tags !== undefined) {
     await supabase.from('article_tags').delete().eq('article_id', id);
+
     if (tags.length > 0) {
-      const tagRows = tags.map(t => ({ article_id: id, tag: t.tag, tag_type: t.tag_type || null }));
+      const tagRows = tags.map(t => ({
+        article_id: id,
+        tag: t.tag,
+        tag_type: t.tag_type || null
+      }));
       await supabase.from('article_tags').insert(tagRows);
     }
   }
+
+    invalidateHomeCache();
 
   return article;
 };
@@ -399,6 +420,7 @@ const publish = async (id) => {
   // Intentar crosspost a Substack (no falla si no está configurado)
   if (process.env.SUBSTACK_URL && process.env.SUBSTACK_COOKIE) {
     const substackUrl = await publishToSubstack(article);
+
     if (substackUrl) {
       await supabase
         .from('articles')
@@ -406,6 +428,8 @@ const publish = async (id) => {
         .eq('id', id);
     }
   }
+
+    invalidateHomeCache();
 
   return article;
 };
@@ -417,6 +441,8 @@ const remove = async (id) => {
     .eq('id', id);
 
   if (error) throw error;
+
+    invalidateHomeCache();
 };
 module.exports = {
   getAll,

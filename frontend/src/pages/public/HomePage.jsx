@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getHome } from '../../api/articles.api';
 import { cacheGet, cacheSet } from '../../utils/cache';
+
+const HOME_CACHE_KEY = 'home_payload';
+const HOME_CACHE_BUSTER_KEY = 'home_payload_version';
 import { formatDate } from '../../utils/formatDate';
 import {
   Clock,
@@ -73,17 +76,27 @@ export default function HomePage() {
       attributeFilter: ['class', 'data-theme'],
     });
 
-    const load = async () => {
-      try {
-        const cachedHome = cacheGet('home_payload');
+    const applyPayload = (payload) => {
+      if (!mounted || !payload) return;
 
-        if (cachedHome && mounted) {
-          setFeatured(Array.isArray(cachedHome.featured) ? cachedHome.featured : []);
-          setLatest(Array.isArray(cachedHome.latest) ? cachedHome.latest : []);
-          setEdition(cachedHome.edition || null);
-          setConvocatoria(cachedHome.convocatoria || null);
-          setCollaborators(Array.isArray(cachedHome.collaborators) ? cachedHome.collaborators : []);
-          setLoading(false);
+      setFeatured(Array.isArray(payload.featured) ? payload.featured : []);
+      setLatest(Array.isArray(payload.latest) ? payload.latest : []);
+      setEdition(payload.edition || null);
+      setConvocatoria(payload.convocatoria || null);
+      setCollaborators(Array.isArray(payload.collaborators) ? payload.collaborators : []);
+    };
+
+    const load = async ({ forceFresh = false } = {}) => {
+      try {
+        if (!forceFresh) {
+          const cachedHome = cacheGet(HOME_CACHE_KEY);
+
+          if (cachedHome && mounted) {
+            applyPayload(cachedHome);
+            setLoading(false);
+          }
+        } else {
+          localStorage.removeItem(HOME_CACHE_KEY);
         }
 
         const data = await getHome();
@@ -98,13 +111,9 @@ export default function HomePage() {
           collaborators: Array.isArray(data?.collaborators) ? data.collaborators : [],
         };
 
-        setFeatured(safePayload.featured);
-        setLatest(safePayload.latest);
-        setEdition(safePayload.edition);
-        setConvocatoria(safePayload.convocatoria);
-        setCollaborators(safePayload.collaborators);
+        applyPayload(safePayload);
 
-        cacheSet('home_payload', safePayload, 60 * 1000);
+        cacheSet(HOME_CACHE_KEY, safePayload, 10 * 1000);
       } catch (e) {
         console.error('ERROR getHome()', e);
       } finally {
@@ -112,11 +121,35 @@ export default function HomePage() {
       }
     };
 
+    const handleHomeInvalidation = () => {
+      localStorage.removeItem(HOME_CACHE_KEY);
+      load({ forceFresh: true });
+    };
+
+    const handleStorage = (event) => {
+      if (event.key === HOME_CACHE_BUSTER_KEY) {
+        handleHomeInvalidation();
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        load({ forceFresh: true });
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('home-cache-invalidated', handleHomeInvalidation);
+    document.addEventListener('visibilitychange', handleVisibility);
+
     load();
 
     return () => {
       mounted = false;
       observer.disconnect();
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('home-cache-invalidated', handleHomeInvalidation);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
   const recentArticles = latest.slice(0, 9);
