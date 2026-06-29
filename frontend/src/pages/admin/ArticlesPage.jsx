@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import { getArticles } from '../../api/articles.api';
 import { publishArticle, deleteArticle } from '../../api/articles.api';
 import { formatDate } from '../../utils/formatDate';
-import useAlert from '../../hooks/useAlert';
+import useAlert   from '../../hooks/useAlert';
+import useConfirm from '../../hooks/useConfirm';
 import {
   Plus, Search, Eye, Edit, Trash2, Send,
   FileText, Filter, ChevronDown
@@ -20,6 +21,7 @@ const STATUS_LABELS = {
 export default function ArticlesPage() {
   const navigate = useNavigate();
   const alert    = useAlert();
+  const confirm  = useConfirm();
 
   const [articles, setArticles]   = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -52,8 +54,14 @@ const params = { page, limit: LIMIT, status: statusFilter };
     a.collaborators?.name?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handlePublish = async (id) => {
-    if (!window.confirm('¿Publicar este artículo?')) return;
+const handlePublish = async (id) => {
+  const ok = await confirm({
+    type: 'info',
+    title: '¿Publicar este artículo?',
+    message: 'El artículo será visible para todos los lectores.',
+    confirmLabel: 'Sí, publicar',
+  });
+  if (!ok) return;
     try {
       await publishArticle(id);
       alert.success('Publicado', 'El artículo ya está visible');
@@ -63,16 +71,28 @@ const params = { page, limit: LIMIT, status: statusFilter };
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('¿Archivar este artículo? No se eliminará permanentemente.')) return;
-    try {
-      await deleteArticle(id);
-      alert.success('Archivado', 'El artículo fue archivado');
-      load();
-    } catch {
-      alert.error('Error', 'No se pudo archivar');
-    }
-  };
+const handleDelete = async (id) => {
+  const ok = await confirm({
+    type: 'danger',
+    title: '¿Eliminar este artículo?',
+    message: 'Esta acción eliminará el artículo permanentemente.',
+    confirmLabel: 'Sí, eliminar',
+  });
+
+  if (!ok) return;
+
+  try {
+    await deleteArticle(id);
+
+    setArticles(prev => prev.filter(article => article.id !== id));
+    setTotal(prev => Math.max(0, prev - 1));
+
+    alert.success('Eliminado', 'El artículo fue eliminado correctamente');
+  } catch (error) {
+    console.error(error);
+    alert.error('Error', 'No se pudo eliminar el artículo');
+  }
+};
 
   const totalPages = Math.ceil(total / LIMIT);
 
@@ -264,16 +284,14 @@ const params = { page, limit: LIMIT, status: statusFilter };
                           </button>
                         )}
 
-                        {/* Archivar */}
-                        {art.status !== 'archived' && (
-                          <button
-                            onClick={() => handleDelete(art.id)}
-                            className={`${styles.actionBtn} ${styles.actionDelete}`}
-                            title="Archivar"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
+                      {/* Eliminar */}
+                      <button
+                        onClick={() => handleDelete(art.id)}
+                        className={`${styles.actionBtn} ${styles.actionDelete}`}
+                        title="Eliminar"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                       </div>
                     </td>
                   </tr>

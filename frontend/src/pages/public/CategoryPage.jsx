@@ -45,7 +45,7 @@ export default function CategoryPage() {
 
   const hasMore = articles.length < total;
 
-  const owner = useMemo(() => {
+const owner = useMemo(() => {
     const validCollaborators = articles
       .map((art) => art?.collaborators)
       .filter(Boolean)
@@ -54,57 +54,49 @@ export default function CategoryPage() {
     if (!validCollaborators.length) return null;
 
     const uniqueKeys = Array.from(
-      new Set(
-        validCollaborators.map(
-          (collab) => collab.id || collab.slug || collab.name
-        )
-      )
+      new Set(validCollaborators.map((c) => c.id || c.slug || c.name))
     );
 
     if (uniqueKeys.length !== 1) return null;
 
     const collaborator = validCollaborators[0];
 
-return {
-  slug: collaborator.slug || null,
-  id: collaborator.id || null,
-  name: collaborator.name || 'Autor/a de la sección',
-  role:
-    collaborator.role ||
-    collaborator.section_role ||
-    collaborator.position ||
-    'Autor/a de la sección',
-  photo:
-    collaborator.photo_url ||
-    collaborator.avatar_url ||
-    collaborator.image_url ||
-    collaborator.profile_photo_url ||
-    null,
-  bio:
-    collaborator.bio ||
-    collaborator.description ||
-    collaborator.excerpt ||
-    '',
-  socials: {
-    instagram:
-      collaborator.instagram ||
-      collaborator.instagram_url ||
-      collaborator.social_instagram ||
-      collaborator.social_links?.instagram ||
-      collaborator.social_links?.instagram_url ||
-      null,
-    website:
-      collaborator.website ||
-      collaborator.website_url ||
-      collaborator.portfolio_url ||
-      collaborator.social_links?.website ||
-      collaborator.social_links?.portfolio ||
-      collaborator.social_links?.portfolio_url ||
-      null,
-    email: collaborator.email ? `mailto:${collaborator.email}` : null,
-  },
-};
+    // Solo mostrar como "autor fijo" si su sección coincide con esta categoría
+    const isFixedOwner =
+      collaborator.type === 'fixed' &&
+      (collaborator.section_slug === slug || collaborator.section_name?.toLowerCase() === category?.name?.toLowerCase());
+
+    if (!isFixedOwner) return null;
+
+    return {
+      slug:  collaborator.slug || null,
+      id:    collaborator.id || null,
+      name:  collaborator.name || 'Autor/a de la sección',
+      role:  collaborator.role || collaborator.section_role || collaborator.position || 'Autor/a de la sección',
+      photo: collaborator.photo_url || collaborator.avatar_url || collaborator.image_url || null,
+      bio:   collaborator.bio || collaborator.description || collaborator.excerpt || '',
+      socials: {
+        instagram: collaborator.instagram || collaborator.instagram_url || collaborator.social_links?.instagram || null,
+        website:   collaborator.website || collaborator.website_url || collaborator.social_links?.website || collaborator.social_links?.portfolio || null,
+        email:     collaborator.email ? `mailto:${collaborator.email}` : null,
+      },
+    };
   }, [articles]);
+
+  // Colaboradores múltiples — para secciones compartidas
+  const multipleCollabs = useMemo(() => {
+    if (owner) return []; // ya hay autor único
+    const seen = new Set();
+    return articles
+      .map(a => a?.collaborators)
+      .filter(Boolean)
+      .filter(c => {
+        const key = c.id || c.slug || c.name;
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  }, [articles, owner]);
   return (
     <div className={styles.page}>
 
@@ -127,107 +119,96 @@ return {
                   )}
                 </div>
 
-                {owner && (
-                  <div className={styles.ownerInline}>
-{owner.slug ? (
-  <Link
-    to={`/colaborador/${owner.slug}`}
-    className={styles.ownerLink}
-  >
-    <div className={styles.ownerMedia}>
-      {owner.photo ? (
-        <img
-          src={owner.photo}
-          alt={owner.name}
-          className={styles.ownerPhoto}
-        />
-      ) : (
-        <div className={styles.ownerPhotoPlaceholder}>
-          {(owner.name || '?')[0].toUpperCase()}
-        </div>
-      )}
-    </div>
-  </Link>
-) : (
-  <div className={styles.ownerMedia}>
-    {owner.photo ? (
-      <img
-        src={owner.photo}
-        alt={owner.name}
-        className={styles.ownerPhoto}
-      />
-    ) : (
-      <div className={styles.ownerPhotoPlaceholder}>
-        {(owner.name || '?')[0].toUpperCase()}
-      </div>
-    )}
-  </div>
-)}
-
-<div className={styles.ownerContent}>
-  <div className={styles.ownerKicker}>Autora fija de la sección</div>
-
-{owner.slug ? (
-  <Link
-    to={`/colaborador/${owner.slug}`}
-    className={styles.ownerNameLink}
-  >
-    <h2 className={styles.ownerName}>{owner.name}</h2>
-  </Link>
-) : (
-  <h2 className={styles.ownerName}>{owner.name}</h2>
-)}
-
-                      {owner.role && (
-                        <div className={styles.ownerRole}>{owner.role}</div>
-                      )}
-
-                      {owner.bio && owner.bio.trim() && (
-                        <p className={styles.ownerBio}>{owner.bio}</p>
-                      )}
-
-                      {(owner.socials?.instagram ||
-                        owner.socials?.website ||
-                        owner.socials?.email) && (
-                        <div className={styles.ownerSocials}>
-                          {owner.socials?.instagram && (
-                            <a
-                              href={owner.socials.instagram}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={styles.ownerSocial}
-                              aria-label="Instagram"
-                            >
-                              <InstagramIcon className={styles.ownerSocialIcon} />
-                            </a>
-                          )}
-
-                          {owner.socials?.website && (
-                            <a
-                              href={owner.socials.website}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={styles.ownerSocial}
-                              aria-label="Sitio web"
-                            >
-                              <Globe size={16} className={styles.ownerSocialIcon} />
-                            </a>
-                          )}
-
-                          {owner.socials?.email && (
-                            <a
-                              href={owner.socials.email}
-                              className={styles.ownerSocial}
-                              aria-label="Correo"
-                            >
-                              <Mail size={16} className={styles.ownerSocialIcon} />
-                            </a>
-                          )}
-                        </div>
-                      )}
+{owner && (
+                <div className={styles.ownerInline}>
+                  {owner.slug ? (
+                    <Link to={`/colaborador/${owner.slug}`} className={styles.ownerLink}>
+                      <div className={styles.ownerMedia}>
+                        {owner.photo
+                          ? <img src={owner.photo} alt={owner.name} className={styles.ownerPhoto} />
+                          : <div className={styles.ownerPhotoPlaceholder}>{(owner.name || '?')[0].toUpperCase()}</div>
+                        }
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className={styles.ownerMedia}>
+                      {owner.photo
+                        ? <img src={owner.photo} alt={owner.name} className={styles.ownerPhoto} />
+                        : <div className={styles.ownerPhotoPlaceholder}>{(owner.name || '?')[0].toUpperCase()}</div>
+                      }
                     </div>
+                  )}
+
+                  <div className={styles.ownerContent}>
+                    <div className={styles.ownerKicker}>Autora fija de la sección</div>
+                    {owner.slug
+                      ? <Link to={`/colaborador/${owner.slug}`} className={styles.ownerNameLink}><h2 className={styles.ownerName}>{owner.name}</h2></Link>
+                      : <h2 className={styles.ownerName}>{owner.name}</h2>
+                    }
+                    {owner.role && <div className={styles.ownerRole}>{owner.role}</div>}
+                    {owner.bio?.trim() && <p className={styles.ownerBio}>{owner.bio}</p>}
+                    {(owner.socials?.instagram || owner.socials?.website || owner.socials?.email) && (
+                      <div className={styles.ownerSocials}>
+                        {owner.socials?.instagram && (
+                          <a href={owner.socials.instagram} target="_blank" rel="noopener noreferrer" className={styles.ownerSocial} aria-label="Instagram">
+                            <InstagramIcon className={styles.ownerSocialIcon} />
+                          </a>
+                        )}
+                        {owner.socials?.website && (
+                          <a href={owner.socials.website} target="_blank" rel="noopener noreferrer" className={styles.ownerSocial} aria-label="Sitio web">
+                            <Globe size={16} className={styles.ownerSocialIcon} />
+                          </a>
+                        )}
+                        {owner.socials?.email && (
+                          <a href={owner.socials.email} className={styles.ownerSocial} aria-label="Correo">
+                            <Mail size={16} className={styles.ownerSocialIcon} />
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+              )}
+
+              {/* Collage de colaboradores múltiples */}
+              {!owner && multipleCollabs.length > 0 && (
+                <div className={styles.collabsCollage}>
+                  <div className={styles.collabsKicker}>Colaboradores</div>
+                  <div className={styles.collabsAvatars}>
+                    {multipleCollabs.slice(0, 8).map((c, i) => (
+                      <Link
+                        key={c.id || c.slug || i}
+                        to={c.slug ? `/colaborador/${c.slug}` : '#'}
+                        className={styles.collabAvatar}
+                        title={c.name}
+                        style={{ zIndex: multipleCollabs.length - i }}
+                      >
+                        {c.photo_url
+                          ? <img src={c.photo_url} alt={c.name} />
+                          : <span>{(c.name || '?')[0].toUpperCase()}</span>
+                        }
+                      </Link>
+                    ))}
+                    {multipleCollabs.length > 8 && (
+                      <div className={styles.collabAvatarMore}>
+                        +{multipleCollabs.length - 8}
+                      </div>
+                    )}
+                  </div>
+                  <div className={styles.collabsNames}>
+                    {multipleCollabs.slice(0, 5).map((c, i) => (
+                      <span key={c.id || i}>
+                        {c.slug
+                          ? <Link to={`/colaborador/${c.slug}`} className={styles.collabNameLink}>{c.name}</Link>
+                          : c.name
+                        }
+                        {i < Math.min(multipleCollabs.length, 5) - 1 && <span className={styles.collabSep}> · </span>}
+                      </span>
+                    ))}
+                    {multipleCollabs.length > 5 && <span className={styles.collabSep}> y más</span>}
+                  </div>
+                </div>
+              )}
               </div>
             </>
           ) : (

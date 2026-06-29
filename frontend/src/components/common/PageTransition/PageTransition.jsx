@@ -2,14 +2,14 @@ import { motion } from 'framer-motion';
 
 const variants = {
   fadeUp: {
-    initial:  { opacity: 0, y: 30 },
-    animate:  { opacity: 1, y: 0 },
-    exit:     { opacity: 0, y: -20 },
+    initial:  { opacity: 0 },
+    animate:  { opacity: 1 },
+    exit:     { opacity: 0 },
   },
   fadeRight: {
-    initial:  { opacity: 0, x: -30 },
-    animate:  { opacity: 1, x: 0 },
-    exit:     { opacity: 0, x: 30 },
+    initial:  { opacity: 0 },
+    animate:  { opacity: 1 },
+    exit:     { opacity: 0 },
   },
   fadeIn: {
     initial:  { opacity: 0 },
@@ -29,13 +29,13 @@ export default function PageTransition({
       initial={v.initial}
       animate={v.animate}
       exit={v.exit}
-      transition={{ duration: 0.4, ease: 'easeOut', delay }}
+      transition={{ duration: 0.35, ease: 'easeOut', delay }}
+      style={{ willChange: 'opacity' }}
     >
       {children}
     </motion.div>
   );
 }
-
 // Componente para animar elementos individuales al aparecer en pantalla
 export function FadeIn({ children, delay = 0, direction = 'up' }) {
   const dirs = {

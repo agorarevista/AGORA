@@ -4,11 +4,76 @@
   background: var(--color-cream);
   transition: background-color 0.35s ease;
 }
+/* ════════════════════════════════════════════════════════
+   FEATURE SECTIONS
+════════════════════════════════════════════════════════ */
 
-.shell {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 24px var(--space-5) 64px;
+.featureSection {
+  margin-top: 56px;
+  margin-bottom: 42px;
+}
+
+
+
+.featureEyebrow {
+  display: inline-block;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: 10px;
+}
+
+  .featureSectionHeader {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  margin-bottom: 26px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--nav-border);
+}
+
+.featureTitle {
+  font-family: var(--font-display);
+  font-size: 42px;
+  line-height: 1;
+  color: var(--nav-text);
+  margin: 0;
+}
+
+.featureMore {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  transition: opacity 0.2s;
+}
+
+.featureMore:hover {
+  opacity: 0.7;
+}
+
+.featureConvWrapper {
+  background: var(--nav-bg);
+  border: 1px solid var(--nav-border);
+  padding: 28px;
+  box-shadow: var(--shadow-md);
+  transition: background-color 0.35s ease, border-color 0.35s ease;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -74,12 +139,7 @@
   padding: 10px 0;
 }
 
-.collabsBlock {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-height: 0;
-}
+ 
 
 .substackBlock {
   min-height: 0;
@@ -562,6 +622,14 @@
 /* ══════════════════════════════════════════════════════
    COLABORADORES
 ══════════════════════════════════════════════════════ */
+ .collabsBlock {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  flex: 1;
+}
+
 .collabCarousel {
   display: flex;
   flex-direction: column;
@@ -574,26 +642,26 @@
 .collabViewport {
   position: relative;
   overflow: hidden;
-  min-height: 0;
-  flex: 1;
-  border-radius: 18px;
+  min-height: 335px;
+  height: 335px;
+  flex: 0 0 auto;
+  border-radius: 4px;
 }
-
 .collabPage {
-  display: block;
-  height: 100%;
-  min-height: 0;
-}
-
-.collabCard {
-  position: relative;
   display: block;
   width: 100%;
   height: 100%;
   min-height: 0;
+}
+.collabCard {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 335px;
+  min-height: 335px;
   text-decoration: none;
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: 4px;
   background: var(--color-gray-100);
   border: 1px solid var(--nav-border);
   box-shadow: var(--shadow-sm);
@@ -637,9 +705,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center center;
+  object-position: center 38%;
   display: block;
-  transform: scale(1.01);
 }
 
 .collabAvatar span {
@@ -654,7 +721,7 @@
 .collabInfo {
   position: absolute;
   left: 50%;
-  bottom: 56px;
+  bottom: 112px;
   transform: translateX(-50%);
   z-index: 2;
 
@@ -666,8 +733,8 @@
 
   padding: 8px 12px 4px;
 
-  width: min(68%, 260px);
-  max-width: min(68%, 260px);
+  width: calc(100% - 32px);
+  max-width: calc(100% - 32px);
 }
 
 .collabTextGroup {
@@ -720,23 +787,23 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 14px;
   flex-wrap: nowrap;
 }
 
 .collabSocial {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: white;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.16);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+  background: rgba(0,0,0,0.18);
+  border: 1.6px solid rgba(255,255,255,0.88);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: transform .2s ease, background .2s ease;
   flex-shrink: 0;
 }
 
@@ -746,8 +813,8 @@
 }
 
 .collabSocialIcon {
-  width: 14px;
-  height: 14px;
+  width: 22px;
+  height: 22px;
   display: block;
 }
 .collabArrow {
@@ -1492,7 +1559,7 @@
 .collabSocialsWrap {
   position: absolute;
   left: 50%;
-  bottom: 10px;
+  bottom: 56px;
   transform: translateX(-50%);
   z-index: 4;
   width: max-content;
@@ -1504,4 +1571,212 @@
   height: auto;
   object-fit: contain;
   margin: 0 auto;
+}
+.aboutAgoraVisualImage {
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+/* ══════════════════════════════════════════════════════
+   CONVOCATORIAS GRID (HOMEPAGE)
+══════════════════════════════════════════════════════ */
+.convGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.convCard {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  background: var(--nav-bg);
+  border: 1px solid var(--nav-border);
+  overflow: hidden;
+  transition: box-shadow 0.25s, transform 0.25s, background-color 0.35s, border-color 0.35s;
+}
+.convCard:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
+
+.convCardMedia {
+  position: relative;
+  height: 220px;
+  overflow: hidden;
+  background: var(--color-gray-100);
+  flex-shrink: 0;
+}
+.convCardMedia img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.convCard:hover .convCardMedia img { transform: scale(1.04); }
+
+.convCardMediaPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 48px;
+  color: var(--color-gray-300);
+}
+
+/* Badge días restantes */
+.convCardDeadline {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 2px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+.convCardDeadlineDays {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+}
+.convCardDeadlineUnit {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.85);
+}
+.convCardDeadlineLabel {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: white;
+  text-align: center;
+  padding: 0 4px;
+}
+
+/* Badges de categoría */
+.convCardCatBadges {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+  max-width: 55%;
+}
+.convCardCatBadge {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  background: rgba(0,0,0,0.62);
+  color: white;
+  border-radius: 2px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Cuerpo de la card */
+.convCardBody {
+  padding: 18px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.convCardTitle {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--nav-text);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color 0.2s;
+}
+.convCard:hover .convCardTitle { color: var(--color-accent); }
+
+.convCardDesc {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--nav-text-muted);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+}
+
+.convCardEmail {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--nav-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.convCardCta {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--color-accent);
+  padding-top: 12px;
+  border-top: 1px solid var(--nav-border);
+  margin-top: auto;
+  transition: opacity 0.2s;
+}
+.convCard:hover .convCardCta { opacity: 0.75; }
+
+.convEmpty {
+  padding: 48px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--nav-text-muted);
+  font-family: var(--font-body);
+  font-size: 15px;
+}
+.convEmpty span {
+  font-family: var(--font-display);
+  font-size: 36px;
+  color: var(--color-gray-300);
+}
+
+@media (max-width: 900px) {
+  .convGrid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .convGrid { grid-template-columns: 1fr; }
 }

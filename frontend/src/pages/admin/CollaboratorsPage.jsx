@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { getCollaborators, createCollaborator, updateCollaborator, deleteCollaborator } from '../../api/collaborators.api';
 import { uploadFile } from '../../api/admin.api';
-import useAlert from '../../hooks/useAlert';
+import useAlert   from '../../hooks/useAlert';
+import useConfirm from '../../hooks/useConfirm';
 import { Plus, Edit, Trash2, X, Check, Upload, User } from 'lucide-react';
 import styles from './CollaboratorsPage.module.css';
 
@@ -28,7 +29,8 @@ const EMPTY_FORM = {
 };
 
 export default function CollaboratorsPage() {
-  const alert = useAlert();
+  const alert   = useAlert();
+  const confirm = useConfirm();
   const [collaborators, setCollaborators] = useState([]);
   const [loading, setLoading]             = useState(true);
   const [showForm, setShowForm]           = useState(false);
@@ -89,8 +91,15 @@ export default function CollaboratorsPage() {
     finally { setUploading(false); }
   };
 
-  const handleSave = async () => {
-    if (!form.name.trim()) {
+const handleSave = async () => {
+  if (form.photo_url?.includes('fbcdn.net') || form.photo_url?.includes('cdninstagram.com')) {
+    alert.warning(
+      'URL no compatible',
+      'Las imágenes de Facebook/Instagram se bloquean. Sube la foto directamente o usa un enlace de Cloudflare R2.'
+    );
+    return;
+  }
+  if (!form.name.trim()) {
       alert.warning('Falta el nombre', 'El colaborador necesita un nombre');
       return;
     }
@@ -118,8 +127,14 @@ export default function CollaboratorsPage() {
     }
   };
 
-  const handleDelete = async (c) => {
-    if (!window.confirm(`¿Eliminar a "${c.name}"?`)) return;
+const handleDelete = async (c) => {
+  const ok = await confirm({
+    type: 'error',
+    title: `¿Eliminar a "${c.name}"?`,
+    message: 'El colaborador será removido del sistema.',
+    confirmLabel: 'Sí, eliminar',
+  });
+  if (!ok) return;
     try {
       await deleteCollaborator(c.id);
       alert.success('Eliminado', `"${c.name}" fue eliminado`);

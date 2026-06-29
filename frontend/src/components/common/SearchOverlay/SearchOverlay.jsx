@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, X, Clock } from 'lucide-react';
+import { Search, X, Clock, User } from 'lucide-react';
 import { searchArticles } from '../../../api/articles.api';
+import { searchCollaborators } from '../../../api/collaborators.api';
 import { formatDate } from '../../../utils/formatDate';
 import styles from './SearchOverlay.module.css';
 
@@ -19,10 +20,11 @@ const saveHistory = (query) => {
 };
 
 export default function SearchOverlay({ open, onClose }) {
-  const [query, setQuery]       = useState('');
-  const [results, setResults]   = useState([]);
-  const [loading, setLoading]   = useState(false);
-  const [history, setHistory]   = useState([]);
+  const [query, setQuery]         = useState('');
+  const [articles, setArticles]   = useState([]);
+  const [collabs, setCollabs]     = useState([]);
+  const [loading, setLoading]     = useState(false);
+  const [history, setHistory]     = useState([]);
   const inputRef = useRef(null);
   const timerRef = useRef(null);
 
@@ -30,22 +32,28 @@ export default function SearchOverlay({ open, onClose }) {
     if (open) {
       setHistory(getHistory());
       setQuery('');
-      setResults([]);
+      setArticles([]);
+      setCollabs([]);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [open]);
 
   useEffect(() => {
     clearTimeout(timerRef.current);
-    if (query.trim().length < 2) { setResults([]); return; }
+    if (query.trim().length < 2) { setArticles([]); setCollabs([]); return; }
 
     setLoading(true);
     timerRef.current = setTimeout(async () => {
       try {
-        const res = await searchArticles(query, { limit: 8 });
-        setResults(res.data || []);
+        const [artRes, collabRes] = await Promise.all([
+          searchArticles(query, { limit: 6 }).catch(() => ({ data: [] })),
+          searchCollaborators(query).catch(() => []),
+        ]);
+        setArticles(artRes.data || []);
+        setCollabs(Array.isArray(collabRes) ? collabRes.slice(0, 3) : []);
       } catch {
-        setResults([]);
+        setArticles([]);
+        setCollabs([]);
       } finally {
         setLoading(false);
       }
@@ -68,9 +76,10 @@ export default function SearchOverlay({ open, onClose }) {
     setHistory(next);
   };
 
-  const showHistory  = query.trim().length < 2 && history.length > 0;
-  const showResults  = query.trim().length >= 2;
-  const showEmpty    = showResults && !loading && results.length === 0;
+  const showHistory = query.trim().length < 2 && history.length > 0;
+  const showResults = query.trim().length >= 2;
+  const hasResults  = articles.length > 0 || collabs.length > 0;
+  const showEmpty   = showResults && !loading && !hasResults;
 
   return (
     <>
@@ -82,6 +91,7 @@ export default function SearchOverlay({ open, onClose }) {
 
       {/* Panel */}
       <div className={`${styles.panel} ${open ? styles.panelOpen : ''}`}>
+
         {/* Input */}
         <div className={styles.inputRow}>
           <Search size={18} className={styles.inputIcon} />
@@ -110,7 +120,6 @@ export default function SearchOverlay({ open, onClose }) {
           </button>
         </div>
 
-        {/* Meandro */}
         <div className={styles.meander} />
 
         {/* Contenido */}
@@ -129,10 +138,7 @@ export default function SearchOverlay({ open, onClose }) {
                 >
                   <Clock size={13} className={styles.historyIcon} />
                   <span>{h}</span>
-                  <button
-                    className={styles.removeHistory}
-                    onClick={(e) => removeHistory(h, e)}
-                  >
+                  <button className={styles.removeHistory} onClick={(e) => removeHistory(h, e)}>
                     <X size={11} />
                   </button>
                 </Link>
@@ -156,13 +162,44 @@ export default function SearchOverlay({ open, onClose }) {
             </div>
           )}
 
-          {/* Resultados */}
-          {showResults && results.length > 0 && (
+          {/* Colaboradores */}
+          {showResults && collabs.length > 0 && (
             <div className={styles.section}>
               <div className={styles.sectionTitle}>
-                {results.length} resultado{results.length !== 1 ? 's' : ''}
+                <User size={12} style={{ opacity: 0.6 }} />
+                Colaboradores
               </div>
-              {results.map(art => (
+              {collabs.map(col => (
+                <Link
+                  key={col.id}
+                  to={`/colaborador/${col.slug || col.id}`}
+                  className={styles.collabItem}
+                  onClick={() => handleSelect(query)}
+                >
+                  <div className={styles.collabAvatar}>
+                    {col.photo_url
+                      ? <img src={col.photo_url} alt={col.name} />
+                      : <span>{(col.name || '?')[0].toUpperCase()}</span>
+                    }
+                  </div>
+                  <div className={styles.collabInfo}>
+                    <div className={styles.collabName}>{col.name}</div>
+                    {col.section_name && (
+                      <div className={styles.collabSection}>{col.section_name}</div>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {/* Artículos */}
+          {showResults && articles.length > 0 && (
+            <div className={styles.section}>
+              <div className={styles.sectionTitle}>
+                Artículos
+              </div>
+              {articles.map(art => (
                 <Link
                   key={art.id}
                   to={`/articulos/${art.slug}`}
@@ -186,9 +223,7 @@ export default function SearchOverlay({ open, onClose }) {
                       <div className={styles.resultSubtitle}>{art.subtitle}</div>
                     )}
                     <div className={styles.resultMeta}>
-                      {art.collaborators && (
-                        <span>{art.collaborators.name}</span>
-                      )}
+                      {art.collaborators && <span>{art.collaborators.name}</span>}
                       <span className={styles.dot}>·</span>
                       <span>{formatDate(art.published_at)}</span>
                     </div>

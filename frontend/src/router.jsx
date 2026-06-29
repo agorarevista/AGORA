@@ -11,7 +11,11 @@ import CollaboratorPage from './pages/public/CollaboratorPage';
 import EditionPage from './pages/public/EditionPage';
 import SearchPage from './pages/public/SearchPage';
 import ConvocatoriaPage from './pages/public/ConvocatoriaPage';
-
+import ConvocatoriasListPage from './pages/public/ConvocatoriasListPage';
+import AboutPage from './pages/public/AboutPage';
+import EdicionesPage from './pages/public/EdicionesPage';
+import ArchivoPage from './pages/public/ArchivoPage';
+import EdicionesEspecialesPage from './pages/public/EdicionesEspecialesPage';
 // Páginas admin
 import LoginPage from './pages/admin/LoginPage';
 import DashboardPage from './pages/admin/DashboardPage';
@@ -61,7 +65,12 @@ const router = createBrowserRouter([
           { path: 'colaborador/:slug',        element: <CollaboratorPage /> },
           { path: 'edicion/:number',          element: <EditionPage /> },
           { path: 'buscar',                   element: <SearchPage /> },
+          { path: 'convocatorias',            element: <ConvocatoriasListPage /> },
           { path: 'convocatoria/:id',         element: <ConvocatoriaPage /> },
+          { path: 'quienes-somos',            element: <AboutPage /> },
+          { path: 'ediciones',                element: <EdicionesPage /> },
+          { path: 'archivo',                  element: <ArchivoPage /> },
+          { path: 'ediciones-especiales',     element: <EdicionesEspecialesPage /> },
         ]
       },
 

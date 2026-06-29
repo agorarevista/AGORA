@@ -9,7 +9,7 @@ import styles from './EditionsPage.module.css';
 
 const EMPTY_FORM = {
   number: '', name: '', description: '',
-  cover_image_url: '', published_at: '', is_current: false
+  cover_image_url: '', published_at: '', is_current: false, is_special: false
 };
 
 export default function EditionsPage() {
@@ -41,13 +41,14 @@ export default function EditionsPage() {
 
   const openEdit = (ed) => {
     setEditing(ed.id);
-    setForm({
+setForm({
       number: ed.number,
       name: ed.name || '',
       description: ed.description || '',
       cover_image_url: ed.cover_image_url || '',
       published_at: ed.published_at?.split('T')[0] || '',
       is_current: ed.is_current || false,
+      is_special: ed.is_special || false,
     });
     setShowForm(true);
   };
@@ -229,6 +230,22 @@ export default function EditionsPage() {
                 </div>
               </div>
             </div>
+
+          {/* Edición especial */}
+          <div style={{ padding: '0 24px 16px' }}>
+            <label style={{ display:'flex', alignItems:'center', gap:8, fontFamily:'var(--font-sans)', fontSize:13, cursor:'pointer', color:'var(--color-primary)' }}>
+              <input
+                type="checkbox"
+                checked={form.is_special}
+                onChange={e => setForm(f => ({ ...f, is_special: e.target.checked }))}
+                style={{ accentColor:'var(--color-accent)', width:15, height:15 }}
+              />
+              Marcar como edición especial
+            </label>
+            <p style={{ margin:'4px 0 0 23px', fontFamily:'var(--font-sans)', fontSize:11, color:'var(--color-gray-400)' }}>
+              Aparecerá en "Ediciones especiales" del navbar
+            </p>
+          </div>
 
             <div className={styles.modalFooter}>
               <button onClick={() => setShowForm(false)} className={styles.cancelBtn}>Cancelar</button>

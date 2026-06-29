@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { getAllComments, updateCommentStatus, deleteComment } from '../../api/comments.api';
-import useAlert from '../../hooks/useAlert';
+import useAlert   from '../../hooks/useAlert';
+import useConfirm from '../../hooks/useConfirm';
 import { Check, X, Trash2, MessageCircle, Eye } from 'lucide-react';
 import { formatDate } from '../../utils/formatDate';
 import { Link } from 'react-router-dom';
@@ -14,7 +15,8 @@ const STATUS_LABELS = {
 };
 
 export default function CommentsPage() {
-  const alert = useAlert();
+  const alert   = useAlert();
+  const confirm = useConfirm();
   const [comments, setComments] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [filter, setFilter]     = useState('pending');
@@ -46,8 +48,14 @@ const handleReject = async (id) => {
   } catch { alert.error('Error', 'No se pudo rechazar'); }
 };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('¿Eliminar este comentario permanentemente?')) return;
+const handleDelete = async (id) => {
+  const ok = await confirm({
+    type: 'error',
+    title: '¿Eliminar este comentario?',
+    message: 'Esta acción es permanente y no se puede deshacer.',
+    confirmLabel: 'Sí, eliminar',
+  });
+  if (!ok) return;
     try {
       await deleteComment(id);
       alert.success('Eliminado', 'Comentario eliminado');

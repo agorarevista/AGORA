@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence } from 'framer-motion';
 import Navbar from '../components/common/Navbar/Navbar';
 import Footer from '../components/common/Footer/Footer';
@@ -9,7 +10,6 @@ import { trackView } from '../api/analytics.api';
 
 export default function PublicLayout() {
   const location = useLocation();
-  const navbarRef = useRef(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
@@ -18,39 +18,34 @@ export default function PublicLayout() {
   }, [location.pathname]);
 
   useEffect(() => {
-    if (!navbarRef.current) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setShowScrollTop(!entry.isIntersecting);
-      },
-      {
-        root: null,
-        threshold: 0.05,
-      }
-    );
-
-    observer.observe(navbarRef.current);
-
-    return () => observer.disconnect();
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <div ref={navbarRef}>
-        <Navbar />
+    <>
+      {/* Navbar renderizado en el body directamente — fuera de cualquier transform context */}
+      {createPortal(<Navbar />, document.body)}
+
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <main style={{ flex: 1 }}>
+          <AnimatePresence mode="wait">
+            <PageTransition key={location.pathname}>
+              <Outlet />
+            </PageTransition>
+          </AnimatePresence>
+        </main>
+
+        <Footer />
       </div>
 
-      <main style={{ flex: 1 }}>
-        <AnimatePresence mode="wait">
-          <PageTransition key={location.pathname}>
-            <Outlet />
-          </PageTransition>
-        </AnimatePresence>
-      </main>
-
-      <Footer />
-      <ScrollToTopButton visible={showScrollTop} />
-    </div>
+      {createPortal(
+        <ScrollToTopButton visible={showScrollTop} />,
+        document.body
+      )}
+    </>
   );
 }

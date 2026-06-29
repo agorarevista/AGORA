@@ -2,7 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles/globals.css';
 import Router from './router';
-import Alert from './components/common/Alert/Alert';
+import Alert         from './components/common/Alert/Alert';
+import ConfirmDialog from './components/common/ConfirmDialog/ConfirmDialog';
 
 // Aplicar tema ANTES de renderizar — evita flash de modo incorrecto
 (function() {
@@ -17,6 +18,7 @@ import Alert from './components/common/Alert/Alert';
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Alert />
+    <ConfirmDialog />
     <Router />
   </StrictMode>
-);
+);  

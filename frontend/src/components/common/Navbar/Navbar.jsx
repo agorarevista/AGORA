@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Search, X, Menu, ChevronDown } from 'lucide-react';
 import styles from './Navbar.module.css';
 import { getCategories } from '../../../api/categories.api';
@@ -9,31 +9,28 @@ import SearchOverlay from '../SearchOverlay/SearchOverlay';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import useThemeStore from '../../../store/themeStore';
 
-// Importar logos
 import logoBlack from '../../../assets/AGORABLACK.png';
 import logoWhite from '../../../assets/AGORAWHITE.png';
 import iconBlack from '../../../assets/AGORAICONBLACK.png';
 import iconWhite from '../../../assets/AGORAICONWHITE.png';
 
 export default function Navbar() {
-  const [categories, setCategories]         = useState([]);
+  const [categories, setCategories]     = useState([]);
   const [currentEdition, setCurrentEdition] = useState(null);
-  const [searchOpen, setSearchOpen]         = useState(false);
-  const [mobileOpen, setMobileOpen]         = useState(false);
-  const [mobileExpanded, setMobileExpanded] = useState({});
+  const [searchOpen, setSearchOpen]     = useState(false);
+  const [mobileOpen, setMobileOpen]     = useState(false);
+  const [mobileSecOpen, setMobileSecOpen] = useState(false);
+  const [secOpen, setSecOpen]           = useState(false);
   const { theme } = useThemeStore();
+  const timerRef  = useRef(null);
 
   const isDark  = theme === 'dark';
   const logoSrc = isDark ? logoWhite : logoBlack;
   const iconSrc = isDark ? iconWhite : iconBlack;
 
-  const VISIBLE = 6;
-  const visible = categories.slice(0, VISIBLE);
-  const hidden  = categories.slice(VISIBLE);
-
   useEffect(() => {
-    const cached = cacheGet('categories');
-    if (cached) { setCategories(cached); }
+    const cachedCats = cacheGet('categories');
+    if (cachedCats) setCategories(cachedCats);
     else {
       getCategories().then(data => {
         setCategories(data);
@@ -42,7 +39,7 @@ export default function Navbar() {
     }
 
     const cachedEd = cacheGet('current_edition');
-    if (cachedEd) { setCurrentEdition(cachedEd); }
+    if (cachedEd) setCurrentEdition(cachedEd);
     else {
       getCurrentEdition().then(data => {
         setCurrentEdition(data);
@@ -51,100 +48,80 @@ export default function Navbar() {
     }
   }, []);
 
-  const toggleMobileSection = (id) => {
-    setMobileExpanded(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const NavItem = ({ cat }) => (
-    <div className={styles.navItem}>
-      <NavLink
-        to={`/categoria/${cat.slug}`}
-        className={({ isActive }) =>
-          `${styles.navLink} ${isActive ? styles.active : ''}`
-        }
-      >
-        {cat.name}
-        <ChevronDown size={10} className={styles.chevron} />
-      </NavLink>
-      <div className={styles.dropdown}>
-        <Link
-          to={`/categoria/${cat.slug}`}
-          className={`${styles.dropdownLink} ${styles.dropdownAll}`}
-        >
-          ❧ Ver todo en {cat.name}
-        </Link>
-        {cat.subcategories && cat.subcategories.length > 0 && (
-          <>
-            <div className={styles.dropdownDivider} />
-            {cat.subcategories.map(sub => (
-              <Link
-                key={sub.id}
-                to={`/categoria/${sub.slug}`}
-                className={styles.dropdownLink}
-              >
-                {sub.name}
-              </Link>
-            ))}
-          </>
-        )}
-      </div>
-    </div>
-  );
+  const openSec  = () => { clearTimeout(timerRef.current); setSecOpen(true); };
+  const closeSec = () => { timerRef.current = setTimeout(() => setSecOpen(false), 120); };
+  const keepSec  = () => clearTimeout(timerRef.current);
 
   return (
     <>
-      <header>
+<header style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200 }}>
         <nav className={styles.navbar}>
           <div className={styles.inner}>
 
-            {/* Logo — cambia según tema y dispositivo */}
-            <Link to="/" className={styles.logo}>
-              <img
-                src={logoSrc}
-                alt="Agorá Revista"
-                className={styles.logoImg}
-              />
-              <img
-                src={iconSrc}
-                alt="Agorá"
-                className={styles.logoIcon}
-              />
+            {/* Logo — izquierda */}
+            <Link to="/" className={styles.logo} onClick={() => setSecOpen(false)}>
+              <img src={logoSrc} alt="Agorá Revista" className={styles.logoImg} />
+              <img src={iconSrc} alt="Agorá" className={styles.logoIcon} />
             </Link>
 
+            {/* Nav — centro */}
             <nav className={styles.nav}>
-              {visible.map(cat => (
-                <NavItem key={cat.id} cat={cat} />
-              ))}
-              {hidden.length > 0 && (
-                <div className={styles.navItem}>
-                  <span className={styles.navLink}>
-                    Más <ChevronDown size={10} className={styles.chevron} />
-                  </span>
-                  <div className={styles.dropdown}>
-                    {hidden.map(cat => (
-                      <div key={cat.id}>
+
+              <NavLink to="/ediciones" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navActive : ''}`} onClick={() => setSecOpen(false)}>
+                Edición
+              </NavLink>
+
+              {/* Secciones — único con dropdown */}
+              <div
+                className={styles.navItem}
+                onMouseEnter={openSec}
+                onMouseLeave={closeSec}
+              >
+                <button
+                  className={`${styles.navLink} ${secOpen ? styles.navActive : ''}`}
+                  onClick={() => setSecOpen(p => !p)}
+                >
+                  Secciones
+                  <ChevronDown size={11} className={`${styles.chevron} ${secOpen ? styles.chevronOpen : ''}`} />
+                </button>
+
+                {secOpen && (
+                  <div
+                    className={styles.dropdown}
+                    onMouseEnter={keepSec}
+                    onMouseLeave={closeSec}
+                  >
+                    <div className={styles.dropdownGrid}>
+                      {categories.map(cat => (
                         <Link
+                          key={cat.id}
                           to={`/categoria/${cat.slug}`}
-                          className={`${styles.dropdownLink} ${styles.dropdownAll}`}
+                          className={styles.dropLink}
+                          onClick={() => setSecOpen(false)}
                         >
                           {cat.name}
                         </Link>
-                        {cat.subcategories?.map(sub => (
-                          <Link
-                            key={sub.id}
-                            to={`/categoria/${sub.slug}`}
-                            className={`${styles.dropdownLink} ${styles.dropdownSub}`}
-                          >
-                            {sub.name}
-                          </Link>
-                        ))}
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+
+              <NavLink to="/archivo" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navActive : ''}`} onClick={() => setSecOpen(false)}>
+                Archivo
+              </NavLink>
+
+              <NavLink to="/ediciones-especiales" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navActive : ''}`} onClick={() => setSecOpen(false)}>
+                Ed. especiales
+              </NavLink>
+
+              <NavLink to="/quienes-somos" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navActive : ''}`} onClick={() => setSecOpen(false)}>
+                Nosotros
+              </NavLink>
+
             </nav>
 
+            {/* Acciones — derecha */}
             <div className={styles.actions}>
               <ThemeToggle />
               <button
@@ -152,66 +129,46 @@ export default function Navbar() {
                 onClick={() => setSearchOpen(true)}
                 aria-label="Buscar"
               >
-                <Search size={17} />
+                <Search size={18} />
               </button>
-              {currentEdition && (
-                <Link to={`/edicion/${currentEdition.number}`} className={styles.editionBadge}>
-                  Ed. {currentEdition.number}
+{currentEdition && (
+                <Link to="/ediciones" className={styles.editionBadge}>
+                  ED. {currentEdition.number}
                 </Link>
               )}
               <button className={styles.menuBtn} onClick={() => setMobileOpen(p => !p)}>
                 {mobileOpen ? <X size={22} /> : <Menu size={22} />}
               </button>
             </div>
+
           </div>
           <div className={styles.meander} />
         </nav>
 
+        {/* Mobile menu */}
         {mobileOpen && (
           <div className={styles.mobileMenu}>
-            {categories.map(cat => (
-              <div key={cat.id}>
-                <div className={styles.mobileSectionRow}>
-                  <NavLink
-                    to={`/categoria/${cat.slug}`}
-                    className={({ isActive }) =>
-                      `${styles.mobileLink} ${isActive ? styles.mobileActive : ''}`
-                    }
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    {cat.name}
-                  </NavLink>
-                  {cat.subcategories?.length > 0 && (
-                    <button
-                      className={styles.mobileToggle}
-                      onClick={() => toggleMobileSection(cat.id)}
-                    >
-                      <ChevronDown
-                        size={14}
-                        style={{
-                          transform: mobileExpanded[cat.id] ? 'rotate(180deg)' : 'none',
-                          transition: 'transform 0.2s'
-                        }}
-                      />
-                    </button>
-                  )}
+            <NavLink to="/ediciones" className={styles.mobileLink} onClick={() => setMobileOpen(false)}>Edición</NavLink>
+
+            <div className={styles.mobileSection}>
+              <button className={styles.mobileSectionBtn} onClick={() => setMobileSecOpen(p => !p)}>
+                Secciones
+                <ChevronDown size={13} style={{ transform: mobileSecOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+              </button>
+              {mobileSecOpen && (
+                <div className={styles.mobileSubs}>
+                  {categories.map(cat => (
+                    <Link key={cat.id} to={`/categoria/${cat.slug}`} className={styles.mobileSub} onClick={() => setMobileOpen(false)}>
+                      {cat.name}
+                    </Link>
+                  ))}
                 </div>
-                {cat.subcategories?.length > 0 && mobileExpanded[cat.id] && (
-                  <div className={styles.mobileSubs}>
-                    {cat.subcategories.map(sub => (
-                      <NavLink
-                        key={sub.id}
-                        to={`/categoria/${sub.slug}`}
-                        className={styles.mobileSub}
-                        onClick={() => setMobileOpen(false)}
-                      >
-                        {sub.name}
-                      </NavLink>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+              )}
+            </div>
+
+            <NavLink to="/archivo" className={styles.mobileLink} onClick={() => setMobileOpen(false)}>Archivo</NavLink>
+            <NavLink to="/ediciones-especiales" className={styles.mobileLink} onClick={() => setMobileOpen(false)}>Ediciones especiales</NavLink>
+            <NavLink to="/quienes-somos" className={styles.mobileLink} onClick={() => setMobileOpen(false)}>Nosotros</NavLink>
           </div>
         )}
       </header>

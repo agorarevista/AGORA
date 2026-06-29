@@ -2,7 +2,8 @@ const service = require('./collaborators.service');
 
 const getAll = async (req, res, next) => {
   try {
-    const data = await service.getAll();
+    const { q } = req.query;
+    const data = await service.getAll({ q });
     res.json(data);
   } catch (err) { next(err); }
 };

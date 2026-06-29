@@ -305,13 +305,28 @@ const search = async (query, { page = 1, limit = 12 } = {}) => {
   }
 
   const from = (page - 1) * limit;
-  const to = from + limit - 1;
+  const to   = from + limit - 1;
+  const q    = query.trim();
+
+  // Primero buscar IDs de colaboradores que coincidan con el nombre
+  const { data: matchingCollabs } = await supabase
+    .from('collaborators')
+    .select('id')
+    .ilike('name', `%${q}%`);
+
+  const collabIds = (matchingCollabs || []).map(c => c.id);
+
+  // Construir filtro: título, extracto, o colaborador que coincida
+  let filter = `title.ilike.%${q}%,excerpt.ilike.%${q}%`;
+  if (collabIds.length > 0) {
+    filter += `,collaborator_id.in.(${collabIds.join(',')})`;
+  }
 
   const { data, error, count } = await supabase
     .from('articles')
     .select(BASE_SELECT, { count: 'exact' })
     .eq('status', 'published')
-    .or(`title.ilike.%${query}%,excerpt.ilike.%${query}%`)
+    .or(filter)
     .order('published_at', { ascending: false })
     .range(from, to);
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getHome } from '../../api/articles.api';
+import { getActiveConvocatorias } from '../../api/convocatorias.api';
 import { cacheGet, cacheSet } from '../../utils/cache';
 import { formatDate } from '../../utils/formatDate';
 import {
@@ -42,14 +43,15 @@ function useCarousel(items, perPage = 3, autoMs = 0) {
 }
 
 export default function HomePage() {
-  const [featured, setFeatured]         = useState([]);
-  const [latest, setLatest]             = useState([]);
-  const [edition, setEdition]           = useState(null);
-  const [convocatoria, setConvocatoria] = useState(null);
+const [featured, setFeatured]           = useState([]);
+  const [latest, setLatest]               = useState([]);
+  const [edition, setEdition]             = useState(null);
+  const [convocatoria, setConvocatoria]   = useState(null);
+  const [convocatorias, setConvocatorias] = useState([]);
   const [collaborators, setCollaborators] = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [viewer, setViewer]             = useState(null); // { src, alt }
-  const [isDark, setIsDark]             = useState(false);
+  const [loading, setLoading]             = useState(true);
+  const [viewer, setViewer]               = useState(null);
+  const [isDark, setIsDark]               = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -103,7 +105,7 @@ export default function HomePage() {
 
         if (!mounted) return;
 
-        const safePayload = {
+const safePayload = {
           featured: Array.isArray(data?.featured) ? data.featured : [],
           latest: Array.isArray(data?.latest) ? data.latest : [],
           edition: data?.edition || null,
@@ -112,8 +114,13 @@ export default function HomePage() {
         };
 
         applyPayload(safePayload);
-
         cacheSet(HOME_CACHE_KEY, safePayload, 10 * 1000);
+
+        // Fetch convocatorias activas por separado
+        try {
+          const convs = await getActiveConvocatorias();
+          if (mounted) setConvocatorias(Array.isArray(convs) ? convs : []);
+        } catch {}
       } catch (e) {
         console.error('ERROR getHome()', e);
 
@@ -219,24 +226,45 @@ return (
         </div>
       </div>
 
+{/* ── SECCIÓN FIJA CONVOCATORIAS ───────────────── */}
+      <section className={styles.featureSection}>
+
+        <div className={styles.featureSectionHeader}>
+          <div>
+            <span className={styles.featureEyebrow}>
+              Participa en Agorá
+            </span>
+            <h2 className={styles.featureTitle}>
+              Convocatorias abiertas
+            </h2>
+          </div>
+          <Link to="/convocatorias" className={styles.featureMore}>
+            Ver todas <ArrowRight size={14} />
+          </Link>
+        </div>
+
+        <div className={styles.featureConvWrapper}>
+          <ConvocatoriasGrid convocatorias={convocatorias} />
+        </div>
+
+      </section>
+
       {/* ── BLOQUE INFERIOR ───────────────────────────── */}
       <div className={styles.lowerSections}>
 
-        <div className={`${styles.block} ${styles.newsWideBlock}`}>
-          <BlockHeader title="Noticias y convocatorias" />
-          <NewsCarousel items={newsItems} />
-        </div>
-
         <div className={styles.lowerGrid}>
+
+          <div className={`${styles.block} ${styles.aboutBlock}`}>
+            <BlockHeader title="Quiénes somos" />
+
+            <AboutAgora isDark={isDark} />
+          </div>
+
           <div className={`${styles.block} ${styles.mostReadWideBlock}`}>
             <BlockHeader title="Más leídos" />
             <MostRead articles={mostRead} />
           </div>
 
-          <div className={`${styles.block} ${styles.aboutBlock}`}>
-            <BlockHeader title="Quiénes somos" />
-            <AboutAgora isDark={isDark} />
-          </div>
         </div>
 
       </div>
@@ -695,7 +723,7 @@ function AboutAgora({ isDark }) {
           trabajo, sus ideas y su mirada sobre el mundo.
         </p>
 
-        <Link to="/acerca-de" className={styles.aboutAgoraLink}>
+        <Link to="/quienes-somos" className={styles.aboutAgoraLink}>
           Conocer más <ArrowRight size={14} />
         </Link>
       </div>
@@ -829,6 +857,84 @@ function EmptySlot() {
       <span>Λ</span>
       <p>Próximamente</p>
     </div>
+  );
+}
+/* ════════════════════════════════════════════════════════
+   CONVOCATORIAS GRID (HOMEPAGE)
+════════════════════════════════════════════════════════ */
+function ConvocatoriasGrid({ convocatorias }) {
+  if (!convocatorias.length) {
+    return (
+      <div className={styles.convEmpty}>
+        <span>◈</span>
+        <p>No hay convocatorias abiertas en este momento</p>
+      </div>
+    );
+  }
+  return (
+    <div className={styles.convGrid}>
+      {convocatorias.map((conv, i) => (
+        <ConvocatoriaCard key={conv.id} conv={conv} index={i} />
+      ))}
+    </div>
+  );
+}
+
+function ConvocatoriaCard({ conv, index }) {
+  const now      = new Date();
+  const deadline = conv.closes_at ? new Date(conv.closes_at) : null;
+  const isPast   = deadline && deadline < now;
+  const daysLeft = deadline && !isPast
+    ? Math.ceil((deadline - now) / (1000*60*60*24)) : null;
+
+  const accentBgs = ['var(--color-accent)', '#B8860B', '#1B4F8A'];
+  const badgeBg   = accentBgs[index % accentBgs.length];
+
+  return (
+    <Link to={`/convocatoria/${conv.id}`} className={styles.convCard}>
+      {/* Imagen */}
+      <div className={styles.convCardMedia}>
+        {conv.cover_image_url
+          ? <img src={conv.cover_image_url} alt={conv.title} />
+          : <div className={styles.convCardMediaPlaceholder}>◈</div>
+        }
+
+        {/* Badge días */}
+        {deadline && (
+          <div className={styles.convCardDeadline} style={{ background: badgeBg }}>
+            {isPast ? (
+              <span className={styles.convCardDeadlineLabel}>Cerrada</span>
+            ) : (
+              <>
+                <span className={styles.convCardDeadlineDays}>{daysLeft}</span>
+                <span className={styles.convCardDeadlineUnit}>días</span>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Badges categorías */}
+        {conv.categories?.length > 0 && (
+          <div className={styles.convCardCatBadges}>
+            {conv.categories.slice(0, 2).map(cat => (
+              <span key={cat} className={styles.convCardCatBadge}>{cat}</span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Cuerpo */}
+      <div className={styles.convCardBody}>
+        <h3 className={styles.convCardTitle}>{conv.title}</h3>
+        {conv.description && (
+          <p className={styles.convCardDesc}>{conv.description}</p>
+        )}
+        {conv.contact_email && (
+          <div className={styles.convCardEmail}>{conv.contact_email}</div>
+        )}
+        <div className={styles.convCardCta}>VER CONVOCATORIA →</div>
+      </div>
+    </Link>
   );
 }
 

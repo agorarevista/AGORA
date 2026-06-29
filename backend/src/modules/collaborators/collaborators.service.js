@@ -1,8 +1,8 @@
 const supabase = require('../../config/supabase');
 const { slugify } = require('../../utils/slugify');
 
-const getAll = async () => {
-  const { data, error } = await supabase
+const getAll = async ({ q } = {}) => {
+  let query = supabase
     .from('collaborators')
     .select(`
       id, name, slug, photo_url, bio, type,
@@ -11,6 +11,11 @@ const getAll = async () => {
     .eq('is_active', true)
     .order('name', { ascending: true });
 
+  if (q?.trim()) {
+    query = query.or(`name.ilike.%${q}%,bio.ilike.%${q}%,section_name.ilike.%${q}%`);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return data;
 };

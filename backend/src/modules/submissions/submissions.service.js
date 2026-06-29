@@ -3,15 +3,11 @@ const supabase = require('../../config/supabase');
 const getAll = async ({ convocatoria_id, status } = {}) => {
   let query = supabase
     .from('submissions')
-    .select(`
-      *,
-      convocatorias ( title ),
-      categories ( name, slug )
-    `)
-    .order('submitted_at', { ascending: false });
+    .select('*')
+    .order('submitted_at', { ascending: false, nullsFirst: false });
 
   if (convocatoria_id) query = query.eq('convocatoria_id', convocatoria_id);
-  if (status) query = query.eq('status', status);
+  if (status)          query = query.eq('status', status);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -21,11 +17,7 @@ const getAll = async ({ convocatoria_id, status } = {}) => {
 const getById = async (id) => {
   const { data, error } = await supabase
     .from('submissions')
-    .select(`
-      *,
-      convocatorias ( title, closes_at ),
-      categories ( name, slug )
-    `)
+    .select('*')
     .eq('id', id)
     .single();
 
@@ -35,9 +27,10 @@ const getById = async (id) => {
 
 const create = async (body) => {
   const {
-    convocatoria_id, name, email, phone, city, country,
-    bio, social_links, work_title, work_excerpt,
-    category_id, files
+    convocatoria_id,
+    author_name, author_email,
+    title, excerpt, content,
+    category, file_url, notes
   } = body;
 
   // Verificar que la convocatoria esté activa
@@ -48,7 +41,10 @@ const create = async (body) => {
       .eq('id', convocatoria_id)
       .single();
 
-    if (!conv || !conv.is_active || new Date(conv.closes_at) < new Date()) {
+    if (conv && conv.closes_at && new Date(conv.closes_at) < new Date()) {
+      throw { status: 400, message: 'Esta convocatoria ya cerró' };
+    }
+    if (conv && !conv.is_active) {
       throw { status: 400, message: 'Esta convocatoria está cerrada' };
     }
   }
@@ -56,10 +52,15 @@ const create = async (body) => {
   const { data, error } = await supabase
     .from('submissions')
     .insert({
-      convocatoria_id, name, email, phone, city, country,
-      bio, social_links: social_links || {},
-      work_title, work_excerpt, category_id,
-      files: files || [],
+      convocatoria_id,
+      author_name,
+      author_email,
+      title,
+      excerpt,
+      content,
+      category,
+      file_url,
+      notes,
       status: 'pending'
     })
     .select()
@@ -69,13 +70,11 @@ const create = async (body) => {
   return data;
 };
 
-const updateStatus = async (id, status, admin_notes, reviewed_by) => {
+const update = async (id, body) => {
   const { data, error } = await supabase
     .from('submissions')
     .update({
-      status,
-      admin_notes,
-      reviewed_by,
+      ...body,
       reviewed_at: new Date().toISOString()
     })
     .eq('id', id)
@@ -86,4 +85,13 @@ const updateStatus = async (id, status, admin_notes, reviewed_by) => {
   return data;
 };
 
-module.exports = { getAll, getById, create, updateStatus };
+const remove = async (id) => {
+  const { error } = await supabase
+    .from('submissions')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+};
+
+module.exports = { getAll, getById, create, update, remove };

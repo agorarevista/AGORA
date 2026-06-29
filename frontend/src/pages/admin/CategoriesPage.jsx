@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { getCategories, createCategory, updateCategory, deleteCategory } from '../../api/categories.api';
-import useAlert from '../../hooks/useAlert';
+import useAlert   from '../../hooks/useAlert';
+import useConfirm from '../../hooks/useConfirm';
 import { Plus, Edit, Trash2, GripVertical, Eye, EyeOff, X, Check } from 'lucide-react';
 import styles from './CategoriesPage.module.css';
 
@@ -11,7 +12,8 @@ const EMPTY_FORM = {
 };
 
 export default function CategoriesPage() {
-  const alert = useAlert();
+  const alert   = useAlert();
+  const confirm = useConfirm();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading]       = useState(true);
   const [showForm, setShowForm]     = useState(false);
@@ -83,8 +85,14 @@ export default function CategoriesPage() {
     } catch { alert.error('Error', 'No se pudo actualizar'); }
   };
 
-  const handleDelete = async (cat) => {
-    if (!window.confirm(`¿Eliminar "${cat.name}"? Esta acción no se puede deshacer.`)) return;
+const handleDelete = async (cat) => {
+  const ok = await confirm({
+    type: 'error',
+    title: `¿Eliminar "${cat.name}"?`,
+    message: 'Esta acción no se puede deshacer.',
+    confirmLabel: 'Sí, eliminar',
+  });
+  if (!ok) return;
     try {
       await deleteCategory(cat.id);
       alert.success('Eliminada', `"${cat.name}" fue eliminada`);

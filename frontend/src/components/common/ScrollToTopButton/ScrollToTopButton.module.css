@@ -6,7 +6,7 @@
   height: 58px;
   border: none;
   border-radius: 999px;
-  background: #b01263;
+  background: #A4518D;
   color: #ffffff;
   display: inline-flex;
   align-items: center;
@@ -39,7 +39,7 @@
 }
 
 :global(html.dark) .btn {
-  background: #b01263;
+  background: #A4518D;
   color: #ffffff;
   box-shadow:
     0 16px 34px rgba(176, 18, 99, 0.34),
@@ -47,7 +47,7 @@
 }
 
 :global(html.dark) .btn:hover {
-  background: #c2186d;
+  background: #A4518D;
 }
 
 @media (max-width: 768px) {

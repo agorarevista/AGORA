@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { getUsers, createUser, updateUser, toggleUser } from '../../api/admin.api';
-import useAlert from '../../hooks/useAlert';
+import useAlert   from '../../hooks/useAlert';
+import useConfirm from '../../hooks/useConfirm';
 import useAuthStore from '../../store/authStore';
 import { Plus, Edit, Trash2, X, Check, Shield, User, Key } from 'lucide-react';
 import { formatDate } from '../../utils/formatDate';
@@ -19,6 +20,7 @@ const ROLES = {
 
 export default function UsersPage() {
   const alert              = useAlert();
+  const confirm            = useConfirm();
   const { user: me }       = useAuthStore();
   const [users, setUsers]  = useState([]);
   const [loading, setLoading] = useState(true);
@@ -91,7 +93,13 @@ const handleDelete = async (u) => {
     alert.warning('Acción no permitida', 'No puedes eliminarte a ti mismo');
     return;
   }
-  if (!window.confirm(`¿Deshabilitar al usuario "${u.username}"?`)) return;
+  const ok = await confirm({
+    type: 'warning',
+    title: `¿Deshabilitar a "${u.username}"?`,
+    message: 'El usuario perderá acceso al panel editorial.',
+    confirmLabel: 'Sí, deshabilitar',
+  });
+  if (!ok) return;
   try {
     await toggleUser(u.id);
     alert.success('Actualizado', `"${u.username}" fue deshabilitado`);

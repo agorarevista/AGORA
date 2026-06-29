@@ -139,7 +139,7 @@ export default function Footer() {
               <li><Link to="/categoria/revista-actual">Edición Actual</Link></li>
               <li><Link to="/categoria/colecciones">Colecciones</Link></li>
               <li><Link to="/buscar">Buscar</Link></li>
-              <li><Link to="/convocatoria">Convocatoria</Link></li>
+              <li><Link to="/convocatorias">Convocatorias</Link></li>
               <li><Link to="/admin/login">Equipo editorial</Link></li>
             </ul>
           </div>

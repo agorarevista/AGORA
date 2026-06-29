@@ -18,11 +18,17 @@ const create = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-const updateStatus = async (req, res, next) => {
+const update = async (req, res, next) => {
   try {
-    const { status, admin_notes } = req.body;
-    res.json(await service.updateStatus(req.params.id, status, admin_notes, req.user.id));
+    res.json(await service.update(req.params.id, req.body));
   } catch (err) { next(err); }
 };
 
-module.exports = { getAll, getById, create, updateStatus };
+const remove = async (req, res, next) => {
+  try {
+    await service.remove(req.params.id);
+    res.json({ message: 'Envío eliminado' });
+  } catch (err) { next(err); }
+};
+
+module.exports = { getAll, getById, create, update, remove };

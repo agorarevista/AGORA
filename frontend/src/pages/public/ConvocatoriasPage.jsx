@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { getConvocatoria, submitToConvocatoria } from '../../api/convocatorias.api';
+import { getConvocatoria } from '../../api/convocatorias.api';
 import { formatDate } from '../../utils/formatDate';
 import {
   ArrowLeft, Calendar, Clock, Mail, CheckCircle,
@@ -16,19 +16,6 @@ export default function ConvocatoriaPage() {
   const [error, setError]     = useState(false);
   const [lightbox, setLightbox] = useState(null); // índice de imagen en galería
   const [sent, setSent]       = useState(false);
-  const [sending, setSending] = useState(false);
-  const [formError, setFormError] = useState('');
-  const [miniFormOpen, setMiniFormOpen] = useState(false);
-
-  const [miniForm, setMiniForm] = useState({
-    name: '',
-    email: '',
-    city: '',
-    instagram: '',
-    work_title: '',
-    work_excerpt: '',
-    notes: '',
-  });
 
   useEffect(() => {
     setLoading(true);
@@ -59,68 +46,6 @@ export default function ConvocatoriaPage() {
 
   const handleCopyEmail = () => {
     navigator.clipboard.writeText(conv.contact_email || 'contactoagorarevista@gmail.com');
-  };
-
-  const handleOpenEmail = () => {
-    const email = conv.contact_email || 'contactoagorarevista@gmail.com';
-    const subject = encodeURIComponent(conv.title || 'Convocatoria Agorá Revista');
-    const body = encodeURIComponent(
-      `Hola, Agorá Revista.\n\nQuiero enviar una propuesta para la convocatoria: ${conv.title}.\n\nNombre:\nCiudad:\nInstagram:\nTítulo de la propuesta:\n\nGracias.`
-    );
-
-    window.open(
-      `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`,
-      '_blank',
-      'noopener,noreferrer'
-    );
-  };
-
-  const setMini = (key, value) => {
-    setMiniForm(prev => ({ ...prev, [key]: value }));
-  };
-
-  const handleMiniSubmit = async (e) => {
-    e.preventDefault();
-    setFormError('');
-
-    if (!miniForm.name.trim() || !miniForm.email.trim() || !miniForm.work_title.trim()) {
-      setFormError('Nombre, email y título de la propuesta son obligatorios.');
-      return;
-    }
-
-    setSending(true);
-
-    try {
-      await submitToConvocatoria({
-        convocatoria_id: id,
-        name: miniForm.name,
-        email: miniForm.email,
-        city: miniForm.city,
-        social_links: {
-          instagram: miniForm.instagram,
-        },
-        work_title: miniForm.work_title,
-        work_excerpt: miniForm.work_excerpt,
-        admin_notes: miniForm.notes,
-        files: [],
-      });
-
-      setSent(true);
-      setMiniFormOpen(false);
-      setMiniForm({
-        name: '',
-        email: '',
-        city: '',
-        instagram: '',
-        work_title: '',
-        work_excerpt: '',
-        notes: '',
-      });
-    } catch (err) {
-      setFormError(err.response?.data?.error || 'No se pudo enviar tu propuesta. Intenta de nuevo.');
-    } finally {
-      setSending(false);
-    }
   };
 
   return (
@@ -300,20 +225,15 @@ export default function ConvocatoriaPage() {
                           <div className={styles.emailAddr}>
                             {conv.contact_email || 'contactoagorarevista@gmail.com'}
                           </div>
-<div className={styles.emailActions}>
-  <button
-    type="button"
+                         <div className={styles.emailActions}>
+  <a
+    href={`mailto:${conv.contact_email || 'contactoagorarevista@gmail.com'}?subject=${encodeURIComponent(conv.title)}`}
     className={styles.emailBtn}
-    onClick={handleOpenEmail}
   >
     <Mail size={13} /> Abrir correo
-  </button>
+  </a>
 
-  <button
-    type="button"
-    className={styles.copyBtn}
-    onClick={handleCopyEmail}
-  >
+  <button className={styles.copyBtn} onClick={handleCopyEmail}>
     Copiar
   </button>
 </div>
@@ -358,15 +278,9 @@ export default function ConvocatoriaPage() {
                           )}
                         </div>
 
-                        <div className={styles.inlineSubmitBox}>
-                          <button
-                            type="button"
-                            className={styles.openSubmitModalBtn}
-                            onClick={() => setMiniFormOpen(true)}
-                          >
-                            Enviar propuesta desde aquí →
-                          </button>
-                        </div>  
+                        <button className={styles.markSentBtn} onClick={() => setSent(true)}>
+                          Ya envié mi propuesta →
+                        </button>
                       </>
                     )}
                   </>
@@ -418,53 +332,6 @@ export default function ConvocatoriaPage() {
           </div>
         </div>
       </div>
-
-      {miniFormOpen && (
-        <div
-          className={styles.submitModalOverlay}
-          onClick={() => setMiniFormOpen(false)}
-        >
-          <div
-            className={styles.submitModal}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles.submitModalHeader}>
-              <div>
-                <span className={styles.submitModalEyebrow}>Convocatoria</span>
-                <h3>Enviar propuesta</h3>
-              </div>
-
-              <button
-                type="button"
-                className={styles.submitModalClose}
-                onClick={() => setMiniFormOpen(false)}
-              >
-                ×
-              </button>
-            </div>
-
-            <form className={styles.miniForm} onSubmit={handleMiniSubmit}>
-              {formError && (
-                <div className={styles.formError}>{formError}</div>
-              )}
-
-              <input className={styles.miniInput} type="text" value={miniForm.name} onChange={(e) => setMini('name', e.target.value)} placeholder="Nombre completo *" />
-              <input className={styles.miniInput} type="email" value={miniForm.email} onChange={(e) => setMini('email', e.target.value)} placeholder="Correo electrónico *" />
-              <input className={styles.miniInput} type="text" value={miniForm.city} onChange={(e) => setMini('city', e.target.value)} placeholder="Ciudad de residencia" />
-              <input className={styles.miniInput} type="text" value={miniForm.instagram} onChange={(e) => setMini('instagram', e.target.value)} placeholder="Instagram" />
-              <input className={styles.miniInput} type="text" value={miniForm.work_title} onChange={(e) => setMini('work_title', e.target.value)} placeholder="Título de tu propuesta *" />
-
-              <textarea className={styles.miniTextarea} value={miniForm.work_excerpt} onChange={(e) => setMini('work_excerpt', e.target.value)} placeholder="Extracto, sinopsis o descripción breve" rows={4} />
-
-              <textarea className={styles.miniTextarea} value={miniForm.notes} onChange={(e) => setMini('notes', e.target.value)} placeholder="Notas adicionales" rows={3} />
-
-              <button type="submit" className={styles.miniSubmitBtn} disabled={sending}>
-                {sending ? 'Enviando...' : 'Enviar propuesta'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -473,7 +340,6 @@ function ConvSkeleton() {
   return (
     <div style={{ padding: '48px 24px', maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ height: 180, background: 'var(--color-gray-200)', borderRadius: 4, marginBottom: 28 }} />
-
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 24 }}>
         <div style={{ height: 500, background: 'var(--color-gray-200)', borderRadius: 4 }} />
         <div style={{ height: 400, background: 'var(--color-gray-200)', borderRadius: 4 }} />
@@ -485,17 +351,9 @@ function ConvSkeleton() {
 function NotFound() {
   return (
     <div style={{ textAlign: 'center', padding: '96px 24px' }}>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 56, color: 'var(--color-gray-300)' }}>
-        Λ
-      </div>
-
-      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, marginBottom: 16 }}>
-        Convocatoria no encontrada
-      </h2>
-
-      <Link to="/" style={{ color: 'var(--color-accent)', fontFamily: 'var(--font-sans)' }}>
-        Volver al inicio
-      </Link>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 56, color: 'var(--color-gray-300)' }}>Λ</div>
+      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, marginBottom: 16 }}>Convocatoria no encontrada</h2>
+      <Link to="/" style={{ color: 'var(--color-accent)', fontFamily: 'var(--font-sans)' }}>Volver al inicio</Link>
     </div>
   );
 }
