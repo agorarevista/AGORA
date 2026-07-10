@@ -38,20 +38,24 @@ const getUsers = async () => {
 };
 
 const createUser = async (body, createdBy) => {
-  const { full_name, username, role, avatar_url } = body;
-  const tempPassword = generateTempPassword();
-  const hash = await bcrypt.hash(tempPassword, 12);
+  const { full_name, username, role, avatar_url, password } = body;
+
+  if (!username || !password) {
+    throw { status: 400, message: 'Usuario y contraseña son requeridos' };
+  }
+
+  const hash = await bcrypt.hash(password, 12);
 
   const { data, error } = await supabase
     .from('admin_users')
     .insert({
-      full_name,
+      full_name: full_name || username,
       username,
       password_hash: hash,
       role: role || 'editor',
       avatar_url,
-      must_change_password: true,
-      temp_password: tempPassword,
+      must_change_password: false,
+      temp_password: null,
       created_by: createdBy
     })
     .select('id, full_name, username, role, must_change_password')
@@ -59,18 +63,23 @@ const createUser = async (body, createdBy) => {
 
   if (error) throw error;
 
-  return {
-    ...data,
-    temp_password: tempPassword // Solo se devuelve al crearlo
-  };
+  return data;
 };
 
 const updateUser = async (id, body) => {
-  const { full_name, role, avatar_url } = body;
+  const { full_name, role, avatar_url, password } = body;
+
+  const updates = { full_name, role, avatar_url };
+
+  if (password && password.trim()) {
+    updates.password_hash = await bcrypt.hash(password, 12);
+    updates.must_change_password = false;
+    updates.temp_password = null;
+  }
 
   const { data, error } = await supabase
     .from('admin_users')
-    .update({ full_name, role, avatar_url })
+    .update(updates)
     .eq('id', id)
     .select('id, full_name, username, role, avatar_url')
     .single();

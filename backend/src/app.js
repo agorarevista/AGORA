@@ -25,6 +25,7 @@ app.use('/api/categories',    require('./modules/categories/categories.routes'))
 app.use('/api/collaborators', require('./modules/collaborators/collaborators.routes'));
 app.use('/api/editions',      require('./modules/editions/editions.routes'));
 app.use('/api/convocatorias', require('./modules/convocatorias/convocatorias.routes'));
+app.use('/api/sponsors',      require('./modules/sponsors/sponsors.routes'));
 app.use('/api/submissions',   require('./modules/submissions/submissions.routes'));
 app.use('/api/admin',         require('./modules/admin/admin.routes'));
 app.use('/api/upload',        require('./modules/upload/upload.routes'));

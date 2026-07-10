@@ -40,8 +40,9 @@ export default function ArticleEditorPage() {
   const [categoryIds, setCategoryIds] = useState([]);
   const [tags, setTags]             = useState([]);
   const [tagInput, setTagInput]     = useState('');
-  const [isFeatured, setIsFeatured] = useState(false);
-  const [status, setStatus]         = useState('draft');
+const [isFeatured, setIsFeatured]     = useState(false);
+  const [featuredOrder, setFeaturedOrder] = useState(0);
+  const [status, setStatus]             = useState('draft');
 
   // ── Estado UI ──────────────────────────────────────────
   const [preview, setPreview]       = useState(false);
@@ -100,7 +101,8 @@ export default function ArticleEditorPage() {
       setEditionId(art.edition_id || '');
       setCategoryIds(art.article_categories?.map(ac => ac.categories?.id).filter(Boolean) || []);
       setTags(art.article_tags || []);
-      setIsFeatured(art.is_featured || false);
+setIsFeatured(art.is_featured || false);
+      setFeaturedOrder(art.featured_order ?? 0);
       setStatus(art.status || 'draft');
 
       if (art.content_html) {
@@ -130,9 +132,10 @@ export default function ArticleEditorPage() {
         cover_image_url: coverUrl,
         collaborator_id: collaboratorId || null,
         edition_id: editionId || null,
-        category_ids: categoryIds,
+category_ids: categoryIds,
         tags: tags.map(t => ({ tag: t.tag || t, tag_type: t.tag_type || null })),
         is_featured: isFeatured,
+        featured_order: isFeatured ? Number(featuredOrder) : null,
       };
 
       if (articleId) {
@@ -545,7 +548,7 @@ export default function ArticleEditorPage() {
             </div>
           </SidePanel>
 
-          {/* Opciones */}
+{/* Opciones */}
           <SidePanel title="Opciones">
             <label className={styles.checkLabel}>
               <input
@@ -553,8 +556,34 @@ export default function ArticleEditorPage() {
                 checked={isFeatured}
                 onChange={e => setIsFeatured(e.target.checked)}
               />
-              <span>Artículo destacado (aparece en homepage)</span>
+              <span>Destacado / Highlight (rodea la portada en el home)</span>
             </label>
+
+            {isFeatured && (
+              <div style={{ marginTop: 10 }}>
+                <label style={{
+                  display: 'block',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: 'var(--color-gray-500)',
+                  marginBottom: 6
+                }}>
+                  Posición en el home (1 a 4)
+                </label>
+                <select
+                  value={featuredOrder}
+                  onChange={e => setFeaturedOrder(e.target.value)}
+                  className={styles.sideSelect}
+                >
+                  <option value={0}>Sin posición fija</option>
+                  <option value={1}>1 — Arriba izquierda</option>
+                  <option value={2}>2 — Abajo izquierda</option>
+                  <option value={3}>3 — Arriba derecha</option>
+                  <option value={4}>4 — Abajo derecha</option>
+                </select>
+              </div>
+            )}
           </SidePanel>
 
         </aside>

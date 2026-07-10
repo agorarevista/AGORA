@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { getCollaborators, createCollaborator, updateCollaborator, deleteCollaborator } from '../../api/collaborators.api';
 import { uploadFile } from '../../api/admin.api';
 import useAlert   from '../../hooks/useAlert';
 import useConfirm from '../../hooks/useConfirm';
+import Cropper from 'react-easy-crop';
 import { Plus, Edit, Trash2, X, Check, Upload, User } from 'lucide-react';
 import styles from './CollaboratorsPage.module.css';
 
@@ -28,6 +29,81 @@ const EMPTY_FORM = {
   }
 };
 
+function createImage(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = url;
+  });
+}
+
+async function getCroppedImageFile(imageSrc, pixelCrop) {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  canvas.width = 1080;
+  canvas.height = 1350;
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('No se pudo generar el recorte'));
+        return;
+      }
+
+      const file = new File([blob], `colaborador-${Date.now()}.jpg`, {
+        type: 'image/jpeg',
+      });
+
+      resolve(file);
+    }, 'image/jpeg', 0.92);
+  });
+}
+
+function parsePhotoCrop(url = '') {
+  const cleanUrl = url.split('#crop=')[0];
+  const cropRaw = url.split('#crop=')[1];
+
+  if (!cropRaw) {
+    return {
+      cleanUrl,
+      x: 50,
+      y: 20,
+      zoom: 1,
+    };
+  }
+
+  const [x, y, zoom] = cropRaw.split(',').map(Number);
+
+  return {
+    cleanUrl,
+    x: Number.isFinite(x) ? x : 50,
+    y: Number.isFinite(y) ? y : 20,
+    zoom: Number.isFinite(zoom) ? zoom : 1,
+  };
+}
+
+function buildPhotoUrl(url, x, y, zoom) {
+  const cleanUrl = String(url || '').split('#crop=')[0].trim();
+  if (!cleanUrl) return '';
+  return `${cleanUrl}#crop=${x},${y},${zoom}`;
+}
+
 export default function CollaboratorsPage() {
   const alert   = useAlert();
   const confirm = useConfirm();
@@ -37,7 +113,13 @@ export default function CollaboratorsPage() {
   const [editing, setEditing]             = useState(null);
   const [form, setForm]                   = useState(EMPTY_FORM);
   const [saving, setSaving]               = useState(false);
-  const [uploading, setUploading]         = useState(false);
+ const [uploading, setUploading]         = useState(false);
+const [cropOpen, setCropOpen]           = useState(false);
+const [cropSrc, setCropSrc]             = useState('');
+const [crop, setCrop]                   = useState({ x: 0, y: 0 });
+const [cropZoom, setCropZoom]           = useState(1);
+const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+const [cropping, setCropping]           = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -54,18 +136,23 @@ export default function CollaboratorsPage() {
     setShowForm(true);
   };
 
-  const openEdit = (c) => {
-    setEditing(c.id);
-    setForm({
-      name: c.name || '',
-      bio: c.bio || '',
-      email: c.email || '',
-      phone: c.phone || '',
-      type: c.type || 'occasional',
-      section_name: c.section_name || '',
-      section_description: c.section_description || '',
-      photo_url: c.photo_url || '',
-      social_links: {
+const openEdit = (c) => {
+  const crop = parsePhotoCrop(c.photo_url || '');
+
+  setEditing(c.id);
+  setForm({
+    name: c.name || '',
+    bio: c.bio || '',
+    email: c.email || '',
+    phone: c.phone || '',
+    type: c.type || 'occasional',
+    section_name: c.section_name || '',
+    section_description: c.section_description || '',
+    photo_url: crop.cleanUrl || '',
+    photo_x: crop.x,
+    photo_y: crop.y,
+    photo_zoom: crop.zoom,
+    social_links: {
         instagram: c.social_links?.instagram || '',
         facebook: c.social_links?.facebook || '',
         twitter: c.social_links?.twitter || '',
@@ -79,17 +166,51 @@ export default function CollaboratorsPage() {
     setShowForm(true);
   };
 
-  const handlePhotoUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const res = await uploadFile(file, 'avatars');
-      setForm(f => ({ ...f, photo_url: res.url }));
-      alert.success('Foto subida', 'Foto de perfil cargada');
-    } catch { alert.error('Error', 'No se pudo subir la foto'); }
-    finally { setUploading(false); }
-  };
+const handlePhotoUpload = async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  setUploading(true);
+  try {
+    const res = await uploadFile(file, 'avatars');
+    setForm(f => ({ ...f, photo_url: res.url }));
+    alert.success('Foto subida', 'Foto de perfil cargada');
+  } catch { alert.error('Error', 'No se pudo subir la foto'); }
+  finally { setUploading(false); }
+};
+
+const onCropComplete = useCallback((_, croppedPixels) => {
+  setCroppedAreaPixels(croppedPixels);
+}, []);
+
+const openCropper = () => {
+  if (!form.photo_url) return;
+  setCropSrc(form.photo_url);
+  setCrop({ x: 0, y: 0 });
+  setCropZoom(1);
+  setCropOpen(true);
+};
+
+const applyCrop = async () => {
+  if (!cropSrc || !croppedAreaPixels) return;
+
+  setCropping(true);
+
+  try {
+    const croppedFile = await getCroppedImageFile(cropSrc, croppedAreaPixels);
+    const res = await uploadFile(croppedFile, 'avatars');
+
+    setForm(f => ({ ...f, photo_url: res.url }));
+    setCropOpen(false);
+    alert.success('Foto ajustada', 'El recorte se aplicó correctamente');
+  } catch {
+    alert.error(
+      'Error',
+      'No se pudo recortar esta imagen. Si es un link externo, descarga la imagen y súbela directo.'
+    );
+  } finally {
+    setCropping(false);
+  }
+};
 
 const handleSave = async () => {
   if (form.photo_url?.includes('fbcdn.net') || form.photo_url?.includes('cdninstagram.com')) {
@@ -105,12 +226,17 @@ const handleSave = async () => {
     }
     setSaving(true);
     try {
-      const payload = {
-        ...form,
-        social_links: Object.fromEntries(
-          Object.entries(form.social_links).filter(([_, v]) => v.trim())
-        )
-      };
+const payload = {
+  ...form,
+  photo_url: buildPhotoUrl(form.photo_url, form.photo_x, form.photo_y, form.photo_zoom),
+  social_links: Object.fromEntries(
+    Object.entries(form.social_links).filter(([_, v]) => v.trim())
+  )
+};
+
+delete payload.photo_x;
+delete payload.photo_y;
+delete payload.photo_zoom;
       if (editing) {
         await updateCollaborator(editing, payload);
         alert.success('Actualizado', 'Colaborador actualizado');
@@ -178,27 +304,37 @@ const handleDelete = async (c) => {
 
             <div className={styles.modalBody}>
               {/* Foto */}
-              <div className={styles.photoSection}>
-                <div className={styles.photoWrap}>
-                  {form.photo_url
-                    ? <img src={form.photo_url} alt="" className={styles.photoPreview} />
-                    : <div className={styles.photoEmpty}><User size={32} /></div>
-                  }
-                </div>
-                <label className={styles.photoBtn}>
-                  <Upload size={13} />
-                  {uploading ? 'Subiendo...' : 'Subir foto'}
-                  <input type="file" accept="image/*" onChange={handlePhotoUpload} hidden />
-                </label>
-                <input
-                  type="text"
-                  value={form.photo_url}
-                  onChange={e => setForm(f => ({ ...f, photo_url: e.target.value }))}
-                  className={styles.input}
-                  placeholder="O pega URL de imagen..."
-                  style={{ marginTop: 6 }}
-                />
-              </div>
+<div className={styles.photoSection}>
+  <div className={styles.photoCropPreviewBox}>
+    {form.photo_url
+      ? <img src={form.photo_url} alt="" className={styles.photoCropPreview} />
+      : <div className={styles.photoEmpty}><User size={32} /></div>
+    }
+  </div>
+
+  <div className={styles.photoActions}>
+    <label className={styles.photoBtn}>
+      <Upload size={13} />
+      {uploading ? 'Subiendo...' : 'Subir foto'}
+      <input type="file" accept="image/*" onChange={handlePhotoUpload} hidden />
+    </label>
+
+    {form.photo_url && (
+      <button type="button" className={styles.photoBtn} onClick={openCropper}>
+        Ajustar encuadre
+      </button>
+    )}
+  </div>
+
+  <input
+    type="text"
+    value={form.photo_url}
+    onChange={e => setForm(f => ({ ...f, photo_url: e.target.value }))}
+    className={styles.input}
+    placeholder="O pega URL de imagen..."
+    style={{ marginTop: 6 }}
+  />
+</div>
 
               <div className={styles.formGrid}>
                 <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
@@ -300,13 +436,58 @@ const handleDelete = async (c) => {
               </div>
             </div>
 
-            <div className={styles.modalFooter}>
-              <button onClick={() => setShowForm(false)} className={styles.cancelBtn}>Cancelar</button>
-              <button onClick={handleSave} disabled={saving} className={styles.saveBtn}>
-                <Check size={14} />
-                {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Crear colaborador'}
-              </button>
-            </div>
+<div className={styles.modalFooter}>
+  <button onClick={() => setShowForm(false)} className={styles.cancelBtn}>Cancelar</button>
+  <button onClick={handleSave} disabled={saving} className={styles.saveBtn}>
+    <Check size={14} />
+    {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Crear colaborador'}
+  </button>
+</div>
+
+{cropOpen && (
+  <div className={styles.cropModalOverlay} onClick={() => setCropOpen(false)}>
+    <div className={styles.cropModal} onClick={e => e.stopPropagation()}>
+      <div className={styles.cropHeader}>
+        <h4>Ajustar foto</h4>
+        <button type="button" onClick={() => setCropOpen(false)}>
+          <X size={18} />
+        </button>
+      </div>
+
+      <div className={styles.cropArea}>
+        <Cropper
+          image={cropSrc}
+          crop={crop}
+          zoom={cropZoom}
+          aspect={4 / 5}
+          onCropChange={setCrop}
+          onZoomChange={setCropZoom}
+          onCropComplete={onCropComplete}
+          showGrid
+        />
+      </div>
+
+      <div className={styles.cropFooter}>
+        <input
+          type="range"
+          min={1}
+          max={3}
+          step={0.01}
+          value={cropZoom}
+          onChange={e => setCropZoom(Number(e.target.value))}
+        />
+
+        <button type="button" className={styles.cancelBtn} onClick={() => setCropOpen(false)}>
+          Cancelar
+        </button>
+
+        <button type="button" className={styles.saveBtn} onClick={applyCrop} disabled={cropping}>
+          {cropping ? 'Aplicando...' : 'Aplicar recorte'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
           </motion.div>
         </div>
       )}

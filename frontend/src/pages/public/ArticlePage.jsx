@@ -6,7 +6,6 @@ import { getComments } from '../../api/comments.api';
 import { formatDate } from '../../utils/formatDate';
 import {
   Clock,
-  Eye,
   ArrowLeft,
   MessageCircle,
   Maximize2
@@ -189,13 +188,7 @@ export default function ArticlePage() {
                   <span>{article.reading_time} min</span>
                 </>
               )}
-              {article.views > 0 && (
-                <>
-                  <span className={styles.dot}>·</span>
-                  <Eye size={12} />
-                  <span>{article.views}</span>
-                </>
-              )}
+ 
             </div>
           </div>
         </div>

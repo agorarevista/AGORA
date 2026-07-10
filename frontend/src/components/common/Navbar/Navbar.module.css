@@ -1,3 +1,8 @@
+/* Blindaje anti-transform: fuerza el fixed real */
+.navbar {
+  position: relative;
+  z-index: 500;
+}
 /* ── Navbar ──────────────────────────────────────────── */
 .navbar {
   background: var(--nav-bg);
@@ -264,3 +269,58 @@
   .mobileSubs { grid-template-columns: 1fr; }
 }
 
+/* ── Redes sociales en navbar ────────────────────────── */
+.socials {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.socialBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: var(--nav-text-muted);
+  text-decoration: none;
+  transition: color 0.2s, background 0.2s;
+}
+.socialBtn:hover { color: var(--color-accent); background: rgba(139,26,74,0.08); }
+
+.actionsDivider {
+  width: 1px;
+  height: 18px;
+  background: var(--nav-border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* Redes en mobile */
+.mobileSocials {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px var(--space-5);
+  border-top: 1px solid var(--nav-border);
+}
+
+.mobileSocialBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--nav-border);
+  color: var(--nav-text-muted);
+  text-decoration: none;
+  transition: color 0.2s, border-color 0.2s;
+}
+.mobileSocialBtn:hover { color: var(--color-accent); border-color: var(--color-accent); }
+
+@media (max-width: 768px) {
+  .socials { display: none; }
+  .actionsDivider { display: none; }
+}

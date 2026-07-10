@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ZoomIn, ZoomOut, RotateCcw, Download } from 'lucide-react';
 import styles from './ImageViewer.module.css';
@@ -31,7 +32,9 @@ export default function ImageViewer({ src, alt, onClose }) {
     }
   };
 
-  return (
+  // Se monta directamente en el body para escapar del stacking context
+  // que crea PageTransition (will-change), y así quedar por encima de la navbar.
+  return createPortal(
     <AnimatePresence>
       <motion.div
         className={styles.overlay}
@@ -96,6 +99,7 @@ export default function ImageViewer({ src, alt, onClose }) {
           Clic fuera para cerrar · Esc para salir
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

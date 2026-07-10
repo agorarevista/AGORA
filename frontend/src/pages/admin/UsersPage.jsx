@@ -9,7 +9,7 @@ import { formatDate } from '../../utils/formatDate';
 import styles from './UsersPage.module.css';
 
 const EMPTY_FORM = {
-  username: '', display_name: '', email: '', role: 'editor', password: ''
+  username: '', full_name: '', role: 'editor', password: ''
 };
 
 const ROLES = {
@@ -48,13 +48,12 @@ const load = async () => {
 
   const openEdit = (u) => {
     setEditing(u.id);
-    setForm({
-      username: u.username || '',
-      display_name: u.display_name || '',
-      email: u.email || '',
-      role: u.role || 'editor',
-      password: ''
-    });
+setForm({
+  username: u.username || '',
+  full_name: u.full_name || '',
+  role: u.role || 'editor',
+  password: ''
+});
     setShowPass(false);
     setShowForm(true);
   };
@@ -155,13 +154,13 @@ const handleDelete = async (u) => {
 
               <div className={styles.formGroup}>
                 <label className={styles.label}>Nombre completo</label>
-                <input
-                  type="text"
-                  value={form.display_name}
-                  onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))}
-                  className={styles.input}
-                  placeholder="María García"
-                />
+<input
+  type="text"
+  value={form.full_name}
+  onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
+  className={styles.input}
+  placeholder="María García"
+/>
               </div>
 
               <div className={styles.formGroup}>
@@ -243,17 +242,16 @@ const handleDelete = async (u) => {
                 className={`${styles.userRow} ${isMe ? styles.userRowMe : ''}`}
               >
                 <div className={styles.userAvatar}>
-                  {u.display_name?.[0] || u.username?.[0] || <User size={16} />}
+{u.full_name?.[0] || u.username?.[0] || <User size={16} />}
                 </div>
                 <div className={styles.userInfo}>
                   <div className={styles.userName}>
-                    {u.display_name || u.username}
+{u.full_name || u.username}
                     {isMe && <span className={styles.youBadge}>Tú</span>}
                   </div>
                   <div className={styles.userMeta}>
-                    @{u.username}
-                    {u.email && <> · {u.email}</>}
-                    {u.last_login && <> · Último acceso: {formatDate(u.last_login)}</>}
+@{u.username}
+{u.last_login && <> · Último acceso: {formatDate(u.last_login)}</>}
                   </div>
                 </div>
                 <span

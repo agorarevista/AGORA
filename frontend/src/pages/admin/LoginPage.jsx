@@ -68,7 +68,8 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const user = await login(username, password);
+const cleanUsername = username.trim();
+const user = await login(cleanUsername, password);
       alert.success('Bienvenido', `Hola, ${user.full_name}`);
       navigate('/admin/dashboard', { replace: true });
     } catch (err) {
@@ -79,16 +80,19 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'var(--color-primary)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-      }}
-    >
+<div
+  style={{
+    position: 'fixed',
+    inset: 0,
+    minHeight: '100vh',
+    background: 'var(--color-primary)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '24px',
+    zIndex: 9999,
+  }}
+>
       <div
         style={{
           width: '100%',
@@ -163,12 +167,13 @@ export default function LoginPage() {
             <input
               type="text"
               value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-                if (rememberSession) {
-                  localStorage.setItem('agora_remember_username', e.target.value);
-                }
-              }}
+onChange={(e) => {
+  const value = e.target.value.trimStart();
+  setUsername(value);
+  if (rememberSession) {
+    localStorage.setItem('agora_remember_username', value);
+  }
+}}
               placeholder="Tu nombre de usuario"
               autoComplete="username"
               style={{

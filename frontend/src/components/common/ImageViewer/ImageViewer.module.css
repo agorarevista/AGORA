@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.92);
-  z-index: 9000;
+  z-index: 999999;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -22,7 +22,7 @@
   padding: 12px 24px;
   background: rgba(0,0,0,0.7);
   backdrop-filter: blur(10px);
-  z-index: 9001;
+  z-index: 1000000;
 }
 
 .ctrlBtn {

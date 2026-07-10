@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { getCollaborator as getCollaboratorBySlug } from '../../api/collaborators.api';
 import { getByCollaborator as getArticlesByCollaborator } from '../../api/articles.api';
 import { formatDate } from '../../utils/formatDate';
-import { Clock, Eye, ArrowLeft, Globe, Mail } from 'lucide-react';
+import { Clock, ArrowLeft, Globe, Mail } from 'lucide-react';
 import {
   FaInstagram,
   FaFacebookF,
@@ -118,7 +118,7 @@ export default function CollaboratorPage() {
             animate={{ opacity: 1, y: 0 }}
             className={styles.profile}
           >
-            <div className={styles.profileMain}>
+<div className={styles.profileMain}>
               <div className={styles.avatarWrap}>
                 {collab.photo_url
                   ? <img src={collab.photo_url} alt={collab.name} className={styles.avatar} />
@@ -127,68 +127,27 @@ export default function CollaboratorPage() {
               </div>
 
               <div className={styles.profileInfo}>
-                <div className={styles.profileLabel}>
-                  {collab.type === 'fixed' ? 'Colaborador fijo' : 'Colaborador'}
-                </div>
-
-                <h1 className={styles.profileName}>{collab.name}</h1>
-
                 {collab.section_name && (
                   <div className={styles.profileSection}>{collab.section_name}</div>
                 )}
 
+                <h1 className={styles.profileName}>{collab.name}</h1>
+
                 {collab.bio && (
                   <p className={styles.profileBio}>{collab.bio}</p>
                 )}
-                {null}
               </div>
-            </div>
 
-            <aside className={styles.profileAside}>
-              <div className={styles.asideBlock}>
-                <div className={styles.asideTitle}>Sobre {collab.name?.split(' ')?.[0] || 'este colaborador'}</div>
-
-                <div className={styles.infoList}>
-                  {collab.section_name && (
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoIcon}>✦</span>
-                      <span>{collab.section_name}</span>
-                    </div>
-                  )}
-
-                  {collab.email && (
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoIcon}>✉</span>
-                      <span>{collab.email}</span>
-                    </div>
-                  )}
-
-                  {collab.phone && (
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoIcon}>☏</span>
-                      <span>{collab.phone}</span>
-                    </div>
-                  )}
-
-                  <div className={styles.infoRow}>
-                    <span className={styles.infoIcon}>◍</span>
-                    <span>{articles.length} artículo{articles.length !== 1 ? 's' : ''} publicado{articles.length !== 1 ? 's' : ''}</span>
-                  </div>
-
-                  {collab.type && (
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoIcon}>•</span>
-                      <span>{collab.type === 'fixed' ? 'Colaborador fijo' : 'Colaborador ocasional'}</span>
-                    </div>
-                  )}
+              <aside className={styles.profileSide}>
+                <div className={styles.articleCount}>
+                  <span className={styles.articleCountNum}>{articles.length}</span>
+                  <span className={styles.articleCountLabel}>
+                    artículo{articles.length !== 1 ? 's' : ''}
+                  </span>
                 </div>
-              </div>
 
-              {socialEntries.length > 0 && (
-                <div className={styles.asideBlock}>
-                  <div className={styles.asideTitle}>Redes sociales</div>
-
-                  <div className={styles.socialsAside}>
+                {socialEntries.length > 0 && (
+                  <div className={styles.socials}>
                     {socialEntries.map((item) => (
                       <a
                         key={item.key}
@@ -203,9 +162,9 @@ export default function CollaboratorPage() {
                       </a>
                     ))}
                   </div>
-                </div>
-              )}
-            </aside>
+                )}
+              </aside>
+            </div>
           </motion.div>
         </div>
       </div>
@@ -267,13 +226,6 @@ export default function CollaboratorPage() {
                           <span className={styles.dot}>·</span>
                           <Clock size={11} />
                           <span>{art.reading_time}′</span>
-                        </>
-                      )}
-                      {art.views > 0 && (
-                        <>
-                          <span className={styles.dot}>·</span>
-                          <Eye size={11} />
-                          <span>{art.views}</span>
                         </>
                       )}
                     </div>

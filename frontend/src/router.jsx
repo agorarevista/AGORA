@@ -30,6 +30,7 @@ import SubmissionsPage from './pages/admin/SubmissionsPage';
 import CommentsPage from './pages/admin/CommentsPage';
 import UsersPage from './pages/admin/UsersPage';
 import SettingsPage from './pages/admin/SettingsPage';
+import SponsorsPage from './pages/admin/SponsorsPage';
 
 import useAuthStore from './store/authStore';
 
@@ -92,6 +93,7 @@ const router = createBrowserRouter([
           { path: 'colaboradores',            element: <CollaboratorsPage /> },
           { path: 'ediciones',                element: <EditionsPage /> },
           { path: 'convocatorias',            element: <ConvocatoriasPage /> },
+          { path: 'sponsors',                 element: <SponsorsPage /> },
           { path: 'convocatorias/:id/envios', element: <SubmissionsPage /> },
           { path: 'comentarios',              element: <CommentsPage /> },
           { path: 'usuarios',                 element: <UsersPage /> },

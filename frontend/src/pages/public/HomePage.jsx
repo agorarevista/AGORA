@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getHome } from '../../api/articles.api';
 import { getActiveConvocatorias } from '../../api/convocatorias.api';
 import { cacheGet, cacheSet } from '../../utils/cache';
 import { formatDate } from '../../utils/formatDate';
+import { getSponsors } from '../../api/sponsors.api';
 import {
   Clock,
-  Eye,
   Heart,
   Share2,
   ChevronLeft,
@@ -49,6 +49,7 @@ const [featured, setFeatured]           = useState([]);
   const [convocatoria, setConvocatoria]   = useState(null);
   const [convocatorias, setConvocatorias] = useState([]);
   const [collaborators, setCollaborators] = useState([]);
+  const [sponsors, setSponsors]           = useState([]);
   const [loading, setLoading]             = useState(true);
   const [viewer, setViewer]               = useState(null);
   const [isDark, setIsDark]               = useState(false);
@@ -116,10 +117,16 @@ const safePayload = {
         applyPayload(safePayload);
         cacheSet(HOME_CACHE_KEY, safePayload, 10 * 1000);
 
-        // Fetch convocatorias activas por separado
+// Fetch convocatorias activas por separado
         try {
           const convs = await getActiveConvocatorias();
           if (mounted) setConvocatorias(Array.isArray(convs) ? convs : []);
+        } catch {}
+
+        // Fetch sponsors y noticias
+        try {
+          const sp = await getSponsors();
+          if (mounted) setSponsors(Array.isArray(sp) ? sp : []);
         } catch {}
       } catch (e) {
         console.error('ERROR getHome()', e);
@@ -188,6 +195,10 @@ const mostRead = useMemo(() =>
   [...latest].sort((a,b) => (b.views||0)-(a.views||0)).slice(0,8)
 , [latest]);
 
+const edicionArticles = useMemo(() =>
+  edition ? latest.filter(a => a.editions?.id === edition.id) : []
+, [latest, edition]);
+
 if (loading && !featured.length && !latest.length && !edition && !collaborators.length) {
   return <PageSkeleton />;
 }
@@ -196,78 +207,70 @@ return (
   <div className={styles.page}>
     <div className={styles.shell}>
 
-      {/* ── BLOQUE SUPERIOR ───────────────────────────── */}
-      <div className={styles.mainGrid}>
-
-        {/* ── IZQ: Portada edición ────────────────────── */}
-        <div className={styles.editionCol}>
-          <EditionCover edition={edition} setViewer={setViewer} />
-        </div>
-
-        {/* ── DER: Recientes + Colaboradores/Substack ─── */}
-        <div className={styles.rightCol}>
-
-          <div className={`${styles.block} ${styles.recentBlock}`}>
-            <BlockHeader title="Artículos recientes" href="/buscar" />
-            <RecentCarousel articles={recentArticles} />
+{/* ── PORTADA CENTRAL + HIGHLIGHTS ──────────────── */}
+      {featured.length > 0 && (
+        <div className={styles.heroGrid}>
+          <div className={styles.heroSideCol}>
+            {featured.slice(0, 2).map(art => (
+              <HighlightCard key={art.id} art={art} />
+            ))}
           </div>
 
-          <div className={styles.block2Col}>
-<div className={`${styles.block} ${styles.collabsBlock}`}>
-  <BlockHeader title="Colaboradores" href="/colaboradores" />
-  <CollaboratorsCarousel collaborators={collaborators} />
-</div>
+          <div className={styles.heroCenterCol}>
+            <EditionCover edition={edition} setViewer={setViewer} />
+          </div>
 
-            <div className={`${styles.block} ${styles.substackBlock}`}>
-              <SubstackPanel />
+          <div className={styles.heroSideCol}>
+            {featured.slice(2, 4).map(art => (
+              <HighlightCard key={art.id} art={art} />
+            ))}
+          </div>
+        </div>
+      )}
+{/* ── TRÍPTICO EDITORIAL: COLABORADORES + SUBSTACK + RANKING ── */}
+<div className={styles.editorialTriptychGrid}>
+
+  <div className={`${styles.block} ${styles.triptychCollabsBlock}`}>
+    <BlockHeader title="Colaboradores" href="/colaboradores" />
+    <CollaboratorsCarousel collaborators={collaborators} />
+  </div>
+
+  <div className={`${styles.block} ${styles.triptychSubstackBlock}`}>
+    <SubstackPanel />
+  </div>
+
+  <div className={`${styles.block} ${styles.triptychRankingBlock}`}>
+    <BlockHeader title="Los más leídos" href="/buscar" />
+    <MostRead articles={mostRead.slice(0, 5)} variant="triptych" />
+  </div>
+
+</div>
+{/* ── SPONSORS Y NOTICIAS ──────────────────────── */}
+      {sponsors.length > 0 && (
+        <section className={styles.sponsorsSection}>
+          <div className={styles.featureSectionHeader}>
+            <div>
+              <span className={styles.featureEyebrow}>Comunidad</span>
+              <h2 className={styles.featureTitle}>Sponsors y Noticias</h2>
             </div>
           </div>
+          <SponsorsCarousel items={sponsors} />
+        </section>
+      )}
 
-        </div>
-      </div>
-
-{/* ── SECCIÓN FIJA CONVOCATORIAS ───────────────── */}
-      <section className={styles.featureSection}>
-
-        <div className={styles.featureSectionHeader}>
-          <div>
-            <span className={styles.featureEyebrow}>
-              Participa en Agorá
-            </span>
-            <h2 className={styles.featureTitle}>
-              Convocatorias abiertas
-            </h2>
+      {/* ── CARRUSEL EDICIÓN ACTUAL ──────────────────── */}
+      {edicionArticles.length > 0 && (
+        <section className={styles.edicionSection}>
+          <div className={styles.featureSectionHeader}>
+            <div>
+              <span className={styles.featureEyebrow}>Explora Agorá</span>
+              <h2 className={styles.featureTitle}>Todo Nuestro Contenido</h2>
+            </div>
           </div>
-          <Link to="/convocatorias" className={styles.featureMore}>
-            Ver todas <ArrowRight size={14} />
-          </Link>
-        </div>
+          <EdicionCarousel articles={edicionArticles} />
+        </section>
+      )}
 
-        <div className={styles.featureConvWrapper}>
-          <ConvocatoriasGrid convocatorias={convocatorias} />
-        </div>
-
-      </section>
-
-      {/* ── BLOQUE INFERIOR ───────────────────────────── */}
-      <div className={styles.lowerSections}>
-
-        <div className={styles.lowerGrid}>
-
-          <div className={`${styles.block} ${styles.aboutBlock}`}>
-            <BlockHeader title="Quiénes somos" />
-
-            <AboutAgora isDark={isDark} />
-          </div>
-
-          <div className={`${styles.block} ${styles.mostReadWideBlock}`}>
-            <BlockHeader title="Más leídos" />
-            <MostRead articles={mostRead} />
-          </div>
-
-        </div>
-
-      </div>
 
     </div>
 
@@ -315,7 +318,7 @@ function EditionCover({ edition, setViewer }) {
         onClick={handleOpenViewer}
         aria-label={`Abrir portada de ${edition.name}`}
       >
-        <div className={styles.editionImgWrap}>
+<div className={styles.editionImgWrap}>
           {edition.cover_image_url ? (
             <img
               src={edition.cover_image_url}
@@ -327,37 +330,6 @@ function EditionCover({ edition, setViewer }) {
               <span>Λ</span>
             </div>
           )}
-
-          <div className={styles.editionTopBadge}>
-            <span className={styles.editionBadge}>Edición #{edition.number}</span>
-          </div>
-
-          <div className={styles.editionMetaOverlay}>
-            <div className={styles.editionMetaGlass}>
-              <span className={styles.editionKicker}>Edición actual</span>
-              <h2 className={styles.editionName}>{edition.name}</h2>
-
-              {edition.description && (
-                <p className={styles.editionDesc}>{edition.description}</p>
-              )}
-
-              <div className={styles.editionActions}>
-                <Link
-                  to={`/edicion/${edition.number}`}
-                  className={styles.editionCta}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Explorar edición <ArrowRight size={13} />
-                </Link>
-
-                {edition.cover_image_url && (
-                  <span className={styles.editionZoomHint}>
-                    <Maximize2 size={15} />
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
       </button>
     </div>
@@ -403,9 +375,7 @@ function RecentCarousel({ articles }) {
                     <span>{formatDate(art.published_at)}</span>
                     {art.reading_time && <><span className={styles.dot}>·</span><Clock size={10}/><span>{art.reading_time}′</span></>}
                   </div>
-                  <div className={styles.recentCardStats}>
-                    {art.views > 0 && <span className={styles.stat}><Eye size={11}/>{art.views}</span>}
-                  </div>
+
                 </div>
               </Link>
             ))}
@@ -472,71 +442,65 @@ function CollaboratorsCarousel({ collaborators }) {
 
   if (!collaborators.length) return <EmptySlot />;
 
-const getSocialLinks = (col) => {
-  const social = col.social_links || {};
+  const getPhotoCrop = (url = '') => {
+    const cleanUrl = url.split('#crop=')[0];
+    const cropRaw = url.split('#crop=')[1];
 
-  const links = [
-    {
-      key: 'instagram',
-      href:
-        social.instagram ||
-        social.instagram_url ||
-        col.instagram_url ||
-        col.instagram ||
-        col.social_instagram,
-      icon: <InstagramIcon className={styles.collabSocialIcon} />
-    },
-    {
-      key: 'facebook',
-      href:
-        social.facebook ||
-        social.facebook_url ||
-        col.facebook_url ||
-        col.facebook ||
-        col.social_facebook,
-      icon: <FacebookIcon className={styles.collabSocialIcon} />
-    },
-    {
-      key: 'linkedin',
-      href:
-        social.linkedin ||
-        social.linkedin_url ||
-        col.linkedin_url ||
-        col.linkedin ||
-        col.social_linkedin,
-      icon: <LinkedInIcon className={styles.collabSocialIcon} />
-    },
-    {
-      key: 'x',
-      href:
-        social.x ||
-        social.twitter ||
-        social.twitter_url ||
-        col.x_url ||
-        col.twitter_url ||
-        col.twitter,
-      icon: <XIcon className={styles.collabSocialIcon} />
-    },
-    {
-      key: 'website',
-      href:
-        social.website ||
-        social.portfolio ||
-        social.portfolio_url ||
-        col.website_url ||
-        col.website ||
-        col.portfolio_url,
-      icon: <Globe size={18} className={styles.collabSocialIcon} />
-    },
-    {
-      key: 'email',
-      href: col.email ? `mailto:${col.email}` : null,
-      icon: <Mail size={18} className={styles.collabSocialIcon} />
-    },
-  ].filter((item) => !!item.href);
+    if (!cropRaw) {
+      return {
+        cleanUrl,
+        x: 50,
+        y: 20,
+        zoom: 1,
+      };
+    }
 
-  return links;
-};
+    const [x, y, zoom] = cropRaw.split(',').map(Number);
+
+    return {
+      cleanUrl,
+      x: Number.isFinite(x) ? x : 50,
+      y: Number.isFinite(y) ? y : 20,
+      zoom: Number.isFinite(zoom) ? zoom : 1,
+    };
+  };
+
+  const getSocialLinks = (col) => {
+    const social = col.social_links || {};
+
+    return [
+      {
+        key: 'instagram',
+        href: social.instagram || social.instagram_url || col.instagram_url || col.instagram || col.social_instagram,
+        icon: <InstagramIcon className={styles.collabSocialIcon} />
+      },
+      {
+        key: 'facebook',
+        href: social.facebook || social.facebook_url || col.facebook_url || col.facebook || col.social_facebook,
+        icon: <FacebookIcon className={styles.collabSocialIcon} />
+      },
+      {
+        key: 'linkedin',
+        href: social.linkedin || social.linkedin_url || col.linkedin_url || col.linkedin || col.social_linkedin,
+        icon: <LinkedInIcon className={styles.collabSocialIcon} />
+      },
+      {
+        key: 'x',
+        href: social.x || social.twitter || social.twitter_url || col.x_url || col.twitter_url || col.twitter,
+        icon: <XIcon className={styles.collabSocialIcon} />
+      },
+      {
+        key: 'website',
+        href: social.website || social.portfolio || social.portfolio_url || col.website_url || col.website || col.portfolio_url,
+        icon: <Globe size={18} className={styles.collabSocialIcon} />
+      },
+      {
+        key: 'email',
+        href: col.email ? `mailto:${col.email}` : null,
+        icon: <Mail size={18} className={styles.collabSocialIcon} />
+      },
+    ].filter((item) => !!item.href);
+  };
 
   return (
     <div className={styles.collabCarousel}>
@@ -552,12 +516,10 @@ const getSocialLinks = (col) => {
           >
             {page.map((col) => {
               const socialLinks = getSocialLinks(col);
+              const crop = getPhotoCrop(col.photo_url || '');
 
               return (
-                <div
-                  key={col.id}
-                  className={styles.collabCard}
-                >
+                <div key={col.id} className={styles.collabCard}>
                   <Link
                     to={`/colaborador/${col.slug || col.id}`}
                     className={styles.collabCardLink}
@@ -565,8 +527,12 @@ const getSocialLinks = (col) => {
                     <div className={styles.collabAvatar}>
                       {col.photo_url ? (
                         <img
-                          src={`${col.photo_url}${col.photo_url.includes('?') ? '&' : '?'}v=${encodeURIComponent(col.updated_at || col.id || col.slug || '1')}`}
+                          src={`${crop.cleanUrl}${crop.cleanUrl.includes('?') ? '&' : '?'}v=${encodeURIComponent(col.updated_at || col.id || col.slug || '1')}`}
                           alt={col.name}
+                          style={{
+                            objectPosition: `${crop.x}% ${crop.y}%`,
+                            transform: `scale(${crop.zoom})`,
+                          }}
                         />
                       ) : (
                         <span>{(col.name || '?')[0].toUpperCase()}</span>
@@ -648,12 +614,61 @@ const getSocialLinks = (col) => {
     </div>
   );
 }
-
 /* ════════════════════════════════════════════════════════
    MÁS LEÍDOS
 ════════════════════════════════════════════════════════ */
-function MostRead({ articles }) {
+function MostRead({ articles, variant = 'default' }) {
   if (!articles.length) return <EmptySlot />;
+
+  const roman = ['I', 'II', 'III', 'IV', 'V'];
+
+  if (variant === 'triptych') {
+    return (
+      <div className={styles.triptychRankingList}>
+        {articles.map((art, i) => {
+          const authorName = art.collaborators?.name || 'Agorá Revista';
+          const sectionName =
+            art.article_categories?.[0]?.categories?.name ||
+            art.categories?.[0]?.name ||
+            '';
+
+          return (
+            <Link
+              key={art.id}
+              to={`/articulos/${art.slug}`}
+              className={styles.triptychRankingItem}
+            >
+              <div className={styles.triptychRankingNum}>{roman[i]}</div>
+
+              <div className={styles.triptychRankingContent}>
+                <div className={styles.triptychRankingText}>
+                  <h3 className={styles.triptychRankingTitle}>{art.title}</h3>
+
+                  <div className={styles.triptychRankingMeta}>
+                    <span>{authorName}</span>
+                    {sectionName && (
+                      <>
+                        <span className={styles.dot}>·</span>
+                        <span>{sectionName}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className={styles.triptychRankingImg}>
+                  {art.cover_image_url ? (
+                    <img src={art.cover_image_url} alt={art.title} />
+                  ) : (
+                    <div className={styles.imgPlaceholder}><span>Λ</span></div>
+                  )}
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    );
+  }
 
   const getLikes = (art) =>
     art.likes_count ?? art.likes ?? art.like_count ?? 0;
@@ -671,13 +686,6 @@ function MostRead({ articles }) {
             <div className={styles.mostReadTitle}>{art.title}</div>
 
             <div className={styles.mostReadStats}>
-              {art.views > 0 && (
-                <span className={styles.stat}>
-                  <Eye size={11} />
-                  {art.views}
-                </span>
-              )}
-
               {getLikes(art) > 0 && (
                 <span className={styles.stat}>
                   <Heart size={11} />
@@ -806,8 +814,12 @@ function NewsCarousel({ items }) {
 ════════════════════════════════════════════════════════ */
 function SubstackPanel() {
   return (
-    <div className={styles.substackClean}>
-
+    <a
+      href="https://agorarevista.substack.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      className={styles.substackClean}
+    >
       <img
         src={agoraIcon}
         alt="Agorá Revista"
@@ -815,30 +827,23 @@ function SubstackPanel() {
       />
 
       <div className={styles.substackCleanContent}>
+        <span className={styles.substackLabel}>Lectura extendida</span>
 
         <h3 className={styles.substackTitleClean}>
-          Agorá Revista
+          Agorá en Substack
         </h3>
 
         <p className={styles.substackTextClean}>
-          Revista digital dedicada a la difusión cultural y artística
+          Ensayos, columnas y textos editoriales para leer con calma.
         </p>
 
-        <a
-          href="https://agorarevista.substack.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.substackBtnClean}
-        >
+        <span className={styles.substackBtnClean}>
           Suscribirme →
-        </a>
-
+        </span>
       </div>
-
-    </div>
+    </a>
   );
 }
-
 /* ════════════════════════════════════════════════════════
    HELPERS
 ════════════════════════════════════════════════════════ */
@@ -933,6 +938,191 @@ function ConvocatoriaCard({ conv, index }) {
           <div className={styles.convCardEmail}>{conv.contact_email}</div>
         )}
         <div className={styles.convCardCta}>VER CONVOCATORIA →</div>
+      </div>
+    </Link>
+  );
+}
+function SponsorsCarousel({ items }) {
+  const trackRef = useRef(null);
+
+  const scroll = (dir) => {
+    const el = trackRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth, behavior: 'smooth' });
+  };
+
+  const typeLabel = (t) => {
+    if (t === 'sponsor') return 'Sponsor';
+    if (t === 'patrocinador') return 'Patrocinador';
+    return 'Noticia';
+  };
+
+  return (
+    <div className={styles.sponsorsCarousel}>
+      <button
+        type="button"
+        className={`${styles.edicionArrow} ${styles.edicionArrowLeft}`}
+        onClick={() => scroll(-1)}
+        aria-label="Anterior"
+      >
+        <ChevronLeft size={20} />
+      </button>
+
+      <div ref={trackRef} className={styles.sponsorsTrack}>
+        {items.map(item => {
+          const Wrapper = item.link_url ? 'a' : 'div';
+          const wrapperProps = item.link_url
+            ? { href: item.link_url, target: '_blank', rel: 'noopener noreferrer' }
+            : {};
+
+          return (
+            <Wrapper
+              key={item.id}
+              {...wrapperProps}
+              className={`${styles.sponsorCard} ${!item.image_url ? styles.sponsorCardEditorial : ''}`}
+            >
+              <span className={styles.sponsorType} data-type={item.type}>
+                {typeLabel(item.type)}
+              </span>
+
+              {item.image_url ? (
+                <div className={styles.sponsorImg}>
+                  <img src={item.image_url} alt={item.title} />
+                </div>
+              ) : (
+                <div className={styles.sponsorGreek}>
+                  <span className={styles.sponsorGreekSymbol}>Λ</span>
+                </div>
+              )}
+
+              <div className={styles.sponsorBody}>
+                <div className={styles.sponsorTitle}>{item.title}</div>
+                {item.body && <p className={styles.sponsorText}>{item.body}</p>}
+                {item.link_url && (
+                  <span className={styles.sponsorCta}>Ver más →</span>
+                )}
+              </div>
+            </Wrapper>
+          );
+        })}
+      </div>
+
+      <button
+        type="button"
+        className={`${styles.edicionArrow} ${styles.edicionArrowRight}`}
+        onClick={() => scroll(1)}
+        aria-label="Siguiente"
+      >
+        <ChevronRight size={20} />
+      </button>
+    </div>
+  );
+}
+function EdicionCarousel({ articles }) {
+  const trackRef = useRef(null);
+  const visibleArticles = articles.slice(0, 5);
+
+  const scroll = (dir) => {
+    const el = trackRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth, behavior: 'smooth' });
+  };
+
+  const getCategories = (art) => {
+    const fromPivot = Array.isArray(art.article_categories)
+      ? art.article_categories
+          .map(item => item?.categories?.name)
+          .filter(Boolean)
+      : [];
+
+    const fromDirect = Array.isArray(art.categories)
+      ? art.categories.map(cat => cat?.name || cat).filter(Boolean)
+      : [];
+
+    return [...new Set([...fromPivot, ...fromDirect])].slice(0, 2);
+  };
+
+  return (
+    <div className={styles.edicionCarousel}>
+      {articles.length > 5 && (
+        <button
+          type="button"
+          className={`${styles.edicionArrow} ${styles.edicionArrowLeft}`}
+          onClick={() => scroll(-1)}
+          aria-label="Anterior"
+        >
+          <ChevronLeft size={20} />
+        </button>
+      )}
+
+      <div ref={trackRef} className={styles.edicionTrack}>
+        {visibleArticles.map(art => {
+          const categories = getCategories(art);
+
+          return (
+            <Link key={art.id} to={`/articulos/${art.slug}`} className={styles.edicionCard}>
+              <div className={styles.edicionCardImg}>
+                {art.cover_image_url
+                  ? <img src={art.cover_image_url} alt={art.title} />
+                  : <div className={styles.imgPlaceholder}><span>Λ</span></div>
+                }
+
+                <div className={styles.edicionCardOverlay}>
+                  {categories.length > 0 && (
+                    <div className={styles.edicionCardCats}>
+                      {categories.map(cat => (
+                        <span key={cat} className={styles.edicionCardCat}>{cat}</span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className={styles.edicionCardText}>
+                    <h3 className={styles.edicionCardTitle}>{art.title}</h3>
+
+                    {art.collaborators && (
+                      <p className={styles.edicionCardAuthor}>{art.collaborators.name}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {articles.length > 5 && (
+        <button
+          type="button"
+          className={`${styles.edicionArrow} ${styles.edicionArrowRight}`}
+          onClick={() => scroll(1)}
+          aria-label="Siguiente"
+        >
+          <ChevronRight size={20} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function HighlightCard({ art }) {
+  return (
+    <Link to={`/articulos/${art.slug}`} className={styles.highlightCard}>
+      <div className={styles.highlightImg}>
+        {art.cover_image_url ? (
+          <img src={art.cover_image_url} alt={art.title} />
+        ) : (
+          <div className={styles.imgPlaceholder}><span>Λ</span></div>
+        )}
+
+        <div className={styles.highlightOverlay}>
+          <div className={styles.highlightTitle}>{art.title}</div>
+
+          {art.collaborators && (
+            <div className={styles.highlightAuthor}>
+              {art.collaborators.name}
+            </div>
+          )}
+        </div>
       </div>
     </Link>
   );
