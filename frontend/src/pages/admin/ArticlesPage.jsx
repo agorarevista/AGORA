@@ -53,7 +53,7 @@ import LikeButton from '../../components/common/LikeButton/LikeButton';
 import ShareButtons from '../../components/common/ShareButtons/ShareButtons';
 import Comments from '../../components/common/Comments/Comments';
 import ImageViewer from '../../components/common/ImageViewer/ImageViewer';
-import styles from './ArticlePage.module.css';
+import styles from './ArticlesPage.module.css';
 
 
 const formatAudioTime = (value) => {
