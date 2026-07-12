@@ -1,11 +1,9 @@
 import { Link, NavLink } from 'react-router-dom';
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Search, X, Menu, ChevronDown } from 'lucide-react';
 import { FaFacebookF, FaInstagram, FaYoutube } from 'react-icons/fa6';
 import { SiSubstack } from 'react-icons/si';
 import styles from './Navbar.module.css';
-import { getCategories } from '../../../api/categories.api';
-import { cacheGet, cacheSet } from '../../../utils/cache';
 import SearchOverlay from '../SearchOverlay/SearchOverlay';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import useThemeStore from '../../../store/themeStore';
@@ -17,17 +15,63 @@ import iconWhite from '../../../assets/AGORAICONWHITE.png';
 
 const SOCIAL_LINKS = [
   { key: 'facebook',  href: 'https://facebook.com/agorarevista',  icon: <FaFacebookF size={19} />,  label: 'Facebook'  },
-  { key: 'instagram', href: 'https://instagram.com/agorarevista', icon: <FaInstagram size={20} />, label: 'Instagram' },
-  { key: 'youtube',   href: 'https://youtube.com/@agorarevista',  icon: <FaYoutube size={21} />,   label: 'YouTube'   },
+  { key: 'instagram', href: 'https://www.instagram.com/agora_revista/', icon: <FaInstagram size={20} />, label: 'Instagram' },
+  { key: 'youtube',   href: 'https://www.youtube.com/@agorarevistamx',  icon: <FaYoutube size={21} />,   label: 'YouTube'   },
   { key: 'substack',  href: 'https://agorarevista.substack.com',  icon: <SiSubstack size={18} />,  label: 'Substack'  },
 ];
 
+// ── Estructura fija del menú ──────────────────────────────
+const NAV_GROUPS = [
+  {
+    key: 'ediciones',
+    label: 'Ediciones',
+    items: [
+      { name: 'La Revista',           to: '/ediciones' },
+      { name: 'Ediciones Especiales', to: '/ediciones-especiales' },
+    ],
+  },
+  {
+    key: 'secciones',
+    label: 'Secciones',
+    items: [
+      { name: 'Poesía',      to: '/categoria/poesia' },
+      { name: 'Narrativa',   to: '/categoria/narrativa' },
+      { name: 'Ensayo',      to: '/categoria/ensayo' },
+      { name: 'Crítica',     to: '/categoria/critica' },
+      { name: 'Pensamiento', to: '/categoria/pensamiento' },
+      { name: 'Galería',     to: '/categoria/galeria' },
+      { name: 'Entrevista',  to: '/categoria/entrevista' },
+      { name: 'Cultural',    to: '/categoria/cultural' },
+    ],
+  },
+  {
+    key: 'columnas',
+    label: 'Columnas',
+    items: [
+      { name: 'Artestigo',    to: '/categoria/artestigo' },
+      { name: 'Entretanto',   to: '/categoria/entretanto' },
+      { name: 'Liceo',        to: '/categoria/liceo' },
+      { name: 'Lo Que Habito',to: '/categoria/lo-que-habito' },
+      { name: 'Menguante',    to: '/categoria/menguante' },
+      { name: 'Palabrante',   to: '/categoria/palabrante' },
+      { name: 'Palimpsesto',  to: '/categoria/palimpsesto' },
+      { name: 'Punktum',      to: '/categoria/punktum' },
+      { name: 'Vórtice',      to: '/categoria/vortice' },
+    ],
+  },
+];
+
+// Enlaces simples (sin dropdown)
+const NAV_LINKS = [
+  { name: 'Colaboraciones', to: '/convocatorias' },
+  { name: 'Nosotros',       to: '/quienes-somos' },
+];
+
 export default function Navbar() {
-  const [categories, setCategories]       = useState([]);
-  const [searchOpen, setSearchOpen]       = useState(false);
-  const [mobileOpen, setMobileOpen]       = useState(false);
-  const [mobileSecOpen, setMobileSecOpen] = useState(false);
-  const [secOpen, setSecOpen]             = useState(false);
+  const [searchOpen, setSearchOpen]   = useState(false);
+  const [mobileOpen, setMobileOpen]   = useState(false);
+  const [mobileGroup, setMobileGroup] = useState(null);
+  const [openGroup, setOpenGroup]     = useState(null);
   const { theme } = useThemeStore();
   const timerRef  = useRef(null);
 
@@ -35,20 +79,15 @@ export default function Navbar() {
   const logoSrc = isDark ? logoWhite : logoBlack;
   const iconSrc = isDark ? iconWhite : iconBlack;
 
-  useEffect(() => {
-    const cachedCats = cacheGet('categories');
-    if (cachedCats) setCategories(cachedCats);
-    else {
-      getCategories().then(data => {
-        setCategories(data);
-        cacheSet('categories', data);
-      }).catch(() => {});
-    }
-  }, []);
+  const openMenu  = (key) => { clearTimeout(timerRef.current); setOpenGroup(key); };
+  const closeMenu = () => { timerRef.current = setTimeout(() => setOpenGroup(null), 120); };
+  const keepMenu  = () => clearTimeout(timerRef.current);
 
-  const openSec  = () => { clearTimeout(timerRef.current); setSecOpen(true); };
-  const closeSec = () => { timerRef.current = setTimeout(() => setSecOpen(false), 120); };
-  const keepSec  = () => clearTimeout(timerRef.current);
+  const closeAll = () => setOpenGroup(null);
+
+  // columnas del dropdown según cantidad de items
+  const colsFor = (n) => (n <= 3 ? 1 : n <= 6 ? 2 : 3);
+  const widthFor = (cols) => (cols === 1 ? 220 : cols === 2 ? 340 : 500);
 
   return (
     <>
@@ -57,7 +96,7 @@ export default function Navbar() {
           <div className={styles.inner}>
 
             {/* Logo — izquierda */}
-            <Link to="/" className={styles.logo} onClick={() => setSecOpen(false)}>
+            <Link to="/" className={styles.logo} onClick={closeAll}>
               <img src={logoSrc} alt="Agorá Revista" className={styles.logoImg} />
               <img src={iconSrc} alt="Agorá" className={styles.logoIcon} />
             </Link>
@@ -65,88 +104,133 @@ export default function Navbar() {
             {/* Nav — centro */}
             <nav className={styles.nav}>
 
-              <NavLink
-                to="/ediciones"
-                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navActive : ''}`}
-                onClick={() => setSecOpen(false)}
-              >
-                Edición
-              </NavLink>
-
-              {/* Secciones con dropdown */}
-              <div className={styles.navItem} onMouseEnter={openSec} onMouseLeave={closeSec}>
-                <button
-                  className={`${styles.navLink} ${secOpen ? styles.navActive : ''}`}
-                  onClick={() => setSecOpen(p => !p)}
-                >
-                  Secciones
-                  <ChevronDown size={11} className={`${styles.chevron} ${secOpen ? styles.chevronOpen : ''}`} />
-                </button>
-
-                {secOpen && (
-                  <div className={styles.dropdown} onMouseEnter={keepSec} onMouseLeave={closeSec}>
-                    <div className={styles.dropdownGrid}>
-                      {categories.map(cat => (
-                        <Link
-                          key={cat.id}
-                          to={`/categoria/${cat.slug}`}
-                          className={styles.dropLink}
-                          onClick={() => setSecOpen(false)}
+              {NAV_GROUPS.map(group => {
+                const cols = colsFor(group.items.length);
+                const isOpen = openGroup === group.key;
+                return (
+                  <div
+                    key={group.key}
+                    className={styles.navItem}
+                    onMouseEnter={() => openMenu(group.key)}
+                    onMouseLeave={closeMenu}
+                  >
+                    <div
+                      className={`${styles.navGroupTrigger} ${
+                        isOpen ? styles.navActive : ''
+                      }`}
+                    >
+                      {group.key === 'columnas' ? (
+                        <NavLink
+                          to="/columnas"
+                          className={({ isActive }) =>
+                            `${styles.navGroupLabel} ${
+                              isActive ? styles.navActive : ''
+                            }`
+                          }
+                          onClick={closeAll}
                         >
-                          {cat.name}
-                        </Link>
-                      ))}
+                          {group.label}
+                        </NavLink>
+                      ) : (
+                        <button
+                          type="button"
+                          className={styles.navGroupLabel}
+                          onClick={() =>
+                            setOpenGroup(previous =>
+                              previous === group.key
+                                ? null
+                                : group.key
+                            )
+                          }
+                        >
+                          {group.label}
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        className={styles.navGroupChevronButton}
+                        onClick={() =>
+                          setOpenGroup(previous =>
+                            previous === group.key
+                              ? null
+                              : group.key
+                          )
+                        }
+                        aria-label={`Abrir menú de ${group.label}`}
+                        aria-expanded={isOpen}
+                      >
+                        <ChevronDown
+                          size={11}
+                          className={`${styles.chevron} ${
+                            isOpen
+                              ? styles.chevronOpen
+                              : ''
+                          }`}
+                        />
+                      </button>
                     </div>
+
+                    {isOpen && (
+                      <div
+                        className={styles.dropdown}
+                        style={{ minWidth: widthFor(cols) }}
+                        onMouseEnter={keepMenu}
+                        onMouseLeave={closeMenu}
+                      >
+                        <div
+                          className={styles.dropdownGrid}
+                          style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+                        >
+                          {group.items.map(item => (
+                            <Link
+                              key={item.to}
+                              to={item.to}
+                              className={styles.dropLink}
+                              onClick={closeAll}
+                            >
+                              {item.name}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                );
+              })}
 
-              <NavLink
-                to="/archivo"
-                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navActive : ''}`}
-                onClick={() => setSecOpen(false)}
-              >
-                Archivo
-              </NavLink>
-
-              <NavLink
-                to="/ediciones-especiales"
-                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navActive : ''}`}
-                onClick={() => setSecOpen(false)}
-              >
-                Ed. especiales
-              </NavLink>
-
-              <NavLink
-                to="/quienes-somos"
-                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navActive : ''}`}
-                onClick={() => setSecOpen(false)}
-              >
-                Nosotros
-              </NavLink>
+              {NAV_LINKS.map(link => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navActive : ''}`}
+                  onClick={closeAll}
+                >
+                  {link.name}
+                </NavLink>
+              ))}
 
             </nav>
 
             {/* Acciones — derecha */}
             <div className={styles.actions}>
 
-
-              {/* Redes sociales */}
-              <div className={styles.socials}>
-                {SOCIAL_LINKS.map(s => (
-                  <a
-                    key={s.key}
-                    href={s.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.socialBtn}
-                    aria-label={s.label}
-                    title={s.label}
-                  >
-                    {s.icon}
-                  </a>
-                ))}
-              </div>
+            {/* Redes sociales */}
+            <div className={styles.socials}>
+              {SOCIAL_LINKS.map(s => (
+                <a
+                  key={s.key}
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.socialBtn}
+                  aria-label={s.label}
+                  title={s.label}
+                >
+                  {s.icon}
+                </a>
+              ))}
+            </div>
 
               <div className={styles.actionsDivider} />
 
@@ -172,27 +256,120 @@ export default function Navbar() {
         {/* Mobile menu */}
         {mobileOpen && (
           <div className={styles.mobileMenu}>
-            <NavLink to="/ediciones" className={styles.mobileLink} onClick={() => setMobileOpen(false)}>Edición</NavLink>
 
-            <div className={styles.mobileSection}>
-              <button className={styles.mobileSectionBtn} onClick={() => setMobileSecOpen(p => !p)}>
-                Secciones
-                <ChevronDown size={13} style={{ transform: mobileSecOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-              </button>
-              {mobileSecOpen && (
-                <div className={styles.mobileSubs}>
-                  {categories.map(cat => (
-                    <Link key={cat.id} to={`/categoria/${cat.slug}`} className={styles.mobileSub} onClick={() => setMobileOpen(false)}>
-                      {cat.name}
-                    </Link>
-                  ))}
+            {NAV_GROUPS.map(group => {
+              const isMobileGroupOpen =
+                mobileGroup === group.key;
+
+              return (
+                <div
+                  key={group.key}
+                  className={styles.mobileSection}
+                >
+                  {group.key === 'columnas' ? (
+                    <div className={styles.mobileSectionHeader}>
+                      <NavLink
+                        to="/columnas"
+                        className={({ isActive }) =>
+                          `${styles.mobileSectionTitle} ${
+                            isActive
+                              ? styles.navActive
+                              : ''
+                          }`
+                        }
+                        onClick={() => {
+                          setMobileOpen(false);
+                          setMobileGroup(null);
+                        }}
+                      >
+                        {group.label}
+                      </NavLink>
+
+                      <button
+                        type="button"
+                        className={styles.mobileSectionToggle}
+                        onClick={() =>
+                          setMobileGroup(current =>
+                            current === group.key
+                              ? null
+                              : group.key
+                          )
+                        }
+                        aria-label="Mostrar columnas"
+                        aria-expanded={isMobileGroupOpen}
+                      >
+                        <ChevronDown
+                          size={15}
+                          style={{
+                            transform:
+                              isMobileGroupOpen
+                                ? 'rotate(180deg)'
+                                : 'none',
+                            transition:
+                              'transform 0.2s',
+                          }}
+                        />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.mobileSectionBtn}
+                      onClick={() =>
+                        setMobileGroup(current =>
+                          current === group.key
+                            ? null
+                            : group.key
+                        )
+                      }
+                    >
+                      {group.label}
+
+                      <ChevronDown
+                        size={13}
+                        style={{
+                          transform:
+                            isMobileGroupOpen
+                              ? 'rotate(180deg)'
+                              : 'none',
+                          transition:
+                            'transform 0.2s',
+                        }}
+                      />
+                    </button>
+                  )}
+
+                  {isMobileGroupOpen && (
+                    <div className={styles.mobileSubs}>
+                      {group.items.map(item => (
+                        <Link
+                          key={item.to}
+                          to={item.to}
+                          className={styles.mobileSub}
+                          onClick={() => {
+                            setMobileOpen(false);
+                            setMobileGroup(null);
+                          }}
+                        >
+                          {item.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })}
 
-            <NavLink to="/archivo" className={styles.mobileLink} onClick={() => setMobileOpen(false)}>Archivo</NavLink>
-            <NavLink to="/ediciones-especiales" className={styles.mobileLink} onClick={() => setMobileOpen(false)}>Ediciones especiales</NavLink>
-            <NavLink to="/quienes-somos" className={styles.mobileLink} onClick={() => setMobileOpen(false)}>Nosotros</NavLink>
+            {NAV_LINKS.map(link => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={styles.mobileLink}
+                onClick={() => setMobileOpen(false)}
+              >
+                {link.name}
+              </NavLink>
+            ))}
 
             {/* Redes en mobile */}
             <div className={styles.mobileSocials}>

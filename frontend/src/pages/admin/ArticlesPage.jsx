@@ -1,365 +1,1190 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { getArticles } from '../../api/articles.api';
-import { publishArticle, deleteArticle } from '../../api/articles.api';
-import { formatDate } from '../../utils/formatDate';
-import useAlert   from '../../hooks/useAlert';
-import useConfirm from '../../hooks/useConfirm';
 import {
-  Plus, Search, Eye, Edit, Trash2, Send,
-  FileText, Filter, ChevronDown
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+
+import {
+  Link,
+  useParams,
+} from 'react-router-dom';
+
+import {
+  AnimatePresence,
+  motion,
+} from 'framer-motion';
+
+import {
+  getArticle,
+} from '../../api/articles.api';
+
+import {
+  getComments,
+} from '../../api/comments.api';
+
+import {
+  formatDate,
+} from '../../utils/formatDate';
+
+import {
+  ArrowLeft,
+  Clock,
+  Maximize2,
+  MessageCircle,
+  Mars,
+  Pause,
+  Play,
+  RotateCcw,
+  RotateCw,
+  Venus,
 } from 'lucide-react';
-import styles from './ArticlesPage.module.css';
 
-const STATUS_LABELS = {
-  draft:     { label: 'Borrador',  color: '#92400E', bg: '#FEF3C7' },
-  published: { label: 'Publicado', color: '#065F46', bg: '#D1FAE5' },
-  archived:  { label: 'Archivado', color: '#6B7280', bg: '#F3F4F6' },
-};
+import {
+  FaFacebookF,
+  FaGlobe,
+  FaInstagram,
+  FaLink,
+  FaTiktok,
+  FaYoutube,
+} from 'react-icons/fa6';
 
-export default function ArticlesPage() {
-  const navigate = useNavigate();
-  const alert    = useAlert();
-  const confirm  = useConfirm();
+import LikeButton from '../../components/common/LikeButton/LikeButton';
+import ShareButtons from '../../components/common/ShareButtons/ShareButtons';
+import Comments from '../../components/common/Comments/Comments';
+import ImageViewer from '../../components/common/ImageViewer/ImageViewer';
+import styles from './ArticlePage.module.css';
 
-  const [articles, setArticles]   = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [search, setSearch]       = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [page, setPage]           = useState(1);
-  const [total, setTotal]         = useState(0);
-  const LIMIT = 15;
 
-  const load = async () => {
-    setLoading(true);
-    try {
-const params = { page, limit: LIMIT, status: statusFilter };
-
-      const res = await getArticles(params);
-      setArticles(res.data || []);
-      setTotal(res.total || 0);
-    } catch {
-      alert.error('Error', 'No se pudieron cargar los artículos');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { load(); }, [page, statusFilter]);
-
-  // Filtro local por búsqueda
-  const filtered = articles.filter(a =>
-    a.title?.toLowerCase().includes(search.toLowerCase()) ||
-    a.collaborators?.name?.toLowerCase().includes(search.toLowerCase())
+const formatAudioTime = (value) => {
+  const totalSeconds = Math.max(
+    0,
+    Math.floor(Number(value) || 0)
   );
 
-const handlePublish = async (id) => {
-  const ok = await confirm({
-    type: 'info',
-    title: '¿Publicar este artículo?',
-    message: 'El artículo será visible para todos los lectores.',
-    confirmLabel: 'Sí, publicar',
-  });
-  if (!ok) return;
-    try {
-      await publishArticle(id);
-      alert.success('Publicado', 'El artículo ya está visible');
-      load();
-    } catch {
-      alert.error('Error', 'No se pudo publicar');
+  const minutes = Math.floor(
+    totalSeconds / 60
+  );
+
+  const seconds =
+    totalSeconds % 60;
+
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+};
+
+
+export default function ArticlePage() {
+  const { slug } = useParams();
+
+  const [article, setArticle] =
+    useState(null);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState(null);
+
+  const [
+    showComments,
+    setShowComments,
+  ] = useState(false);
+
+  const [
+    commentCount,
+    setCommentCount,
+  ] = useState(0);
+
+  const [viewer, setViewer] =
+    useState(null);
+
+  const [
+    selectedVoiceType,
+    setSelectedVoiceType,
+  ] = useState('female');
+
+  const [
+    isAudioPlaying,
+    setIsAudioPlaying,
+  ] = useState(false);
+
+  const [
+    audioCurrentTime,
+    setAudioCurrentTime,
+  ] = useState(0);
+
+  const [
+    audioDuration,
+    setAudioDuration,
+  ] = useState(0);
+
+  const [
+    playbackRate,
+    setPlaybackRate,
+  ] = useState(1);
+
+  const bodyRef = useRef(null);
+  const audioRef = useRef(null);
+
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+
+    getArticle(slug)
+      .then(setArticle)
+      .catch(() => setError(true))
+      .finally(() =>
+        setLoading(false)
+      );
+  }, [slug]);
+
+
+  const loadCommentCount =
+    useCallback(async () => {
+      if (!article?.id) return;
+
+      try {
+        const data =
+          await getComments(article.id);
+
+        const totalCount =
+          (data || []).reduce(
+            (accumulator, item) => {
+              return (
+                accumulator +
+                1 +
+                (item.replies?.length || 0)
+              );
+            },
+            0
+          );
+
+        setCommentCount(totalCount);
+      } catch {
+        // No bloqueamos el artículo.
+      }
+    }, [article?.id]);
+
+
+  useEffect(() => {
+    if (!article?.id) return undefined;
+
+    loadCommentCount();
+
+    const interval = setInterval(
+      loadCommentCount,
+      2500
+    );
+
+    return () =>
+      clearInterval(interval);
+  }, [
+    article?.id,
+    loadCommentCount,
+  ]);
+
+
+  useEffect(() => {
+    const bodyElement =
+      bodyRef.current;
+
+    if (!bodyElement || !article) {
+      return undefined;
+    }
+
+    const images = Array.from(
+      bodyElement.querySelectorAll('img')
+    );
+
+    const cleanups = [];
+
+    images.forEach(image => {
+      image.style.cursor = 'zoom-in';
+
+      const handleImageClick = event => {
+        const parentLink =
+          image.closest('a');
+
+        if (
+          parentLink &&
+          (
+            event.ctrlKey ||
+            event.metaKey
+          )
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        setViewer({
+          src:
+            image.currentSrc ||
+            image.src,
+
+          alt:
+            image.alt ||
+            '',
+        });
+      };
+
+      image.addEventListener(
+        'click',
+        handleImageClick
+      );
+
+      cleanups.push(() => {
+        image.removeEventListener(
+          'click',
+          handleImageClick
+        );
+      });
+    });
+
+    return () => {
+      cleanups.forEach(cleanup =>
+        cleanup()
+      );
+    };
+  }, [article]);
+
+
+  const maleAudioUrl =
+    article?.audio_male_url || '';
+
+  const femaleAudioUrl =
+    article?.audio_female_url || '';
+
+  const hasMaleAudio =
+    Boolean(maleAudioUrl);
+
+  const hasFemaleAudio =
+    Boolean(femaleAudioUrl);
+
+  const selectedAudioUrl =
+    selectedVoiceType === 'male'
+      ? maleAudioUrl
+      : femaleAudioUrl;
+
+  const storedDuration =
+    selectedVoiceType === 'male'
+      ? article?.audio_male_duration
+      : article?.audio_female_duration;
+
+
+  useEffect(() => {
+    if (
+      selectedVoiceType === 'female' &&
+      !hasFemaleAudio &&
+      hasMaleAudio
+    ) {
+      setSelectedVoiceType('male');
+    }
+
+    if (
+      selectedVoiceType === 'male' &&
+      !hasMaleAudio &&
+      hasFemaleAudio
+    ) {
+      setSelectedVoiceType('female');
+    }
+  }, [
+    hasFemaleAudio,
+    hasMaleAudio,
+    selectedVoiceType,
+  ]);
+
+
+  useEffect(() => {
+    const audio =
+      audioRef.current;
+
+    if (!audio) return;
+
+    audio.pause();
+    audio.currentTime = 0;
+    audio.playbackRate = playbackRate;
+
+    setIsAudioPlaying(false);
+    setAudioCurrentTime(0);
+    setAudioDuration(
+      Number(storedDuration) || 0
+    );
+
+    if (selectedAudioUrl) {
+      audio.load();
+    }
+  }, [
+    selectedAudioUrl,
+    storedDuration,
+    playbackRate,
+  ]);
+
+
+  useEffect(() => {
+    return () => {
+      const audio =
+        audioRef.current;
+
+      if (audio) {
+        audio.pause();
+      }
+    };
+  }, []);
+
+
+  const handleVoiceChange = (
+    nextVoice
+  ) => {
+    if (
+      nextVoice === 'male' &&
+      !hasMaleAudio
+    ) {
+      return;
+    }
+
+    if (
+      nextVoice === 'female' &&
+      !hasFemaleAudio
+    ) {
+      return;
+    }
+
+    setSelectedVoiceType(nextVoice);
+  };
+
+
+  const handlePlayToggle =
+    async () => {
+      const audio =
+        audioRef.current;
+
+      if (!audio || !selectedAudioUrl) {
+        return;
+      }
+
+      try {
+        if (audio.paused) {
+          await audio.play();
+        } else {
+          audio.pause();
+        }
+      } catch (playError) {
+        console.error(
+          'No se pudo reproducir el audio:',
+          playError
+        );
+      }
+    };
+
+
+  const seekAudio = (
+    secondsToMove
+  ) => {
+    const audio =
+      audioRef.current;
+
+    if (!audio) return;
+
+    const nextTime = Math.min(
+      audio.duration || audioDuration || 0,
+      Math.max(
+        0,
+        audio.currentTime +
+        secondsToMove
+      )
+    );
+
+    audio.currentTime = nextTime;
+    setAudioCurrentTime(nextTime);
+  };
+
+
+  const handleProgressChange = (
+    event
+  ) => {
+    const audio =
+      audioRef.current;
+
+    if (!audio) return;
+
+    const nextTime = Number(
+      event.target.value
+    );
+
+    audio.currentTime = nextTime;
+    setAudioCurrentTime(nextTime);
+  };
+
+
+  const handleRateChange = (
+    event
+  ) => {
+    const nextRate = Number(
+      event.target.value
+    );
+
+    setPlaybackRate(nextRate);
+
+    if (audioRef.current) {
+      audioRef.current.playbackRate =
+        nextRate;
     }
   };
 
-const handleDelete = async (id) => {
-  const ok = await confirm({
-    type: 'danger',
-    title: '¿Eliminar este artículo?',
-    message: 'Esta acción eliminará el artículo permanentemente.',
-    confirmLabel: 'Sí, eliminar',
-  });
 
-  if (!ok) return;
-
-  try {
-    await deleteArticle(id);
-
-    setArticles(prev => prev.filter(article => article.id !== id));
-    setTotal(prev => Math.max(0, prev - 1));
-
-    alert.success('Eliminado', 'El artículo fue eliminado correctamente');
-  } catch (error) {
-    console.error(error);
-    alert.error('Error', 'No se pudo eliminar el artículo');
+  if (loading) {
+    return <ArticleSkeleton />;
   }
-};
 
-  const totalPages = Math.ceil(total / LIMIT);
+  if (error || !article) {
+    return <NotFound />;
+  }
+
+
+  const collab =
+    article.collaborators;
+
+  const cats =
+    article.article_categories
+      ?.map(item => item.categories)
+      .filter(Boolean) || [];
+
+  const tags =
+    article.article_tags || [];
+
+  const hasAnyAudio =
+    hasMaleAudio ||
+    hasFemaleAudio;
+
+
+  const renderSocialIcon = (
+    network
+  ) => {
+    const key = String(
+      network || ''
+    ).toLowerCase();
+
+    if (key === 'instagram') {
+      return <FaInstagram size={26} />;
+    }
+
+    if (key === 'facebook') {
+      return <FaFacebookF size={24} />;
+    }
+
+    if (key === 'youtube') {
+      return <FaYoutube size={26} />;
+    }
+
+    if (key === 'tiktok') {
+      return <FaTiktok size={24} />;
+    }
+
+    if (key === 'website') {
+      return <FaGlobe size={24} />;
+    }
+
+    if (
+      key === 'twitter' ||
+      key === 'x'
+    ) {
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+        </svg>
+      );
+    }
+
+    return <FaLink size={24} />;
+  };
+
+
+  const socialEntries =
+    Object.entries(
+      collab?.social_links || {}
+    ).filter(([, url]) =>
+      Boolean(url)
+    );
+
 
   return (
     <div className={styles.page}>
-
-      {/* ── Header ────────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
+      <motion.header
+        initial={{
+          opacity: 0,
+          y: 20,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        transition={{
+          duration: 0.5,
+        }}
         className={styles.header}
       >
-        <div>
-          <div className={styles.headerLabel}>Contenido</div>
-          <h1 className={styles.headerTitle}>Artículos</h1>
-        </div>
-        <Link to="/admin/articulos/nuevo" className={styles.newBtn}>
-          <Plus size={16} />
-          Nuevo artículo
-        </Link>
-      </motion.div>
+        <div className={styles.headerInner}>
+          <Link
+            to="/"
+            className={styles.back}
+          >
+            <ArrowLeft size={14} />
+            Inicio
+          </Link>
 
-      {/* ── Filtros ───────────────────────────────────────── */}
+          {cats.length > 0 && (
+            <div
+              className={styles.categories}
+            >
+              {cats.map(
+                (category, index) => (
+                  <Link
+                    key={
+                      category.id ||
+                      category.slug ||
+                      `${category.name}-${index}`
+                    }
+                    to={`/categoria/${category.slug}`}
+                    className={styles.categoryTag}
+                  >
+                    {category.name}
+                  </Link>
+                )
+              )}
+            </div>
+          )}
+
+          <h1 className={styles.title}>
+            {article.title}
+          </h1>
+
+          {article.subtitle && (
+            <p className={styles.subtitle}>
+              {article.subtitle}
+            </p>
+          )}
+
+          <div className={styles.meta}>
+            {collab && (
+              <Link
+                to={`/colaborador/${collab.slug}`}
+                className={styles.author}
+              >
+                {collab.photo_url && (
+                  <img
+                    src={collab.photo_url}
+                    alt={collab.name}
+                    className={styles.authorAvatar}
+                  />
+                )}
+
+                <span>{collab.name}</span>
+
+                {collab.section_name && (
+                  <span
+                    className={styles.authorSection}
+                  >
+                    · {collab.section_name}
+                  </span>
+                )}
+              </Link>
+            )}
+
+            <div className={styles.metaRight}>
+              <span
+                className={styles.publishDate}
+              >
+                {formatDate(
+                  article.published_at
+                )}
+              </span>
+
+              {hasAnyAudio && (
+                <>
+                  <span className={styles.dot}>
+                    ·
+                  </span>
+
+                  <div
+                    className={styles.speechControls}
+                  >
+                    <button
+                      type="button"
+                      className={`
+                        ${styles.speechPlayButton}
+                        ${
+                          isAudioPlaying
+                            ? styles.speechPlayButtonActive
+                            : ''
+                        }
+                      `}
+                      onClick={handlePlayToggle}
+                      title={
+                        isAudioPlaying
+                          ? 'Pausar'
+                          : 'Escuchar artículo'
+                      }
+                      aria-label={
+                        isAudioPlaying
+                          ? 'Pausar narración'
+                          : 'Reproducir narración'
+                      }
+                    >
+                      {isAudioPlaying ? (
+                        <Pause size={13} />
+                      ) : (
+                        <Play size={13} />
+                      )}
+                    </button>
+
+                    <div
+                      className={styles.speechVoiceButtons}
+                      role="group"
+                      aria-label="Seleccionar voz"
+                    >
+                      <button
+                        type="button"
+                        className={`
+                          ${styles.speechVoiceButton}
+                          ${
+                            selectedVoiceType === 'male'
+                              ? styles.speechVoiceButtonActive
+                              : ''
+                          }
+                        `}
+                        onClick={() =>
+                          handleVoiceChange('male')
+                        }
+                        disabled={!hasMaleAudio}
+                        title={
+                          hasMaleAudio
+                            ? 'Voz de Jorge'
+                            : 'Voz masculina no disponible'
+                        }
+                      >
+                        <Mars size={15} />
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`
+                          ${styles.speechVoiceButton}
+                          ${
+                            selectedVoiceType === 'female'
+                              ? styles.speechVoiceButtonActive
+                              : ''
+                          }
+                        `}
+                        onClick={() =>
+                          handleVoiceChange('female')
+                        }
+                        disabled={!hasFemaleAudio}
+                        title={
+                          hasFemaleAudio
+                            ? 'Voz de Dalia'
+                            : 'Voz femenina no disponible'
+                        }
+                      >
+                        <Venus size={15} />
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      className={styles.audioSkipButton}
+                      onClick={() =>
+                        seekAudio(-10)
+                      }
+                      title="Retroceder 10 segundos"
+                    >
+                      <RotateCcw size={13} />
+                    </button>
+
+                    <button
+                      type="button"
+                      className={styles.audioSkipButton}
+                      onClick={() =>
+                        seekAudio(10)
+                      }
+                      title="Adelantar 10 segundos"
+                    >
+                      <RotateCw size={13} />
+                    </button>
+
+                    <div
+                      className={styles.speechDuration}
+                    >
+                      <Clock size={12} />
+
+                      <span>
+                        {formatAudioTime(
+                          audioCurrentTime
+                        )}
+                        {' / '}
+                        {formatAudioTime(
+                          audioDuration ||
+                          storedDuration
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {hasAnyAudio && (
+            <div className={styles.audioProgressRow}>
+              <input
+                type="range"
+                min="0"
+                max={
+                  audioDuration ||
+                  storedDuration ||
+                  0
+                }
+                step="0.1"
+                value={Math.min(
+                  audioCurrentTime,
+                  audioDuration ||
+                  storedDuration ||
+                  0
+                )}
+                onChange={handleProgressChange}
+                className={styles.audioProgress}
+                aria-label="Posición de la narración"
+              />
+
+              <select
+                value={playbackRate}
+                onChange={handleRateChange}
+                className={styles.audioRate}
+                aria-label="Velocidad de reproducción"
+              >
+                <option value="0.75">
+                  0.75×
+                </option>
+
+                <option value="1">
+                  1×
+                </option>
+
+                <option value="1.25">
+                  1.25×
+                </option>
+
+                <option value="1.5">
+                  1.5×
+                </option>
+              </select>
+            </div>
+          )}
+
+          <audio
+            ref={audioRef}
+            src={selectedAudioUrl || undefined}
+            preload="metadata"
+            onPlay={() =>
+              setIsAudioPlaying(true)
+            }
+            onPause={() =>
+              setIsAudioPlaying(false)
+            }
+            onEnded={() => {
+              setIsAudioPlaying(false);
+              setAudioCurrentTime(0);
+            }}
+            onTimeUpdate={event =>
+              setAudioCurrentTime(
+                event.currentTarget.currentTime
+              )
+            }
+            onLoadedMetadata={event => {
+              const duration =
+                event.currentTarget.duration;
+
+              if (
+                Number.isFinite(duration)
+              ) {
+                setAudioDuration(duration);
+              }
+
+              event.currentTarget.playbackRate =
+                playbackRate;
+            }}
+          />
+        </div>
+      </motion.header>
+
+      <div className={styles.meander} />
+
+      {article.cover_image_url && (
+        <motion.div
+          initial={{
+            opacity: 0,
+            scale: 1.02,
+          }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+          }}
+          transition={{
+            duration: 0.6,
+            delay: 0.1,
+          }}
+          className={styles.coverWrap}
+          onClick={() =>
+            setViewer({
+              src: article.cover_image_url,
+              alt: article.title,
+            })
+          }
+        >
+          <img
+            src={article.cover_image_url}
+            alt={article.title}
+            className={styles.cover}
+          />
+
+          <div
+            className={styles.coverExpand}
+          >
+            <Maximize2 size={18} />
+          </div>
+        </motion.div>
+      )}
+
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
-        className={styles.filters}
+        initial={{
+          opacity: 0,
+          y: 20,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        transition={{
+          duration: 0.5,
+          delay: 0.2,
+        }}
+        className={styles.article}
       >
-        {/* Búsqueda */}
-        <div className={styles.searchWrap}>
-          <Search size={15} className={styles.searchIcon} />
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar por título o autor..."
-            className={styles.searchInput}
+        {article.content_html && (
+          <div
+            ref={bodyRef}
+            className={styles.body}
+            dangerouslySetInnerHTML={{
+              __html:
+                article.content_html,
+            }}
+          />
+        )}
+
+        {tags.length > 0 && (
+          <div className={styles.tags}>
+            {tags.map((tag, index) => (
+              <span
+                key={
+                  tag.id ||
+                  `${tag.tag}-${tag.tag_type || 'tag'}-${index}`
+                }
+                className={styles.tag}
+              >
+                {tag.tag_type && (
+                  <span
+                    className={styles.tagType}
+                  >
+                    {tag.tag_type}
+                  </span>
+                )}
+
+                {tag.tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {collab && (
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: 16,
+            }}
+            whileInView={{
+              opacity: 1,
+              y: 0,
+            }}
+            viewport={{
+              once: true,
+            }}
+            transition={{
+              duration: 0.4,
+            }}
+            className={styles.authorCard}
+          >
+            <Link
+              to={`/colaborador/${collab.slug}`}
+              className={styles.authorCardMain}
+            >
+              <div
+                className={styles.authorCardAvatarWrap}
+              >
+                {collab.photo_url ? (
+                  <img
+                    src={collab.photo_url}
+                    alt={collab.name}
+                    className={styles.authorCardAvatar}
+                  />
+                ) : (
+                  <div
+                    className={styles.authorCardAvatarFallback}
+                  >
+                    {collab.name
+                      ?.[0]
+                      ?.toUpperCase()}
+                  </div>
+                )}
+              </div>
+
+              <div
+                className={styles.authorCardInfo}
+              >
+                <div
+                  className={styles.authorCardLabel}
+                >
+                  Sobre el autor
+                </div>
+
+                <div
+                  className={styles.authorCardName}
+                >
+                  {collab.name}
+                </div>
+
+                {collab.section_name && (
+                  <div
+                    className={styles.authorCardSection}
+                  >
+                    {collab.section_name}
+                  </div>
+                )}
+
+                {collab.bio && (
+                  <p
+                    className={styles.authorCardBio}
+                  >
+                    {collab.bio}
+                  </p>
+                )}
+              </div>
+            </Link>
+
+            {socialEntries.length > 0 && (
+              <div
+                className={styles.authorSocials}
+              >
+                {socialEntries.map(
+                  ([network, url], index) => (
+                    <a
+                      key={`${network}-${index}`}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.socialIconLink}
+                      aria-label={network}
+                      title={network}
+                      onClick={event =>
+                        event.stopPropagation()
+                      }
+                    >
+                      {renderSocialIcon(network)}
+                    </a>
+                  )
+                )}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        <div className={styles.actionsBar}>
+          <LikeButton
+            articleId={article.id}
+          />
+
+          <button
+            className={`
+              ${styles.actionIcon}
+              ${
+                showComments
+                  ? styles.actionIconActive
+                  : ''
+              }
+            `}
+            onClick={() =>
+              setShowComments(previous =>
+                !previous
+              )
+            }
+            title="Comentarios"
+          >
+            <span
+              className={styles.actionIconWrap}
+            >
+              <MessageCircle size={22} />
+            </span>
+
+            <span
+              className={styles.actionCount}
+            >
+              {commentCount}
+            </span>
+          </button>
+
+          <ShareButtons
+            article={article}
           />
         </div>
 
-        {/* Filtro de estado */}
-        <div className={styles.filterWrap}>
-          <Filter size={14} />
-          <select
-            value={statusFilter}
-            onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-            className={styles.filterSelect}
-          >
-            <option value="all">Todos los estados</option>
-            <option value="draft">Borradores</option>
-            <option value="published">Publicados</option>
-            <option value="archived">Archivados</option>
-          </select>
-          <ChevronDown size={13} />
-        </div>
-
-        <div className={styles.totalCount}>
-          {total} artículo{total !== 1 ? 's' : ''}
-        </div>
+        <AnimatePresence>
+          {showComments && (
+            <motion.div
+              initial={{
+                opacity: 0,
+                height: 0,
+              }}
+              animate={{
+                opacity: 1,
+                height: 'auto',
+              }}
+              exit={{
+                opacity: 0,
+                height: 0,
+              }}
+              transition={{
+                duration: 0.3,
+                ease: 'easeInOut',
+              }}
+              style={{
+                overflow: 'hidden',
+              }}
+            >
+              <Comments
+                articleId={article.id}
+                onCountChange={
+                  setCommentCount
+                }
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
-      {/* ── Tabla ─────────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
-        className={styles.tableWrap}
+      {viewer && (
+        <ImageViewer
+          src={viewer.src}
+          alt={viewer.alt}
+          onClose={() =>
+            setViewer(null)
+          }
+        />
+      )}
+    </div>
+  );
+}
+
+
+function ArticleSkeleton() {
+  return (
+    <div
+      style={{
+        padding: '48px 24px',
+        maxWidth: 760,
+        margin: '0 auto',
+      }}
+    >
+      {[300, 500, 60, 400, 400, 200]
+        .map((width, index) => (
+          <div
+            key={index}
+            style={{
+              height:
+                index === 1
+                  ? 48
+                  : 20,
+
+              width:
+                `${Math.min(width, 700)}px`,
+
+              maxWidth: '100%',
+
+              background:
+                'var(--color-gray-200)',
+
+              borderRadius: 4,
+              marginBottom: 16,
+            }}
+          />
+        ))}
+    </div>
+  );
+}
+
+
+function NotFound() {
+  return (
+    <div
+      style={{
+        textAlign: 'center',
+        padding: '96px 24px',
+      }}
+    >
+      <div
+        style={{
+          fontFamily:
+            'var(--font-display)',
+
+          fontSize: 64,
+
+          color:
+            'var(--color-gray-300)',
+        }}
       >
-        {loading ? (
-          <TableSkeleton />
-        ) : filtered.length === 0 ? (
-          <EmptyState search={search} />
-        ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Artículo</th>
-                <th>Autor</th>
-                <th>Secciones</th>
-                <th>Estado</th>
-                <th>Fecha</th>
-                <th>Vistas</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(art => {
-                const s = STATUS_LABELS[art.status] || STATUS_LABELS.draft;
-                const cats = art.article_categories?.map(ac => ac.categories?.name).filter(Boolean) || [];
+        Λ
+      </div>
 
-                return (
-                  <tr key={art.id}>
-                    {/* Artículo */}
-                    <td className={styles.tdArticle}>
-                      <div className={styles.articleInfo}>
-                        {art.cover_image_url ? (
-                          <img src={art.cover_image_url} alt="" className={styles.articleThumb} />
-                        ) : (
-                          <div className={styles.articleThumbEmpty}>
-                            <FileText size={14} />
-                          </div>
-                        )}
-                        <div>
-                          <div className={styles.articleTitle}>{art.title}</div>
-                          {art.subtitle && (
-                            <div className={styles.articleSubtitle}>{art.subtitle}</div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
+      <h2
+        style={{
+          fontFamily:
+            'var(--font-display)',
 
-                    {/* Autor */}
-                    <td className={styles.tdMuted}>
-                      {art.collaborators?.name || '—'}
-                    </td>
+          fontSize: 28,
+          marginBottom: 16,
+        }}
+      >
+        Artículo no encontrado
+      </h2>
 
-                    {/* Secciones */}
-                    <td>
-                      <div className={styles.catTags}>
-                        {cats.slice(0, 2).map(c => (
-                          <span key={c} className={styles.catTag}>{c}</span>
-                        ))}
-                        {cats.length > 2 && (
-                          <span className={styles.catTagMore}>+{cats.length - 2}</span>
-                        )}
-                      </div>
-                    </td>
+      <Link
+        to="/"
+        style={{
+          color:
+            'var(--color-accent)',
 
-                    {/* Estado */}
-                    <td>
-                      <span
-                        className={styles.statusBadge}
-                        style={{ background: s.bg, color: s.color }}
-                      >
-                        {s.label}
-                      </span>
-                    </td>
-
-                    {/* Fecha */}
-                    <td className={styles.tdMuted}>
-                      {art.published_at
-                        ? formatDate(art.published_at)
-                        : formatDate(art.created_at)
-                      }
-                    </td>
-
-                    {/* Vistas */}
-                    <td className={styles.tdViews}>
-                      <div className={styles.viewsInline}>
-                        <Eye size={12} />
-                        <span>{art.views || 0}</span>
-                      </div>
-                    </td>
-
-                    {/* Acciones */}
-                    <td>
-                      <div className={styles.actions}>
-                        {/* Ver en sitio */}
-                        {art.status === 'published' && (
-                          <a
-                            href={`/articulos/${art.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.actionBtn}
-                            title="Ver en sitio"
-                          >
-                            <Eye size={14} />
-                          </a>
-                        )}
-
-                        {/* Editar */}
-                        <button
-                          onClick={() => navigate(`/admin/articulos/editar/${art.id}`)}
-                          className={styles.actionBtn}
-                          title="Editar"
-                        >
-                          <Edit size={14} />
-                        </button>
-
-                        {/* Publicar (solo borradores) */}
-                        {art.status === 'draft' && (
-                          <button
-                            onClick={() => handlePublish(art.id)}
-                            className={`${styles.actionBtn} ${styles.actionPublish}`}
-                            title="Publicar"
-                          >
-                            <Send size={14} />
-                          </button>
-                        )}
-
-                      {/* Eliminar */}
-                      <button
-                        onClick={() => handleDelete(art.id)}
-                        className={`${styles.actionBtn} ${styles.actionDelete}`}
-                        title="Eliminar"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </motion.div>
-
-      {/* ── Paginación ────────────────────────────────────── */}
-      {totalPages > 1 && (
-        <div className={styles.pagination}>
-          <button
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className={styles.pageBtn}
-          >
-            ← Anterior
-          </button>
-          <span className={styles.pageInfo}>
-            Página {page} de {totalPages}
-          </span>
-          <button
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className={styles.pageBtn}
-          >
-            Siguiente →
-          </button>
-        </div>
-      )}
-
-    </div>
-  );
-}
-
-function TableSkeleton() {
-  return (
-    <div className={styles.skeleton}>
-      {[1,2,3,4,5].map(i => (
-        <div key={i} className={styles.skeletonRow} />
-      ))}
-    </div>
-  );
-}
-
-function EmptyState({ search }) {
-  return (
-    <div className={styles.empty}>
-      <span className={styles.emptyIcon}>✦</span>
-      <h3>
-        {search
-          ? `Sin resultados para "${search}"`
-          : 'No hay artículos todavía'
-        }
-      </h3>
-      <p>
-        {search
-          ? 'Intenta con otro término de búsqueda'
-          : 'Crea el primer artículo de la revista'
-        }
-      </p>
-      {!search && (
-        <Link to="/admin/articulos/nuevo" className={styles.emptyBtn}>
-          <Plus size={14} /> Nuevo artículo
-        </Link>
-      )}
+          fontFamily:
+            'var(--font-sans)',
+        }}
+      >
+        Volver al inicio
+      </Link>
     </div>
   );
 }

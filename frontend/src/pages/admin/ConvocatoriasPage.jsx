@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  getConvocatorias, createConvocatoria, updateConvocatoria, deleteConvocatoria
+  getConvocatorias,
+  createConvocatoria,
+  updateConvocatoria,
+  openConvocatoria,
+  closeConvocatoria,
+  deleteConvocatoria,
 } from '../../api/convocatorias.api';
 import { uploadFile } from '../../api/admin.api';
 import useAlert   from '../../hooks/useAlert';
@@ -9,8 +14,20 @@ import useConfirm from '../../hooks/useConfirm';
 import { formatDate } from '../../utils/formatDate';
 import { Link } from 'react-router-dom';
 import {
-  Plus, X, Check, Eye, EyeOff, Upload, Trash2,
-  Edit, Calendar, Users, FileText, Image as ImgIcon, Inbox
+  Plus,
+  X,
+  Check,
+  Upload,
+  Trash2,
+  Edit,
+  Calendar,
+  Users,
+  FileText,
+  Image as ImgIcon,
+  Inbox,
+  Lock,
+  Play,
+  Clock3,
 } from 'lucide-react';
 import styles from './ConvocatoriasPage.module.css';
 
@@ -29,14 +46,107 @@ const EMPTY_FORM = {
   requirements: '',
   prizes: '',
   categories: [],
-  contact_email: 'contactoagorarevista@gmail.com',
+  contact_email:
+    'contactoagorarevista@gmail.com',
+
+  opens_at: '',
   closes_at: '',
+
   max_submissions: '',
   max_file_size_mb: 10,
   cover_image_url: '',
   gallery_images: [],
   is_active: true,
 };
+
+function toDateTimeInputValue(
+  dateValue
+) {
+  if (!dateValue) {
+    return '';
+  }
+
+  const date = new Date(dateValue);
+
+  if (
+    Number.isNaN(date.getTime())
+  ) {
+    return '';
+  }
+
+  const pad = value =>
+    String(value).padStart(2, '0');
+
+  return [
+    date.getFullYear(),
+    '-',
+    pad(date.getMonth() + 1),
+    '-',
+    pad(date.getDate()),
+    'T',
+    pad(date.getHours()),
+    ':',
+    pad(date.getMinutes()),
+  ].join('');
+}
+
+function toIsoDateOrNull(
+  dateValue
+) {
+  if (!dateValue) {
+    return null;
+  }
+
+  const date = new Date(dateValue);
+
+  if (
+    Number.isNaN(date.getTime())
+  ) {
+    return null;
+  }
+
+  return date.toISOString();
+}
+
+function getConvocatoriaStatus(
+  convocatoria
+) {
+  const now = new Date();
+
+  const opensAt =
+    convocatoria.opens_at
+      ? new Date(
+          convocatoria.opens_at
+        )
+      : null;
+
+  const closesAt =
+    convocatoria.closes_at
+      ? new Date(
+          convocatoria.closes_at
+        )
+      : null;
+
+  if (!convocatoria.is_active) {
+    return 'closed';
+  }
+
+  if (
+    opensAt &&
+    opensAt > now
+  ) {
+    return 'scheduled';
+  }
+
+  if (
+    closesAt &&
+    closesAt <= now
+  ) {
+    return 'closed';
+  }
+
+  return 'open';
+}
 
 export default function ConvocatoriasPage() {
   const alert   = useAlert();
@@ -78,9 +188,22 @@ export default function ConvocatoriasPage() {
       requirements:    c.requirements || '',
       prizes:          c.prizes || '',
       categories:      c.categories || [],
-      contact_email:   c.contact_email || 'contactoagorarevista@gmail.com',
-      closes_at:       c.closes_at ? c.closes_at.split('T')[0] : '',
-      max_submissions: c.max_submissions || '',
+      contact_email:
+        c.contact_email ||
+        'contactoagorarevista@gmail.com',
+
+      opens_at:
+        toDateTimeInputValue(
+          c.opens_at
+        ),
+
+      closes_at:
+        toDateTimeInputValue(
+          c.closes_at
+        ),
+
+      max_submissions:
+        c.max_submissions || '',
       max_file_size_mb: c.max_file_size_mb || 10,
       cover_image_url: c.cover_image_url || '',
       gallery_images:  c.gallery_images || [],
@@ -97,18 +220,66 @@ export default function ConvocatoriasPage() {
     }
     setSaving(true);
     try {
+      const opensAt =
+        toIsoDateOrNull(
+          form.opens_at
+        );
+
+      const closesAt =
+        toIsoDateOrNull(
+          form.closes_at
+        );
+
+      if (
+        opensAt &&
+        closesAt &&
+        new Date(opensAt) >=
+          new Date(closesAt)
+      ) {
+        alert.warning(
+          'Fechas incorrectas',
+          'La fecha de cierre debe ser posterior a la fecha de apertura'
+        );
+
+        setSaving(false);
+        return;
+      }
+
       const payload = {
         ...form,
-        closes_at: form.closes_at ? new Date(form.closes_at + 'T23:59:59').toISOString() : null,
-        max_submissions: form.max_submissions ? parseInt(form.max_submissions) : null,
-        max_file_size_mb: parseInt(form.max_file_size_mb) || 10,
+
+        opens_at:
+          opensAt,
+
+        closes_at:
+          closesAt,
+
+        max_submissions:
+          form.max_submissions
+            ? parseInt(
+                form.max_submissions,
+                10
+              )
+            : null,
+
+        max_file_size_mb:
+          parseInt(
+            form.max_file_size_mb,
+            10
+          ) || 10,
       };
       if (editing) {
         await updateConvocatoria(editing, payload);
         alert.success('Actualizada', 'Convocatoria actualizada correctamente');
       } else {
         await createConvocatoria(payload);
-        alert.success('Creada', 'Convocatoria creada y publicada');
+        alert.success(
+          'Creada',
+          opensAt &&
+          new Date(opensAt) > new Date()
+            ? 'Convocatoria programada correctamente'
+            : 'Convocatoria creada y publicada'
+        );
       }
       setShowForm(false);
       load();
@@ -119,27 +290,108 @@ export default function ConvocatoriasPage() {
     }
   };
 
-  const handleToggle = async (c) => {
+  const handleOpen = async convocatoria => {
+    const ok = await confirm({
+      type: 'success',
+      title: '¿Abrir esta convocatoria?',
+      message:
+        `"${convocatoria.title}" quedará visible inmediatamente y podrá recibir envíos.`,
+      confirmLabel: 'Sí, abrir',
+    });
+
+    if (!ok) {
+      return;
+    }
+
     try {
-      await updateConvocatoria(c.id, { is_active: !c.is_active });
-      alert.success(c.is_active ? 'Cerrada' : 'Abierta', `Convocatoria actualizada`);
-      load();
-    } catch { alert.error('Error', 'No se pudo actualizar'); }
+      await openConvocatoria(
+        convocatoria.id
+      );
+
+      alert.success(
+        'Abierta',
+        'La convocatoria ya está recibiendo envíos'
+      );
+
+      await load();
+    } catch (error) {
+      alert.error(
+        'Error',
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        'No se pudo abrir la convocatoria'
+      );
+    }
   };
 
-const handleDelete = async (c) => {
-  const ok = await confirm({
-    type: 'error',
-    title: '¿Cerrar esta convocatoria?',
-    message: `"${c.title}" se cerrará permanentemente y no recibirá más envíos.`,
-    confirmLabel: 'Sí, cerrar',
-  });
-  if (!ok) return;
+  const handleClose = async convocatoria => {
+    const ok = await confirm({
+      type: 'warning',
+      title: '¿Cerrar esta convocatoria?',
+      message:
+        `"${convocatoria.title}" dejará de recibir envíos, pero permanecerá guardada en el panel.`,
+      confirmLabel: 'Sí, cerrar',
+    });
+
+    if (!ok) {
+      return;
+    }
+
     try {
-      await deleteConvocatoria(c.id);
-      alert.success('Cerrada', 'Convocatoria cerrada');
-      load();
-    } catch { alert.error('Error', 'No se pudo cerrar'); }
+      await closeConvocatoria(
+        convocatoria.id
+      );
+
+      alert.success(
+        'Cerrada',
+        'La convocatoria dejó de recibir envíos'
+      );
+
+      await load();
+    } catch (error) {
+      alert.error(
+        'Error',
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        'No se pudo cerrar la convocatoria'
+      );
+    }
+  };
+
+  const handleDelete = async convocatoria => {
+    const ok = await confirm({
+      type: 'error',
+      title:
+        '¿Eliminar definitivamente esta convocatoria?',
+      message:
+        `"${convocatoria.title}" y todos sus envíos asociados serán eliminados. Esta acción no se puede deshacer.`,
+      confirmLabel:
+        'Sí, eliminar',
+    });
+
+    if (!ok) {
+      return;
+    }
+
+    try {
+      await deleteConvocatoria(
+        convocatoria.id
+      );
+
+      alert.success(
+        'Eliminada',
+        'La convocatoria fue eliminada definitivamente'
+      );
+
+      await load();
+    } catch (error) {
+      alert.error(
+        'Error',
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        'No se pudo eliminar la convocatoria'
+      );
+    }
   };
 
   const handleCoverUpload = async (e) => {
@@ -174,10 +426,26 @@ const handleDelete = async (c) => {
     const arr = form.categories || [];
     setF('categories', arr.includes(cat) ? arr.filter(c => c !== cat) : [...arr, cat]);
   };
+  const scheduled = convs.filter(
+    convocatoria =>
+      getConvocatoriaStatus(
+        convocatoria
+      ) === 'scheduled'
+  );
 
-  const now = new Date();
-  const active = convs.filter(c => c.is_active && (!c.closes_at || new Date(c.closes_at) > now));
-  const closed = convs.filter(c => !c.is_active || (c.closes_at && new Date(c.closes_at) <= now));
+  const active = convs.filter(
+    convocatoria =>
+      getConvocatoriaStatus(
+        convocatoria
+      ) === 'open'
+  );
+
+  const closed = convs.filter(
+    convocatoria =>
+      getConvocatoriaStatus(
+        convocatoria
+      ) === 'closed'
+  );
 
   return (
     <div className={styles.page}>
@@ -391,14 +659,49 @@ const handleDelete = async (c) => {
                       </div>
 
                       <div className={styles.formGroup}>
-                        <label className={styles.label}>Fecha límite de recepción</label>
+                        <label className={styles.label}>
+                          Apertura programada
+                        </label>
+
                         <input
-                          type="date"
-                          value={form.closes_at}
-                          onChange={e => setF('closes_at', e.target.value)}
+                          type="datetime-local"
+                          value={form.opens_at}
+                          onChange={event =>
+                            setF(
+                              'opens_at',
+                              event.target.value
+                            )
+                          }
                           className={styles.input}
                         />
-                        <div className={styles.fieldHint}>La convocatoria se cerrará automáticamente en esta fecha</div>
+
+                        <div className={styles.fieldHint}>
+                          Déjalo vacío para abrirla inmediatamente
+                          al publicarla.
+                        </div>
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label className={styles.label}>
+                          Cierre programado
+                        </label>
+
+                        <input
+                          type="datetime-local"
+                          value={form.closes_at}
+                          onChange={event =>
+                            setF(
+                              'closes_at',
+                              event.target.value
+                            )
+                          }
+                          className={styles.input}
+                        />
+
+                        <div className={styles.fieldHint}>
+                          Dejará de recibir envíos automáticamente
+                          en la fecha y hora indicadas.
+                        </div>
                       </div>
 
                       <div className={styles.formGroup}>
@@ -470,12 +773,44 @@ const handleDelete = async (c) => {
       {/* ── Lista activas ────────────────────────────────── */}
       {loading ? <Skeleton /> : (
         <>
+          {scheduled.length > 0 && (
+            <div className={styles.section}>
+              <div className={styles.sectionLabel}>
+                Programadas
+              </div>
+
+              <div className={styles.list}>
+                {scheduled.map((convocatoria, index) => (
+                  <ConvRow
+                    key={convocatoria.id}
+                    conv={convocatoria}
+                    index={index}
+                    status="scheduled"
+                    onEdit={openEdit}
+                    onOpen={handleOpen}
+                    onClose={handleClose}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {active.length > 0 && (
             <div className={styles.section}>
               <div className={styles.sectionLabel}>Abiertas</div>
               <div className={styles.list}>
                 {active.map((c, i) => (
-                  <ConvRow key={c.id} conv={c} index={i} onEdit={openEdit} onToggle={handleToggle} onDelete={handleDelete} />
+                  <ConvRow
+                    key={c.id}
+                    conv={c}
+                    index={i}
+                    status="open"
+                    onEdit={openEdit}
+                    onOpen={handleOpen}
+                    onClose={handleClose}
+                    onDelete={handleDelete}
+                  />
                 ))}
               </div>
             </div>
@@ -486,7 +821,16 @@ const handleDelete = async (c) => {
               <div className={styles.sectionLabel}>Cerradas</div>
               <div className={styles.list}>
                 {closed.map((c, i) => (
-                  <ConvRow key={c.id} conv={c} index={i} onEdit={openEdit} onToggle={handleToggle} onDelete={handleDelete} closed />
+                  <ConvRow
+                    key={c.id}
+                    conv={c}
+                    index={i}
+                    status="closed"
+                    onEdit={openEdit}
+                    onOpen={handleOpen}
+                    onClose={handleClose}
+                    onDelete={handleDelete}
+                  />
                 ))}
               </div>
             </div>
@@ -508,64 +852,244 @@ const handleDelete = async (c) => {
 }
 
 /* ── Fila de convocatoria ──────────────────────────────── */
-function ConvRow({ conv: c, index, onEdit, onToggle, onDelete, closed }) {
-  const now      = new Date();
-  const deadline = c.closes_at ? new Date(c.closes_at) : null;
-  const isPast   = deadline && deadline < now;
-  const daysLeft = deadline && !isPast ? Math.ceil((deadline - now) / (1000 * 60 * 60 * 24)) : null;
+function ConvRow({
+  conv: convocatoria,
+  index,
+  status,
+  onEdit,
+  onOpen,
+  onClose,
+  onDelete,
+}) {
+  const now = new Date();
+
+  const opensAt =
+    convocatoria.opens_at
+      ? new Date(
+          convocatoria.opens_at
+        )
+      : null;
+
+  const closesAt =
+    convocatoria.closes_at
+      ? new Date(
+          convocatoria.closes_at
+        )
+      : null;
+
+  const daysLeft =
+    closesAt &&
+    closesAt > now
+      ? Math.ceil(
+          (
+            closesAt.getTime() -
+            now.getTime()
+          ) /
+          (
+            1000 *
+            60 *
+            60 *
+            24
+          )
+        )
+      : null;
+
+  const isClosed =
+    status === 'closed';
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04 }}
-      className={`${styles.convRow} ${closed ? styles.convRowClosed : ''}`}
+      initial={{
+        opacity: 0,
+        y: 10,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      transition={{
+        delay: index * 0.04,
+      }}
+      className={`
+        ${styles.convRow}
+        ${isClosed
+          ? styles.convRowClosed
+          : ''}
+      `}
     >
-      {c.cover_image_url && (
-        <div className={styles.convRowImg}>
-          <img src={c.cover_image_url} alt={c.title} />
-        </div>
-      )}
+      <div className={styles.convRowImg}>
+        {convocatoria.cover_image_url ? (
+          <img
+            src={
+              convocatoria.cover_image_url
+            }
+            alt={convocatoria.title}
+          />
+        ) : (
+          <div className={styles.convRowImgEmpty}>
+            <ImgIcon size={22} />
+          </div>
+        )}
+      </div>
 
       <div className={styles.convRowInfo}>
-        <div className={styles.convRowTitle}>{c.title}</div>
-        {c.subtitle && <div className={styles.convRowSubtitle}>{c.subtitle}</div>}
+        <div className={styles.convRowTitle}>
+          {convocatoria.title}
+        </div>
+
+        {convocatoria.subtitle && (
+          <div className={styles.convRowSubtitle}>
+            {convocatoria.subtitle}
+          </div>
+        )}
+
         <div className={styles.convRowMeta}>
-          {deadline && (
-            <span className={`${styles.metaPill} ${isPast ? styles.metaPillDead : styles.metaPillOpen}`}>
+          {status === 'scheduled' && opensAt && (
+            <span
+              className={`
+                ${styles.metaPill}
+                ${styles.metaPillScheduled}
+              `}
+            >
+              <Clock3 size={11} />
+
+              Abre el{' '}
+              {formatDate(
+                convocatoria.opens_at
+              )}
+            </span>
+          )}
+
+          {status === 'open' && closesAt && (
+            <span
+              className={`
+                ${styles.metaPill}
+                ${styles.metaPillOpen}
+              `}
+            >
               <Calendar size={11} />
-              {isPast ? `Cerró el ${formatDate(c.closes_at)}` : `Cierra en ${daysLeft} día${daysLeft !== 1 ? 's' : ''}`}
+
+              {daysLeft !== null
+                ? `Cierra en ${daysLeft} ${
+                    daysLeft === 1
+                      ? 'día'
+                      : 'días'
+                  }`
+                : `Cierra el ${formatDate(
+                    convocatoria.closes_at
+                  )}`}
             </span>
           )}
-          {c.max_submissions && (
-            <span className={styles.metaPill}>
-              <Users size={11} /> Cupo: {c.max_submissions}
+
+          {status === 'open' && !closesAt && (
+            <span
+              className={`
+                ${styles.metaPill}
+                ${styles.metaPillOpen}
+              `}
+            >
+              Sin fecha de cierre
             </span>
           )}
-          {c.categories?.length > 0 && (
+
+          {status === 'closed' && (
+            <span
+              className={`
+                ${styles.metaPill}
+                ${styles.metaPillDead}
+              `}
+            >
+              <Lock size={11} />
+
+              Convocatoria cerrada
+            </span>
+          )}
+
+          {convocatoria.max_submissions && (
             <span className={styles.metaPill}>
-              <FileText size={11} /> {c.categories.length} categoría{c.categories.length !== 1 ? 's' : ''}
+              <Users size={11} />
+
+              Cupo:{' '}
+              {convocatoria.max_submissions}
+            </span>
+          )}
+
+          {convocatoria.categories?.length > 0 && (
+            <span className={styles.metaPill}>
+              <FileText size={11} />
+
+              {convocatoria.categories.length}{' '}
+              {convocatoria.categories.length === 1
+                ? 'categoría'
+                : 'categorías'}
             </span>
           )}
         </div>
       </div>
 
-<div className={styles.convRowActions}>
-  <Link to={`/admin/convocatorias/${c.id}/envios`} className={styles.actionBtn} title="Ver envíos">
-    <Inbox size={14} />
-  </Link>
-  <button className={styles.actionBtn} onClick={() => onEdit(c)} title="Editar"><Edit size={14} /></button>
-  <button className={styles.actionBtn} onClick={() => onToggle(c)} title={c.is_active ? 'Cerrar' : 'Abrir'}>
-    {c.is_active ? <EyeOff size={14} /> : <Eye size={14} />}
-  </button>
-  <button className={`${styles.actionBtn} ${styles.actionDanger}`} onClick={() => onDelete(c)} title="Eliminar">
-    <Trash2 size={14} />
-  </button>
-</div>
+      <div className={styles.convRowActions}>
+        <Link
+          to={
+            `/admin/convocatorias/${convocatoria.id}/envios`
+          }
+          className={styles.actionBtn}
+          title="Ver envíos"
+        >
+          <Inbox size={14} />
+        </Link>
+
+        <button
+          type="button"
+          className={styles.actionBtn}
+          onClick={() =>
+            onEdit(convocatoria)
+          }
+          title="Editar"
+        >
+          <Edit size={14} />
+        </button>
+
+        {status === 'open' ? (
+          <button
+            type="button"
+            className={styles.actionBtn}
+            onClick={() =>
+              onClose(convocatoria)
+            }
+            title="Cerrar convocatoria"
+          >
+            <Lock size={14} />
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={styles.actionBtn}
+            onClick={() =>
+              onOpen(convocatoria)
+            }
+            title="Abrir ahora"
+          >
+            <Play size={14} />
+          </button>
+        )}
+
+        <button
+          type="button"
+          className={`
+            ${styles.actionBtn}
+            ${styles.actionDanger}
+          `}
+          onClick={() =>
+            onDelete(convocatoria)
+          }
+          title="Eliminar definitivamente"
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
     </motion.div>
   );
 }
-
 /* ── Preview ───────────────────────────────────────────── */
 function PreviewConvocatoria({ form }) {
   const deadline = form.closes_at ? new Date(form.closes_at + 'T23:59:59') : null;

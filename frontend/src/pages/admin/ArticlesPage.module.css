@@ -327,6 +327,111 @@
   background: #FEE2E2;
 }
 
+/* ── Audio de artículos ──────────────────────────────── */
+.audioActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  min-width: 118px;
+}
+
+.audioVoiceBtn,
+.audioBothBtn,
+.audioDeleteBtn {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 7px;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  color: var(--color-gray-500);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.audioVoiceBtn:hover,
+.audioBothBtn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: rgba(139, 26, 74, 0.06);
+  transform: translateY(-1px);
+}
+
+.audioVoiceBtn:disabled,
+.audioBothBtn:disabled {
+  opacity: 0.45;
+  cursor: wait;
+  transform: none;
+}
+
+.audioVoiceReady {
+  border-color: rgba(6, 95, 70, 0.28);
+  color: #065f46;
+  background: #d1fae5;
+}
+
+.audioVoiceReady:hover {
+  border-color: #065f46;
+  color: #065f46;
+  background: #a7f3d0;
+}
+
+.audioBothBtn {
+  color: var(--color-accent);
+}
+
+.audioDeleteBtn {
+  min-width: 38px;
+  color: #b42318;
+  border-color: rgba(180, 35, 24, 0.18);
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.audioDeleteBtn:hover {
+  color: #ffffff;
+  border-color: #b42318;
+  background: #b42318;
+}
+
+.audioOutdated,
+.audioError {
+  margin-top: 5px;
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.audioOutdated {
+  color: #92400e;
+}
+
+.audioError {
+  color: #b42318;
+}
+
+.spinning {
+  animation: audioSpin 0.8s linear infinite;
+}
+
+@keyframes audioSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ── Paginación ──────────────────────────────────────── */
 .pagination {
   display: flex;

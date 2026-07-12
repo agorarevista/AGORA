@@ -1020,23 +1020,80 @@ function SponsorsCarousel({ items }) {
 }
 function EdicionCarousel({ articles }) {
   const trackRef = useRef(null);
-  const visibleArticles = articles.slice(0, 5);
+
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobilePage, setMobilePage] = useState(0);
+
+  const mobilePerPage = 4;
+  const mobileTotalPages = Math.ceil(articles.length / mobilePerPage);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 600px)');
+
+    const updateMobileState = () => {
+      setIsMobile(mediaQuery.matches);
+    };
+
+    updateMobileState();
+
+    mediaQuery.addEventListener('change', updateMobileState);
+
+    return () => {
+      mediaQuery.removeEventListener('change', updateMobileState);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (mobilePage >= mobileTotalPages) {
+      setMobilePage(Math.max(0, mobileTotalPages - 1));
+    }
+  }, [mobilePage, mobileTotalPages]);
+
+  const visibleArticles = isMobile
+    ? articles.slice(
+        mobilePage * mobilePerPage,
+        mobilePage * mobilePerPage + mobilePerPage
+      )
+    : articles;
 
   const scroll = (dir) => {
     const el = trackRef.current;
+
     if (!el) return;
-    el.scrollBy({ left: dir * el.clientWidth, behavior: 'smooth' });
+
+    el.scrollBy({
+      left: dir * el.clientWidth,
+      behavior: 'smooth',
+    });
+  };
+
+  const previousMobilePage = () => {
+    setMobilePage((currentPage) =>
+      currentPage === 0
+        ? mobileTotalPages - 1
+        : currentPage - 1
+    );
+  };
+
+  const nextMobilePage = () => {
+    setMobilePage((currentPage) =>
+      currentPage === mobileTotalPages - 1
+        ? 0
+        : currentPage + 1
+    );
   };
 
   const getCategories = (art) => {
     const fromPivot = Array.isArray(art.article_categories)
       ? art.article_categories
-          .map(item => item?.categories?.name)
+          .map((item) => item?.categories?.name)
           .filter(Boolean)
       : [];
 
     const fromDirect = Array.isArray(art.categories)
-      ? art.categories.map(cat => cat?.name || cat).filter(Boolean)
+      ? art.categories
+          .map((cat) => cat?.name || cat)
+          .filter(Boolean)
       : [];
 
     return [...new Set([...fromPivot, ...fromDirect])].slice(0, 2);
@@ -1044,43 +1101,62 @@ function EdicionCarousel({ articles }) {
 
   return (
     <div className={styles.edicionCarousel}>
-      {articles.length > 5 && (
+      {!isMobile && articles.length > 5 && (
         <button
           type="button"
           className={`${styles.edicionArrow} ${styles.edicionArrowLeft}`}
           onClick={() => scroll(-1)}
-          aria-label="Anterior"
+          aria-label="Mostrar artículos anteriores"
         >
           <ChevronLeft size={20} />
         </button>
       )}
 
       <div ref={trackRef} className={styles.edicionTrack}>
-        {visibleArticles.map(art => {
+        {visibleArticles.map((art) => {
           const categories = getCategories(art);
 
           return (
-            <Link key={art.id} to={`/articulos/${art.slug}`} className={styles.edicionCard}>
+            <Link
+              key={art.id}
+              to={`/articulos/${art.slug}`}
+              className={styles.edicionCard}
+            >
               <div className={styles.edicionCardImg}>
-                {art.cover_image_url
-                  ? <img src={art.cover_image_url} alt={art.title} />
-                  : <div className={styles.imgPlaceholder}><span>Λ</span></div>
-                }
+                {art.cover_image_url ? (
+                  <img
+                    src={art.cover_image_url}
+                    alt={art.title}
+                  />
+                ) : (
+                  <div className={styles.imgPlaceholder}>
+                    <span>Λ</span>
+                  </div>
+                )}
 
                 <div className={styles.edicionCardOverlay}>
                   {categories.length > 0 && (
                     <div className={styles.edicionCardCats}>
-                      {categories.map(cat => (
-                        <span key={cat} className={styles.edicionCardCat}>{cat}</span>
+                      {categories.map((cat) => (
+                        <span
+                          key={cat}
+                          className={styles.edicionCardCat}
+                        >
+                          {cat}
+                        </span>
                       ))}
                     </div>
                   )}
 
                   <div className={styles.edicionCardText}>
-                    <h3 className={styles.edicionCardTitle}>{art.title}</h3>
+                    <h3 className={styles.edicionCardTitle}>
+                      {art.title}
+                    </h3>
 
                     {art.collaborators && (
-                      <p className={styles.edicionCardAuthor}>{art.collaborators.name}</p>
+                      <p className={styles.edicionCardAuthor}>
+                        {art.collaborators.name}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -1090,15 +1166,53 @@ function EdicionCarousel({ articles }) {
         })}
       </div>
 
-      {articles.length > 5 && (
+      {!isMobile && articles.length > 5 && (
         <button
           type="button"
           className={`${styles.edicionArrow} ${styles.edicionArrowRight}`}
           onClick={() => scroll(1)}
-          aria-label="Siguiente"
+          aria-label="Mostrar siguientes artículos"
         >
           <ChevronRight size={20} />
         </button>
+      )}
+
+      {isMobile && mobileTotalPages > 1 && (
+        <div className={styles.edicionMobileControls}>
+          <button
+            type="button"
+            className={styles.edicionMobileArrow}
+            onClick={previousMobilePage}
+            aria-label="Página anterior"
+          >
+            <ChevronLeft size={20} />
+          </button>
+
+          <div className={styles.edicionMobileDots}>
+            {Array.from({ length: mobileTotalPages }).map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                className={`${styles.edicionMobileDot} ${
+                  index === mobilePage
+                    ? styles.edicionMobileDotActive
+                    : ''
+                }`}
+                onClick={() => setMobilePage(index)}
+                aria-label={`Ir a la página ${index + 1}`}
+              />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            className={styles.edicionMobileArrow}
+            onClick={nextMobilePage}
+            aria-label="Siguiente página"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
       )}
     </div>
   );

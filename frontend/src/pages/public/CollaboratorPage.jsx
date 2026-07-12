@@ -3,8 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getCollaborator as getCollaboratorBySlug } from '../../api/collaborators.api';
 import { getByCollaborator as getArticlesByCollaborator } from '../../api/articles.api';
-import { formatDate } from '../../utils/formatDate';
-import { Clock, ArrowLeft, Globe, Mail } from 'lucide-react';
+import { ArrowLeft, Globe, Mail } from 'lucide-react';
 import {
   FaInstagram,
   FaFacebookF,
@@ -191,62 +190,176 @@ export default function CollaboratorPage() {
             <p>Aún no hay artículos publicados.</p>
           </div>
         ) : (
-          <div className={styles.grid}>
-            {articles.map((art, i) => (
-              <motion.div
-                key={art.id}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i, 5) * 0.06 }}
-              >
-                <Link to={`/articulos/${art.slug}`} className={styles.card}>
-                  {art.cover_image_url && (
-                    <div className={styles.cardImg}>
-                      <img src={art.cover_image_url} alt={art.title} />
-                    </div>
-                  )}
-
-                  <div className={styles.cardBody}>
-                    {art.article_categories?.[0]?.categories && (
-                      <span className={styles.cat}>
-                        {art.article_categories[0].categories.name}
-                      </span>
-                    )}
-
-                    <h3 className={styles.cardTitle}>{art.title}</h3>
-
-                    <div className={styles.cardAuthor}>
-                      {collab.name}
-                    </div>
-
-                    <div className={styles.cardMeta}>
-                      <span>{formatDate(art.published_at)}</span>
-                      {art.reading_time && (
-                        <>
-                          <span className={styles.dot}>·</span>
-                          <Clock size={11} />
-                          <span>{art.reading_time}′</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
+<div className={styles.grid}>
+  {articles.map((article, index) => (
+    <motion.div
+      key={article.id}
+      className={styles.cardWrapper}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        delay: Math.min(index % 5, 4) * 0.06,
+      }}
+    >
+      <CollaboratorArticleCard
+        article={article}
+        authorName={collab.name}
+      />
+    </motion.div>
+  ))}
+</div>
         )}
       </div>
     </div>
   );
 }
 
+function formatArticleDate(dateValue) {
+  if (!dateValue) {
+    return '';
+  }
+
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('es-MX', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(date);
+}
+
+function isRecentArticle(dateValue) {
+  if (!dateValue) {
+    return false;
+  }
+
+  const publishedDate = new Date(dateValue);
+
+  if (Number.isNaN(publishedDate.getTime())) {
+    return false;
+  }
+
+  const now = new Date();
+
+  const elapsedMilliseconds =
+    now.getTime() - publishedDate.getTime();
+
+  const elapsedDays =
+    elapsedMilliseconds /
+    (1000 * 60 * 60 * 24);
+
+  return (
+    elapsedDays >= 0 &&
+    elapsedDays <= 10
+  );
+}
+
+function CollaboratorArticleCard({
+  article,
+  authorName,
+}) {
+  const publishedDate =
+    formatArticleDate(article.published_at);
+
+  const isNew =
+    isRecentArticle(article.published_at);
+
+  return (
+    <Link
+      to={`/articulos/${article.slug}`}
+      className={styles.card}
+    >
+      <div className={styles.cardImg}>
+        {article.cover_image_url ? (
+          <img
+            src={article.cover_image_url}
+            alt={article.title}
+          />
+        ) : (
+          <div className={styles.cardImgPlaceholder}>
+            <span>Λ</span>
+          </div>
+        )}
+
+        {isNew && (
+          <span className={styles.newBadge}>
+            <span className={styles.newBadgeText}>
+              New
+            </span>
+
+            <span
+              className={styles.newBadgeSymbol}
+              aria-hidden="true"
+            />
+          </span>
+        )}
+
+        <div className={styles.cardOverlay}>
+          <div className={styles.cardText}>
+            <h3 className={styles.cardTitle}>
+              {article.title}
+            </h3>
+
+            <p className={styles.cardAuthor}>
+              {authorName}
+            </p>
+
+            {publishedDate && (
+              <time
+                className={styles.cardDate}
+                dateTime={article.published_at}
+              >
+                {publishedDate}
+              </time>
+            )}
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 function CollabSkeleton() {
   return (
-    <div style={{ padding: '48px 24px', maxWidth: 1200, margin: '0 auto' }}>
-      <div style={{ height: 240, background: 'var(--color-gray-200)', borderRadius: 8, marginBottom: 32 }} />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 24 }}>
-        {[1, 2, 3].map(i => (
-          <div key={i} style={{ height: 280, background: 'var(--color-gray-200)', borderRadius: 8 }} />
+    <div
+      style={{
+        width: '100%',
+        maxWidth: 1480,
+        margin: '0 auto',
+        padding: '48px 24px',
+      }}
+    >
+      <div
+        style={{
+          height: 240,
+          marginBottom: 32,
+          borderRadius: 4,
+          background: 'var(--color-gray-200)',
+        }}
+      />
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns:
+            'repeat(5, minmax(0, 1fr))',
+          gap: 22,
+        }}
+      >
+        {[1, 2, 3, 4, 5].map(item => (
+          <div
+            key={item}
+            style={{
+              aspectRatio: '4 / 5.35',
+              borderRadius: 2,
+              background:
+                'var(--color-gray-200)',
+            }}
+          />
         ))}
       </div>
     </div>

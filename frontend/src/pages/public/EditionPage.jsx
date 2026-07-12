@@ -1,213 +1,319 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import {
+  motion,
+  AnimatePresence,
+} from 'framer-motion';
 import { getEdition as getEditionByNumber } from '../../api/editions.api';
-import { getByEdition as getArticlesByEdition } from '../../api/articles.api';
 import { formatDate } from '../../utils/formatDate';
-import { Clock, Eye, BookOpen, ArrowLeft } from 'lucide-react';
+import {
+  BookOpen,
+  ArrowLeft,
+} from 'lucide-react';
+
+import ImageViewer from '../../components/common/ImageViewer/ImageViewer';
 import styles from './EditionPage.module.css';
 
 export default function EditionPage() {
   const { number } = useParams();
-  const [edition, setEdition]   = useState(null);
+
+  const [edition, setEdition] = useState(null);
   const [articles, setArticles] = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [viewer, setViewer] = useState(null);
 
-  useEffect(() => {
+useEffect(() => {
+  let mounted = true;
+
+  const loadEdition = async () => {
     setLoading(true);
-    getEditionByNumber(number)
-      .then(async (ed) => {
-        setEdition(ed);
-        const arts = await getArticlesByEdition(ed.id, { limit: 30 });
-        setArticles(arts.data || []);
-      })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, [number]);
+    setError(false);
 
-  if (loading) return <EditionSkeleton />;
-  if (error || !edition) return <NotFound />;
+    try {
+      const editionData = await getEditionByNumber(number);
 
-  const featured    = articles.filter(a => a.is_featured);
-  const regularArts = articles.filter(a => !a.is_featured);
+      if (!mounted) return;
+
+      setEdition(editionData);
+
+      const editionArticles = Array.isArray(editionData?.articles)
+        ? editionData.articles
+        : [];
+
+      setArticles(editionArticles);
+    } catch (err) {
+      console.error(
+        'ERROR cargando edición:',
+        err?.response?.status,
+        err?.response?.data || err
+      );
+
+      if (mounted) {
+        setError(true);
+        setEdition(null);
+        setArticles([]);
+      }
+    } finally {
+      if (mounted) {
+        setLoading(false);
+      }
+    }
+  };
+
+  loadEdition();
+
+  return () => {
+    mounted = false;
+  };
+}, [number]);
+
+const handleOpenCover = () => {
+  if (!edition?.cover_image_url) return;
+
+  setViewer({
+    src: edition.cover_image_url,
+    alt:
+      edition.name ||
+      `Edición ${edition.number}`,
+  });
+};
+
+if (loading) return <EditionSkeleton />;
+if (error || !edition) return <NotFound />;
 
   return (
     <div className={styles.page}>
-
-      {/* ── Hero de la edición ─────────────────────────────── */}
-      <div className={styles.hero}>
+      {/* ── CABECERA DE LA EDICIÓN ─────────────────────── */}
+      <section className={styles.hero}>
         <div className={styles.heroInner}>
-          <Link to="/" className={styles.back}>
-            <ArrowLeft size={13} /> Inicio
+          <Link to="/ediciones" className={styles.back}>
+            <ArrowLeft size={14} />
+            Volver a ediciones
           </Link>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            className={styles.heroContent}
+            initial={{ opacity: 0, y: 22 }}
             animate={{ opacity: 1, y: 0 }}
-            className={styles.heroLayout}
+            transition={{ duration: 0.45 }}
           >
-            {/* Portada */}
-            <div className={styles.coverWrap}>
-              {edition.cover_image_url
-                ? <img src={edition.cover_image_url} alt={edition.name} className={styles.cover} />
-                : (
-                  <div className={styles.coverPlaceholder}>
-                    <BookOpen size={48} />
-                    <span>Edición #{edition.number}</span>
-                  </div>
-                )
-              }
+            <div className={styles.heroBadges}>
+              <span className={styles.editionBadge}>
+                Edición #{edition.number}
+              </span>
+
+              {edition.is_special && (
+                <span className={styles.specialBadge}>
+                  Edición especial
+                </span>
+              )}
+
+              {edition.is_current && (
+                <span className={styles.currentBadge}>
+                  Edición actual
+                </span>
+              )}
             </div>
 
-            {/* Info */}
-            <div className={styles.heroInfo}>
-              <div className={styles.heroKicker}>
-                <span className={styles.editionBadge}>Edición #{edition.number}</span>
-                {edition.is_current && (
-                  <span className={styles.currentBadge}>Edición actual</span>
-                )}
-              </div>
-              <h1 className={styles.heroTitle}>{edition.name}</h1>
-              {edition.description && (
-                <p className={styles.heroDesc}>{edition.description}</p>
-              )}
+            <h1 className={styles.heroTitle}>
+              {edition.name}
+            </h1>
+
+<div className={styles.coverWrap}>
+  {edition.cover_image_url ? (
+<button
+  type="button"
+  className={styles.coverButton}
+  onClick={handleOpenCover}
+  aria-label={`Abrir portada de ${edition.name}`}
+>
+  <img
+    src={edition.cover_image_url}
+    alt={edition.name}
+    className={styles.cover}
+  />
+</button>
+  ) : (
+    <div className={styles.coverPlaceholder}>
+      <BookOpen size={48} />
+      <span>Edición #{edition.number}</span>
+    </div>
+  )}
+</div>
+
+            {edition.description && (
+              <p className={styles.heroDesc}>
+                {edition.description}
+              </p>
+            )}
+
+            <div className={styles.heroMeta}>
               {edition.published_at && (
-                <div className={styles.heroDate}>
-                  Publicada: {formatDate(edition.published_at)}
-                </div>
+                <span>
+                  Publicada el {formatDate(edition.published_at)}
+                </span>
               )}
-              <div className={styles.heroStats}>
-                <div className={styles.heroStat}>
-                  <span className={styles.heroStatNum}>{articles.length}</span>
-                  <span className={styles.heroStatLabel}>artículos</span>
-                </div>
-                {featured.length > 0 && (
-                  <div className={styles.heroStat}>
-                    <span className={styles.heroStatNum}>{featured.length}</span>
-                    <span className={styles.heroStatLabel}>destacados</span>
-                  </div>
-                )}
-              </div>
+
+              {edition.published_at && articles.length > 0 && (
+                <span className={styles.metaDot}>·</span>
+              )}
+
+              {articles.length > 0 && (
+                <span>
+                  {articles.length} {articles.length === 1 ? 'artículo' : 'artículos'}
+                </span>
+              )}
             </div>
           </motion.div>
         </div>
-      </div>
+      </section>
 
       <div className={styles.meander} />
 
-      {/* ── Artículos ─────────────────────────────────────── */}
-      <div className={styles.body}>
+      {/* ── TODOS LOS ARTÍCULOS ───────────────────────── */}
+      <main className={styles.body}>
+        {articles.length > 0 ? (
+          <section className={styles.articlesSection}>
+            <div className={styles.sectionHeader}>
+              <span className={styles.sectionEyebrow}>
+                Explora la edición
+              </span>
 
-        {/* Destacados */}
-        {featured.length > 0 && (
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>Artículos destacados</h2>
-            <div className={styles.featuredGrid}>
-              {featured.map((art, i) => (
+              <h2 className={styles.sectionTitle}>
+                Todos los artículos
+              </h2>
+            </div>
+
+            <div className={styles.articlesGrid}>
+              {articles.map((article, index) => (
                 <motion.div
-                  key={art.id}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.08 }}
+                  key={article.id}
+                  className={styles.articleCardWrapper}
+                  initial={{ opacity: 0, y: 18 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.15 }}
+                  transition={{
+                    duration: 0.35,
+                    delay: Math.min(index % 5, 4) * 0.05,
+                  }}
                 >
-                  <FeaturedCard article={art} />
+                  <EditionArticleCard article={article} />
                 </motion.div>
               ))}
             </div>
           </section>
-        )}
-
-        {/* Todos los artículos */}
-        {regularArts.length > 0 && (
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>
-              {featured.length > 0 ? 'Todos los artículos' : 'Artículos de esta edición'}
-            </h2>
-            <div className={styles.grid}>
-              {regularArts.map((art, i) => (
-                <motion.div
-                  key={art.id}
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(i, 6) * 0.05 }}
-                >
-                  <ArticleRow article={art} />
-                </motion.div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {articles.length === 0 && (
+        ) : (
           <div className={styles.empty}>
-            <BookOpen size={36} />
-            <p>Esta edición no tiene artículos publicados todavía.</p>
+            <BookOpen size={38} />
+            <p>
+              Esta edición no tiene artículos publicados todavía.
+            </p>
           </div>
         )}
-      </div>
+      </main>
+
+      <AnimatePresence>
+        {viewer && (
+          <ImageViewer
+            src={viewer.src}
+            alt={viewer.alt || ''}
+            onClose={() => setViewer(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function FeaturedCard({ article: art }) {
+function EditionArticleCard({ article }) {
+  const categories = getArticleCategories(article);
+  const authorName =
+    article.collaborators?.name ||
+    article.author_name ||
+    'Agorá Revista';
+
   return (
-    <Link to={`/articulos/${art.slug}`} className={styles.featuredCard}>
-      <div className={styles.featuredCardImg}>
-        {art.cover_image_url
-          ? <img src={art.cover_image_url} alt={art.title} />
-          : <div className={styles.imgPlaceholder}><span>Λ</span></div>
-        }
-      </div>
-      <div className={styles.featuredCardBody}>
-        {art.article_categories?.[0]?.categories && (
-          <span className={styles.cat}>{art.article_categories[0].categories.name}</span>
+    <Link
+      to={`/articulos/${article.slug}`}
+      className={styles.articleCard}
+    >
+      <div className={styles.articleCardImage}>
+        {article.cover_image_url ? (
+          <img
+            src={article.cover_image_url}
+            alt={article.title}
+          />
+        ) : (
+          <div className={styles.imgPlaceholder}>
+            <span>Λ</span>
+          </div>
         )}
-        <h3 className={styles.featuredCardTitle}>{art.title}</h3>
-        {art.excerpt && <p className={styles.featuredCardExcerpt}>{art.excerpt}</p>}
-        <div className={styles.cardMeta}>
-          {art.collaborators && <span className={styles.cardAuthor}>{art.collaborators.name}</span>}
-          <span className={styles.dot}>·</span>
-          <span>{formatDate(art.published_at)}</span>
-          {art.reading_time && <><span className={styles.dot}>·</span><Clock size={11}/><span>{art.reading_time} min</span></>}
-          {art.views > 0 && <><span className={styles.dot}>·</span><Eye size={11}/><span>{art.views}</span></>}
+
+        <div className={styles.articleCardOverlay}>
+          {categories.length > 0 && (
+            <div className={styles.articleCategories}>
+              {categories.map(category => (
+                <span
+                  key={category}
+                  className={styles.articleCategory}
+                >
+                  {category}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className={styles.articleCardText}>
+            <h3 className={styles.articleCardTitle}>
+              {article.title}
+            </h3>
+
+            <p className={styles.articleCardAuthor}>
+              {authorName}
+            </p>
+          </div>
         </div>
       </div>
     </Link>
   );
 }
 
-function ArticleRow({ article: art }) {
-  return (
-    <Link to={`/articulos/${art.slug}`} className={styles.articleRow}>
-      {art.cover_image_url && (
-        <div className={styles.rowImg}>
-          <img src={art.cover_image_url} alt={art.title} />
-        </div>
-      )}
-      <div className={styles.rowBody}>
-        {art.article_categories?.[0]?.categories && (
-          <span className={styles.cat}>{art.article_categories[0].categories.name}</span>
-        )}
-        <h3 className={styles.rowTitle}>{art.title}</h3>
-        {art.excerpt && <p className={styles.rowExcerpt}>{art.excerpt}</p>}
-        <div className={styles.cardMeta}>
-          {art.collaborators && <span className={styles.cardAuthor}>{art.collaborators.name}</span>}
-          <span className={styles.dot}>·</span>
-          <span>{formatDate(art.published_at)}</span>
-          {art.reading_time && <><span className={styles.dot}>·</span><Clock size={11}/><span>{art.reading_time} min</span></>}
-        </div>
-      </div>
-    </Link>
-  );
+function getArticleCategories(article) {
+  const pivotCategories = Array.isArray(article.article_categories)
+    ? article.article_categories
+        .map(item => item?.categories?.name)
+        .filter(Boolean)
+    : [];
+
+  const directCategories = Array.isArray(article.categories)
+    ? article.categories
+        .map(category => category?.name || category)
+        .filter(Boolean)
+    : [];
+
+  return [...new Set([
+    ...pivotCategories,
+    ...directCategories,
+  ])].slice(0, 2);
 }
 
 function EditionSkeleton() {
   return (
-    <div style={{ padding: '48px 24px', maxWidth: 1100, margin: '0 auto' }}>
-      <div style={{ height: 300, background: 'var(--color-gray-200)', borderRadius: 4, marginBottom: 32 }} />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
-        {[1,2,3].map(i => <div key={i} style={{ height: 240, background: 'var(--color-gray-200)', borderRadius: 4 }} />)}
+    <div className={styles.skeletonPage}>
+      <div className={styles.skeletonHeader}>
+        <div className={styles.skeletonTitle} />
+        <div className={styles.skeletonCover} />
+        <div className={styles.skeletonDescription} />
+      </div>
+
+      <div className={styles.skeletonGrid}>
+        {[1, 2, 3, 4, 5].map(item => (
+          <div
+            key={item}
+            className={styles.skeletonCard}
+          />
+        ))}
       </div>
     </div>
   );
@@ -215,13 +321,20 @@ function EditionSkeleton() {
 
 function NotFound() {
   return (
-    <div style={{ textAlign: 'center', padding: '96px 24px' }}>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 56, color: 'var(--color-gray-300)' }}>Λ</div>
-      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, marginBottom: 16 }}>
+    <div className={styles.notFound}>
+      <div className={styles.notFoundSymbol}>
+        Λ
+      </div>
+
+      <h2 className={styles.notFoundTitle}>
         Edición no encontrada
       </h2>
-      <Link to="/" style={{ color: 'var(--color-accent)', fontFamily: 'var(--font-sans)' }}>
-        Volver al inicio
+
+      <Link
+        to="/ediciones"
+        className={styles.notFoundLink}
+      >
+        Volver a ediciones
       </Link>
     </div>
   );

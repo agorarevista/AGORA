@@ -16,8 +16,26 @@ const invalidateHomeCache = () => {
 };
 // Campos base para listados
 const BASE_SELECT = `
-  id, title, slug, subtitle, excerpt, cover_image_url,
-  published_at, status, views, reading_time, is_featured, featured_order,
+  id,
+  title,
+  slug,
+  subtitle,
+  excerpt,
+  cover_image_url,
+  published_at,
+  created_at,
+  status,
+  views,
+  reading_time,
+  is_featured,
+  featured_order,
+  audio_male_url,
+  audio_female_url,
+  audio_male_duration,
+  audio_female_duration,
+  audio_status,
+  audio_error,
+  audio_updated_at,
   collaborators ( id, name, slug, photo_url, type, section_name, section_slug, social_links ),
   editions ( id, number, name ),
   article_categories ( categories ( id, name, slug, color ) ),
@@ -37,11 +55,21 @@ const EDITOR_SELECT = `
   collaborator_id,
   edition_id,
   published_at,
+  created_at,
   status,
   views,
   reading_time,
   is_featured,
   featured_order,
+  audio_male_url,
+  audio_female_url,
+  audio_male_duration,
+  audio_female_duration,
+  audio_male_hash,
+  audio_female_hash,
+  audio_status,
+  audio_error,
+  audio_updated_at,
   collaborators ( id, name, slug, photo_url, type, section_name, section_slug, social_links ),
   editions ( id, number, name ),
   article_categories ( categories ( id, name, slug, color ) ),
@@ -391,11 +419,24 @@ const create = async (body) => {
 };
 
 const update = async (id, body) => {
-  const { category_ids, tags, content_html, ...rest } = body;
+  const {
+    category_ids,
+    tags,
+    content_html,
+    ...rest
+  } = body;
 
-  if (content_html) {
+  if (content_html !== undefined) {
     rest.content_html = content_html;
-    rest.reading_time = readingTime(content_html);
+
+    rest.reading_time =
+      readingTime(content_html);
+
+    rest.audio_status =
+      'outdated';
+
+    rest.audio_error =
+      null;
   }
 
   const { data: article, error } = await supabase

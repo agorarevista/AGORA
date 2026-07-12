@@ -12,7 +12,7 @@
 
 .dialog {
   width: 100%;
-  max-width: 400px;
+  max-width: 470px;
   background: #FDFAF4;
   border-radius: 4px;
   box-shadow:
@@ -61,10 +61,11 @@
 
 /* Cuerpo */
 .body {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 20px 20px 12px 24px;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+  padding: 28px 28px 18px;
 }
 
 /* Ícono */
@@ -142,25 +143,60 @@
   font-family: 'Georgia', serif;
 }
 
-/* Meandro ornamental */
+/* Ornamento geométrico estable */
 .meander {
-  padding: 4px 24px;
-  font-size: 11px;
-  letter-spacing: 3px;
-  font-family: monospace;
-  opacity: 0.2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 18px;
+  padding: 0 24px;
+  opacity: 0.34;
 }
-.warning .meander { color: #B8860B; }
-.error   .meander { color: #8B1A1A; }
-.info    .meander { color: #1A3A6B; }
-.success .meander { color: #2D7A4F; }
+
+.meander span {
+  display: block;
+  height: 1px;
+  background: currentColor;
+}
+
+.meander span:nth-child(1) {
+  width: 38px;
+}
+
+.meander span:nth-child(2) {
+  width: 8px;
+  height: 8px;
+  background: transparent;
+  border: 1px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.meander span:nth-child(3) {
+  flex: 1;
+}
+
+.warning .meander {
+  color: #B8860B;
+}
+
+.error .meander {
+  color: #8B1A1A;
+}
+
+.info .meander {
+  color: #1A3A6B;
+}
+
+.success .meander {
+  color: #2D7A4F;
+}
 
 /* Botones */
 .actions {
   display: flex;
-  gap: 8px;
-  padding: 12px 20px 18px 24px;
   justify-content: flex-end;
+  gap: 10px;
+  padding: 18px 28px 24px;
 }
 
 .cancelBtn {
@@ -190,8 +226,29 @@
 }
 .confirmBtn_warning { background: #B8860B; }
 .confirmBtn_warning:hover { background: #9A7009; }
-.confirmBtn_error   { background: #8B1A1A; }
-.confirmBtn_error:hover   { background: #6E1515; }
+.confirmBtn_error {
+  color: white;
+  background:
+    linear-gradient(
+      135deg,
+      #A32626,
+      #7C1818
+    );
+  box-shadow:
+    0 8px 18px rgba(139, 26, 26, 0.22);
+}
+
+.confirmBtn_error:hover {
+  background:
+    linear-gradient(
+      135deg,
+      #8F2020,
+      #681313
+    );
+  transform: translateY(-1px);
+  box-shadow:
+    0 11px 24px rgba(139, 26, 26, 0.3);
+}
 .confirmBtn_info    { background: #1A3A6B; }
 .confirmBtn_info:hover    { background: #142D54; }
 .confirmBtn_success { background: #2D7A4F; }

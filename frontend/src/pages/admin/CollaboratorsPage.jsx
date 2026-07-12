@@ -1,6 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { getCollaborators, createCollaborator, updateCollaborator, deleteCollaborator } from '../../api/collaborators.api';
+import {
+  getCollaborators,
+  createCollaborator,
+  updateCollaborator,
+  deleteCollaborator,
+} from '../../api/collaborators.api';
+
+import { getAdminCategories } from '../../api/categories.api.js';
 import { uploadFile } from '../../api/admin.api';
 import useAlert   from '../../hooks/useAlert';
 import useConfirm from '../../hooks/useConfirm';
@@ -14,9 +21,19 @@ const EMPTY_FORM = {
   email: '',
   phone: '',
   type: 'occasional',
+
+  // Relación real con categories.id
+  fixed_category_id: '',
+
+  // Se mantiene por compatibilidad con el backend actual.
   section_name: '',
   section_description: '',
+
   photo_url: '',
+  photo_x: 50,
+  photo_y: 20,
+  photo_zoom: 1,
+
   social_links: {
     instagram: '',
     facebook: '',
@@ -26,7 +43,7 @@ const EMPTY_FORM = {
     youtube: '',
     website: '',
     extra_link: '',
-  }
+  },
 };
 
 function createImage(url) {
@@ -108,63 +125,146 @@ export default function CollaboratorsPage() {
   const alert   = useAlert();
   const confirm = useConfirm();
   const [collaborators, setCollaborators] = useState([]);
-  const [loading, setLoading]             = useState(true);
-  const [showForm, setShowForm]           = useState(false);
+  const [fixedSections, setFixedSections] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingSections, setLoadingSections] = useState(true);
+  const [showForm, setShowForm] = useState(false);
   const [editing, setEditing]             = useState(null);
   const [form, setForm]                   = useState(EMPTY_FORM);
   const [saving, setSaving]               = useState(false);
- const [uploading, setUploading]         = useState(false);
-const [cropOpen, setCropOpen]           = useState(false);
-const [cropSrc, setCropSrc]             = useState('');
-const [crop, setCrop]                   = useState({ x: 0, y: 0 });
-const [cropZoom, setCropZoom]           = useState(1);
-const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
-const [cropping, setCropping]           = useState(false);
+  const [uploading, setUploading]         = useState(false);
+  const [cropOpen, setCropOpen]           = useState(false);
+  const [cropSrc, setCropSrc]             = useState('');
+  const [crop, setCrop]                   = useState({ x: 0, y: 0 });
+  const [cropZoom, setCropZoom]           = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [cropping, setCropping]           = useState(false);
 
-  const load = async () => {
-    setLoading(true);
-    try { setCollaborators(await getCollaborators()); }
-    catch { alert.error('Error', 'No se pudieron cargar los colaboradores'); }
+const load = async () => {
+  setLoading(true);
+  setLoadingSections(true);
+
+  try {
+    const [collaboratorData, categoryData] = await Promise.all([
+      getCollaborators(),
+      getAdminCategories(),
+    ]);
+
+    setCollaborators(
+      Array.isArray(collaboratorData)
+        ? collaboratorData
+        : []
+    );
+
+    const categoryParents = Array.isArray(categoryData)
+      ? categoryData
+      : [];
+
+    const columnsFolder = categoryParents.find(
+      category =>
+        category.slug === 'columnas' ||
+        category.name?.trim().toLowerCase() === 'columnas'
+    );
+
+    const columnSections = Array.isArray(
+      columnsFolder?.subcategories
+    )
+      ? columnsFolder.subcategories
+          .filter(category => category.is_active)
+          .sort(
+            (a, b) =>
+              Number(a.display_order || 0) -
+              Number(b.display_order || 0)
+          )
+      : [];
+
+    setFixedSections(columnSections);
+  } catch (error) {
+    console.error('ERROR cargando colaboradores:', error);
+
+    alert.error(
+      'Error',
+      error?.response?.data?.error ||
+      error?.response?.data?.message ||
+      'No se pudieron cargar los colaboradores'
+    );
+  } finally {
     setLoading(false);
-  };
+    setLoadingSections(false);
+  }
+};
 
-  useEffect(() => { load(); }, []);
+useEffect(() => {
+  load();
+}, []);
 
-  const openNew = () => {
-    setEditing(null);
-    setForm(EMPTY_FORM);
-    setShowForm(true);
-  };
+const openNew = () => {
+  setEditing(null);
 
-const openEdit = (c) => {
-  const crop = parsePhotoCrop(c.photo_url || '');
-
-  setEditing(c.id);
   setForm({
-    name: c.name || '',
-    bio: c.bio || '',
-    email: c.email || '',
-    phone: c.phone || '',
-    type: c.type || 'occasional',
-    section_name: c.section_name || '',
-    section_description: c.section_description || '',
-    photo_url: crop.cleanUrl || '',
-    photo_x: crop.x,
-    photo_y: crop.y,
-    photo_zoom: crop.zoom,
+    ...EMPTY_FORM,
     social_links: {
-        instagram: c.social_links?.instagram || '',
-        facebook: c.social_links?.facebook || '',
-        twitter: c.social_links?.twitter || '',
-        x: c.social_links?.x || '',
-        tiktok: c.social_links?.tiktok || '',
-        youtube: c.social_links?.youtube || '',
-        website: c.social_links?.website || '',
-        extra_link: c.social_links?.extra_link || '',
-      }
-    });
-    setShowForm(true);
-  };
+      ...EMPTY_FORM.social_links,
+    },
+  });
+
+  setShowForm(true);
+};
+
+const openEdit = collaborator => {
+  const cropData = parsePhotoCrop(
+    collaborator.photo_url || ''
+  );
+
+  setEditing(collaborator.id);
+
+  setForm({
+    name: collaborator.name || '',
+    bio: collaborator.bio || '',
+    email: collaborator.email || '',
+    phone: collaborator.phone || '',
+    type: collaborator.type || 'occasional',
+
+    fixed_category_id:
+      collaborator.fixed_category_id ||
+      collaborator.fixed_category?.id ||
+      '',
+
+    section_name:
+      collaborator.fixed_category?.name ||
+      collaborator.section_name ||
+      '',
+
+    section_description:
+      collaborator.section_description || '',
+
+    photo_url: cropData.cleanUrl || '',
+    photo_x: cropData.x,
+    photo_y: cropData.y,
+    photo_zoom: cropData.zoom,
+
+    social_links: {
+      instagram:
+        collaborator.social_links?.instagram || '',
+      facebook:
+        collaborator.social_links?.facebook || '',
+      twitter:
+        collaborator.social_links?.twitter || '',
+      x:
+        collaborator.social_links?.x || '',
+      tiktok:
+        collaborator.social_links?.tiktok || '',
+      youtube:
+        collaborator.social_links?.youtube || '',
+      website:
+        collaborator.social_links?.website || '',
+      extra_link:
+        collaborator.social_links?.extra_link || '',
+    },
+  });
+
+  setShowForm(true);
+};
 
 const handlePhotoUpload = async (e) => {
   const file = e.target.files?.[0];
@@ -213,45 +313,121 @@ const applyCrop = async () => {
 };
 
 const handleSave = async () => {
-  if (form.photo_url?.includes('fbcdn.net') || form.photo_url?.includes('cdninstagram.com')) {
+  if (
+    form.photo_url?.includes('fbcdn.net') ||
+    form.photo_url?.includes('cdninstagram.com')
+  ) {
     alert.warning(
       'URL no compatible',
       'Las imágenes de Facebook/Instagram se bloquean. Sube la foto directamente o usa un enlace de Cloudflare R2.'
     );
     return;
   }
-  if (!form.name.trim()) {
-      alert.warning('Falta el nombre', 'El colaborador necesita un nombre');
-      return;
-    }
-    setSaving(true);
-    try {
-const payload = {
-  ...form,
-  photo_url: buildPhotoUrl(form.photo_url, form.photo_x, form.photo_y, form.photo_zoom),
-  social_links: Object.fromEntries(
-    Object.entries(form.social_links).filter(([_, v]) => v.trim())
-  )
-};
 
-delete payload.photo_x;
-delete payload.photo_y;
-delete payload.photo_zoom;
-      if (editing) {
-        await updateCollaborator(editing, payload);
-        alert.success('Actualizado', 'Colaborador actualizado');
-      } else {
-        await createCollaborator(payload);
-        alert.success('Creado', 'Colaborador creado correctamente');
-      }
-      setShowForm(false);
-      load();
-    } catch (err) {
-      alert.error('Error', err.response?.data?.error || 'No se pudo guardar');
-    } finally {
-      setSaving(false);
+  if (!form.name.trim()) {
+    alert.warning(
+      'Falta el nombre',
+      'El colaborador necesita un nombre'
+    );
+    return;
+  }
+
+  if (form.type === 'fixed' && !form.fixed_category_id) {
+    alert.warning(
+      'Falta la columna',
+      'Selecciona la columna fija que pertenece a este colaborador'
+    );
+    return;
+  }
+
+  setSaving(true);
+
+  try {
+    const selectedCategory = fixedSections.find(
+      category => category.id === form.fixed_category_id
+    );
+
+    const payload = {
+      ...form,
+
+      fixed_category_id:
+        form.type === 'fixed'
+          ? form.fixed_category_id
+          : null,
+
+      section_name:
+        form.type === 'fixed'
+          ? selectedCategory?.name || ''
+          : null,
+
+      section_description:
+        form.type === 'fixed'
+          ? form.section_description || null
+          : null,
+
+      photo_url: buildPhotoUrl(
+        form.photo_url,
+        form.photo_x,
+        form.photo_y,
+        form.photo_zoom
+      ),
+
+      social_links: Object.fromEntries(
+        Object.entries(form.social_links).filter(
+          ([, value]) =>
+            typeof value === 'string' &&
+            value.trim()
+        )
+      ),
+    };
+
+    delete payload.photo_x;
+    delete payload.photo_y;
+    delete payload.photo_zoom;
+
+    if (editing) {
+      await updateCollaborator(editing, payload);
+
+      alert.success(
+        'Actualizado',
+        'Colaborador y columna actualizados correctamente'
+      );
+    } else {
+      await createCollaborator(payload);
+
+      alert.success(
+        'Creado',
+        'Colaborador y columna vinculados correctamente'
+      );
     }
-  };
+
+    setShowForm(false);
+    setEditing(null);
+
+    setForm({
+      ...EMPTY_FORM,
+      social_links: {
+        ...EMPTY_FORM.social_links,
+      },
+    });
+
+    await load();
+  } catch (error) {
+    console.error(
+      'ERROR guardando colaborador:',
+      error?.response?.data || error
+    );
+
+    alert.error(
+      'Error',
+      error?.response?.data?.error ||
+      error?.response?.data?.message ||
+      'No se pudo guardar'
+    );
+  } finally {
+    setSaving(false);
+  }
+};
 
 const handleDelete = async (c) => {
   const ok = await confirm({
@@ -361,35 +537,131 @@ const handleDelete = async (c) => {
                 <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
                   <label className={styles.label}>Tipo de colaborador</label>
                   <div className={styles.typeToggle}>
-                    <button
-                      type="button"
-                      className={`${styles.typeBtn} ${form.type === 'occasional' ? styles.typeBtnActive : ''}`}
-                      onClick={() => setForm(f => ({ ...f, type: 'occasional' }))}
-                    >
-                      Ocasional
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.typeBtn} ${form.type === 'fixed' ? styles.typeBtnActive : ''}`}
-                      onClick={() => setForm(f => ({ ...f, type: 'fixed' }))}
-                    >
-                      Fijo
-                    </button>
+                <button
+                  type="button"
+                  className={`
+                    ${styles.typeBtn}
+                    ${form.type === 'occasional'
+                      ? styles.typeBtnActive
+                      : ''}
+                  `}
+                  onClick={() =>
+                    setForm(current => ({
+                      ...current,
+                      type: 'occasional',
+                      fixed_category_id: '',
+                      section_name: '',
+                      section_description: '',
+                    }))
+                  }
+                >
+                  Ocasional
+                </button>
+
+                <button
+                  type="button"
+                  className={`
+                    ${styles.typeBtn}
+                    ${form.type === 'fixed'
+                      ? styles.typeBtnActive
+                      : ''}
+                  `}
+                  onClick={() =>
+                    setForm(current => ({
+                      ...current,
+                      type: 'fixed',
+                    }))
+                  }
+                >
+                  Fijo
+                </button>
                   </div>
                 </div>
 
-                {form.type === 'fixed' && (
-                  <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
-                    <label className={styles.label}>Nombre de su sección propia</label>
-                    <input
-                      type="text"
-                      value={form.section_name}
-                      onChange={e => setForm(f => ({ ...f, section_name: e.target.value }))}
-                      className={styles.input}
-                      placeholder="ej: Vórtice, Palabrante, etc."
-                    />
-                  </div>
-                )}
+{form.type === 'fixed' && (
+  <>
+    <div
+      className={styles.formGroup}
+      style={{ gridColumn: '1 / -1' }}
+    >
+      <label className={styles.label}>
+        Columna fija *
+      </label>
+
+      <select
+        value={form.fixed_category_id || ''}
+        onChange={event => {
+          const selectedId = event.target.value;
+
+          const selectedCategory = fixedSections.find(
+            category => category.id === selectedId
+          );
+
+          setForm(current => ({
+            ...current,
+            fixed_category_id: selectedId,
+            section_name: selectedCategory?.name || '',
+          }));
+        }}
+        className={styles.select}
+        disabled={loadingSections}
+      >
+        <option value="">
+          {loadingSections
+            ? 'Cargando columnas...'
+            : '— Selecciona una columna —'}
+        </option>
+
+        {fixedSections.map(category => {
+          const occupiedByAnother =
+            category.fixed_collaborator_id &&
+            category.fixed_collaborator_id !== editing;
+
+          return (
+            <option
+              key={category.id}
+              value={category.id}
+              disabled={occupiedByAnother}
+            >
+              {category.name}
+              {occupiedByAnother
+                ? ' — ya asignada'
+                : ''}
+            </option>
+          );
+        })}
+      </select>
+
+      <span className={styles.fieldHelp}>
+        Solo aparecen las secciones publicadas dentro de la
+        carpeta “Columnas”. Una columna no puede pertenecer a
+        dos colaboradores.
+      </span>
+    </div>
+
+    <div
+      className={styles.formGroup}
+      style={{ gridColumn: '1 / -1' }}
+    >
+      <label className={styles.label}>
+        Descripción de la columna
+      </label>
+
+      <textarea
+        value={form.section_description}
+        onChange={event =>
+          setForm(current => ({
+            ...current,
+            section_description: event.target.value,
+          }))
+        }
+        className={styles.textarea}
+        rows={2}
+        placeholder="Descripción breve de la columna..."
+      />
+    </div>
+  </>
+)}
 
                 <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
                   <label className={styles.label}>Semblanza / Bio</label>

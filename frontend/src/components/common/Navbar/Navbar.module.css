@@ -47,7 +47,50 @@
   gap: 4px;
 }
 
-.navItem { position: relative; }
+.navItem {
+  position: relative;
+}
+
+.navGroupTrigger {
+  display: inline-flex;
+  align-items: center;
+  color: var(--nav-text);
+  border-radius: 2px;
+  transition: color 0.2s ease;
+}
+
+.navGroupLabel {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 3px 8px 14px;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.navGroupChevronButton {
+  width: 25px;
+  height: 32px;
+  padding: 0 8px 0 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.navGroupTrigger:hover {
+  color: var(--color-accent);
+}
 
 .navLink {
   display: inline-flex;
@@ -212,7 +255,47 @@
 }
 .mobileLink:hover { color: var(--color-accent); }
 
-.mobileSection { border-bottom: 1px solid var(--nav-border); }
+.mobileSection {
+  border-bottom: 1px solid var(--nav-border);
+}
+
+.mobileSectionHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 54px;
+  align-items: stretch;
+}
+
+.mobileSectionTitle {
+  display: flex;
+  align-items: center;
+  padding: 14px var(--space-5);
+  color: var(--nav-text);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 700;
+  transition: color 0.2s ease;
+}
+
+.mobileSectionTitle:hover {
+  color: var(--color-accent);
+}
+
+.mobileSectionToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--nav-text);
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--nav-border);
+  cursor: pointer;
+}
+
+.mobileSectionToggle:hover {
+  color: var(--color-accent);
+  background: rgba(139, 26, 74, 0.06);
+}
 
 .mobileSectionBtn {
   display: flex;
@@ -251,8 +334,24 @@
 
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 960px) {
-  .navLink { font-size: 12px; padding: 8px 10px; }
-  .dropdown { min-width: 360px; }
+  .navLink {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+
+  .navGroupLabel {
+    padding-left: 10px;
+    font-size: 12px;
+  }
+
+  .navGroupChevronButton {
+    width: 22px;
+    padding-right: 5px;
+  }
+
+  .dropdown {
+    min-width: 360px;
+  }
   .dropdownGrid { grid-template-columns: repeat(2, 1fr); }
 }
 

@@ -8,7 +8,11 @@ import {
   Clock,
   ArrowLeft,
   MessageCircle,
-  Maximize2
+  Maximize2,
+  Play,
+  Pause,
+  Mars,
+  Venus
 } from 'lucide-react';
 import {
   FaInstagram,
@@ -24,6 +28,166 @@ import Comments from '../../components/common/Comments/Comments';
 import ImageViewer from '../../components/common/ImageViewer/ImageViewer';
 import styles from './ArticlePage.module.css';
 
+const FEMALE_VOICE_HINTS = [
+  'female',
+  'mujer',
+  'sabina',
+  'helena',
+  'laura',
+  'dalia',
+  'monica',
+  'mónica',
+  'paulina',
+  'marisol',
+  'sofia',
+  'sofía',
+  'elvira',
+  'luciana',
+  'paloma',
+  'ximena',
+  'carmen',
+  'conchita',
+  'lupe',
+];
+
+const MALE_VOICE_HINTS = [
+  'male',
+  'hombre',
+  'jorge',
+  'pablo',
+  'raul',
+  'raúl',
+  'enrique',
+  'alvaro',
+  'álvaro',
+  'diego',
+  'carlos',
+  'antonio',
+  'andres',
+  'andrés',
+  'miguel',
+  'juan',
+  'pedro',
+  'marcelo',
+];
+
+const cleanArticleTextForSpeech = (html) => {
+  if (!html || typeof window === 'undefined') {
+    return '';
+  }
+
+  const documentFromHtml = new DOMParser().parseFromString(
+    html,
+    'text/html'
+  );
+
+  documentFromHtml
+    .querySelectorAll(`
+      img,
+      picture,
+      source,
+      video,
+      audio,
+      iframe,
+      embed,
+      object,
+      figure,
+      figcaption,
+      script,
+      style,
+      noscript,
+      svg,
+      canvas,
+      button
+    `)
+    .forEach(element => element.remove());
+
+  return documentFromHtml.body.textContent
+    .replace(/https?:\/\/\S+/gi, ' ')
+    .replace(/www\.\S+/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+const calculateEstimatedSpeechSeconds = (text) => {
+  const words = String(text || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (words.length === 0) {
+    return 0;
+  }
+
+  const wordsPerMinute = 155;
+
+  return Math.max(
+    1,
+    Math.round((words.length / wordsPerMinute) * 60)
+  );
+};
+
+const formatSpeechDuration = (totalSeconds) => {
+  const seconds = Math.max(
+    0,
+    Math.round(Number(totalSeconds) || 0)
+  );
+
+  if (seconds < 60) {
+    return `${seconds} s`;
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
+  if (remainingSeconds === 0) {
+    return `${minutes} min`;
+  }
+
+  return `${minutes} min ${remainingSeconds} s`;
+};
+
+const selectBrowserVoice = (voices, voiceType) => {
+  if (!Array.isArray(voices) || voices.length === 0) {
+    return null;
+  }
+
+  const spanishVoices = voices.filter(voice =>
+    String(voice.lang || '')
+      .toLowerCase()
+      .startsWith('es')
+  );
+
+  const availableVoices =
+    spanishVoices.length > 0
+      ? spanishVoices
+      : voices;
+
+  const hints =
+    voiceType === 'male'
+      ? MALE_VOICE_HINTS
+      : FEMALE_VOICE_HINTS;
+
+  const matchingVoice = availableVoices.find(voice => {
+    const searchableName = `${voice.name} ${voice.voiceURI}`
+      .toLowerCase();
+
+    return hints.some(hint =>
+      searchableName.includes(hint)
+    );
+  });
+
+  if (matchingVoice) {
+    return matchingVoice;
+  }
+
+  if (voiceType === 'male' && availableVoices.length > 1) {
+    return availableVoices[1];
+  }
+
+  return availableVoices[0] || null;
+};
+
 export default function ArticlePage() {
   const { slug } = useParams();
   const [article, setArticle]           = useState(null);
@@ -32,7 +196,15 @@ export default function ArticlePage() {
   const [showComments, setShowComments] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
   const [viewer, setViewer]             = useState(null); // { src, alt }
+
+  const [speechSupported, setSpeechSupported] = useState(true);
+  const [availableVoices, setAvailableVoices] = useState([]);
+  const [selectedVoiceType, setSelectedVoiceType] = useState('female');
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isSpeechPaused, setIsSpeechPaused] = useState(false);
+
   const bodyRef = useRef(null);
+  const utteranceRef = useRef(null);
 
   useEffect(() => {
     setLoading(true);
@@ -69,38 +241,238 @@ export default function ArticlePage() {
     return () => clearInterval(interval);
   }, [article?.id, loadCommentCount]);
 
-  // Hacer imágenes del cuerpo clickeables para fullscreen
+  // Abrir imágenes del contenido sin modificar la estructura HTML.
+  // Conserva figure, float, caption y enlaces.
   useEffect(() => {
-    if (!bodyRef.current || !article) return;
-    const imgs = bodyRef.current.querySelectorAll('img');
-    imgs.forEach(img => {
-      // Crear wrapper
-      if (img.parentElement?.classList?.contains('img-wrapper')) return;
-      const wrapper = document.createElement('div');
-      wrapper.className = 'img-wrapper';
-      wrapper.style.cssText = 'position:relative;display:block;cursor:zoom-in;';
-      img.parentNode.insertBefore(wrapper, img);
-      wrapper.appendChild(img);
+    const bodyElement = bodyRef.current;
 
-      // Ícono expand
-      const icon = document.createElement('div');
-      icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>`;
-      icon.style.cssText = `
-        position:absolute;top:12px;right:12px;
-        background:rgba(0,0,0,0.55);
-        border-radius:8px;padding:6px;
-        display:flex;align-items:center;justify-content:center;
-        opacity:0;transition:opacity 0.2s;pointer-events:none;
-      `;
-      wrapper.appendChild(icon);
+    if (!bodyElement || !article) {
+      return undefined;
+    }
 
-      wrapper.addEventListener('mouseenter', () => { icon.style.opacity = '1'; });
-      wrapper.addEventListener('mouseleave', () => { icon.style.opacity = '0'; });
-      wrapper.addEventListener('click', () => {
-        setViewer({ src: img.src, alt: img.alt || '' });
+    const images = Array.from(
+      bodyElement.querySelectorAll('img')
+    );
+
+    const cleanupFunctions = [];
+
+    images.forEach(image => {
+      image.style.cursor = 'zoom-in';
+
+      const handleImageClick = event => {
+        const parentLink =
+          image.closest('a');
+
+        // Ctrl/Cmd + clic conserva el enlace original.
+        if (
+          parentLink &&
+          (
+            event.ctrlKey ||
+            event.metaKey
+          )
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        setViewer({
+          src:
+            image.currentSrc ||
+            image.src,
+
+          alt:
+            image.alt ||
+            '',
+        });
+      };
+
+      image.addEventListener(
+        'click',
+        handleImageClick
+      );
+
+      cleanupFunctions.push(() => {
+        image.removeEventListener(
+          'click',
+          handleImageClick
+        );
       });
     });
+
+    return () => {
+      cleanupFunctions.forEach(
+        cleanup => cleanup()
+      );
+    };
   }, [article]);
+
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      !('speechSynthesis' in window) ||
+      !('SpeechSynthesisUtterance' in window)
+    ) {
+      setSpeechSupported(false);
+      return undefined;
+    }
+
+    const speechSynthesis = window.speechSynthesis;
+
+    const loadVoices = () => {
+      const browserVoices = speechSynthesis.getVoices();
+      setAvailableVoices(browserVoices);
+    };
+
+    loadVoices();
+
+    speechSynthesis.addEventListener(
+      'voiceschanged',
+      loadVoices
+    );
+
+    return () => {
+      speechSynthesis.removeEventListener(
+        'voiceschanged',
+        loadVoices
+      );
+
+      speechSynthesis.cancel();
+      utteranceRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      !('speechSynthesis' in window)
+    ) {
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    utteranceRef.current = null;
+    setIsSpeaking(false);
+    setIsSpeechPaused(false);
+  }, [slug, article?.content_html]);
+
+  const speechText = cleanArticleTextForSpeech(
+    article?.content_html
+  );
+
+  const estimatedSpeechSeconds =
+    calculateEstimatedSpeechSeconds(speechText);
+
+  const estimatedSpeechDuration =
+    formatSpeechDuration(estimatedSpeechSeconds);
+
+  const stopSpeech = () => {
+    if (
+      typeof window === 'undefined' ||
+      !('speechSynthesis' in window)
+    ) {
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    utteranceRef.current = null;
+    setIsSpeaking(false);
+    setIsSpeechPaused(false);
+  };
+
+  const handleVoiceTypeChange = (nextVoiceType) => {
+    if (nextVoiceType === selectedVoiceType) {
+      return;
+    }
+
+    stopSpeech();
+    setSelectedVoiceType(nextVoiceType);
+  };
+
+  const handleSpeechToggle = () => {
+    if (
+      !speechSupported ||
+      !speechText ||
+      typeof window === 'undefined'
+    ) {
+      return;
+    }
+
+    const speechSynthesis = window.speechSynthesis;
+
+    if (speechSynthesis.speaking) {
+      if (speechSynthesis.paused) {
+        speechSynthesis.resume();
+        setIsSpeechPaused(false);
+        setIsSpeaking(true);
+      } else {
+        speechSynthesis.pause();
+        setIsSpeechPaused(true);
+      }
+
+      return;
+    }
+
+    const selectedVoice = selectBrowserVoice(
+      availableVoices,
+      selectedVoiceType
+    );
+
+    const utterance = new SpeechSynthesisUtterance(
+      speechText
+    );
+
+    utterance.voice = selectedVoice;
+    utterance.lang = selectedVoice?.lang || 'es-MX';
+    utterance.rate = 1;
+    utterance.pitch =
+      selectedVoiceType === 'male'
+        ? 0.92
+        : 1.05;
+    utterance.volume = 1;
+
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setIsSpeechPaused(false);
+    };
+
+    utterance.onpause = () => {
+      setIsSpeechPaused(true);
+    };
+
+    utterance.onresume = () => {
+      setIsSpeaking(true);
+      setIsSpeechPaused(false);
+    };
+
+    utterance.onend = () => {
+      utteranceRef.current = null;
+      setIsSpeaking(false);
+      setIsSpeechPaused(false);
+    };
+
+    utterance.onerror = event => {
+      if (event.error !== 'interrupted') {
+        console.error(
+          'Error al reproducir la narración:',
+          event.error
+        );
+      }
+
+      utteranceRef.current = null;
+      setIsSpeaking(false);
+      setIsSpeechPaused(false);
+    };
+
+    utteranceRef.current = utterance;
+
+    speechSynthesis.cancel();
+
+    window.setTimeout(() => {
+      speechSynthesis.speak(utterance);
+    }, 100);
+  };
 
   if (loading) return <ArticleSkeleton />;
   if (error)   return <NotFound />;
@@ -180,15 +552,98 @@ export default function ArticlePage() {
               </Link>
             )}
             <div className={styles.metaRight}>
-              <span>{formatDate(article.published_at)}</span>
-              {article.reading_time && (
+              <span className={styles.publishDate}>
+                {formatDate(article.published_at)}
+              </span>
+
+              {speechSupported && speechText && (
                 <>
                   <span className={styles.dot}>·</span>
-                  <Clock size={12} />
-                  <span>{article.reading_time} min</span>
+
+                  <div className={styles.speechControls}>
+                    <button
+                      type="button"
+                      className={`
+                        ${styles.speechPlayButton}
+                        ${
+                          isSpeaking && !isSpeechPaused
+                            ? styles.speechPlayButtonActive
+                            : ''
+                        }
+                      `}
+                      onClick={handleSpeechToggle}
+                      aria-label={
+                        isSpeaking && !isSpeechPaused
+                          ? 'Pausar lectura del artículo'
+                          : isSpeechPaused
+                            ? 'Continuar lectura del artículo'
+                            : 'Escuchar artículo'
+                      }
+                      title={
+                        isSpeaking && !isSpeechPaused
+                          ? 'Pausar'
+                          : isSpeechPaused
+                            ? 'Continuar'
+                            : 'Escuchar artículo'
+                      }
+                    >
+                      {isSpeaking && !isSpeechPaused ? (
+                        <Pause size={13} />
+                      ) : (
+                        <Play size={13} />
+                      )}
+                    </button>
+
+                    <div
+                      className={styles.speechVoiceButtons}
+                      role="group"
+                      aria-label="Seleccionar voz de lectura"
+                    >
+                      <button
+                        type="button"
+                        className={`
+                          ${styles.speechVoiceButton}
+                          ${
+                            selectedVoiceType === 'male'
+                              ? styles.speechVoiceButtonActive
+                              : ''
+                          }
+                        `}
+                        onClick={() => handleVoiceTypeChange('male')}
+                        aria-label="Seleccionar voz masculina"
+                        title="Voz masculina"
+                      >
+                        <Mars size={15} />
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`
+                          ${styles.speechVoiceButton}
+                          ${
+                            selectedVoiceType === 'female'
+                              ? styles.speechVoiceButtonActive
+                              : ''
+                          }
+                        `}
+                        onClick={() => handleVoiceTypeChange('female')}
+                        aria-label="Seleccionar voz femenina"
+                        title="Voz femenina"
+                      >
+                        <Venus size={15} />
+                      </button>
+                    </div>
+
+                    <div
+                      className={styles.speechDuration}
+                      title="Duración estimada de la narración"
+                    >
+                      <Clock size={12} />
+                      <span>{estimatedSpeechDuration}</span>
+                    </div>
+                  </div>
                 </>
               )}
- 
             </div>
           </div>
         </div>

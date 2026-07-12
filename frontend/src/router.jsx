@@ -16,6 +16,7 @@ import AboutPage from './pages/public/AboutPage';
 import EdicionesPage from './pages/public/EdicionesPage';
 import ArchivoPage from './pages/public/ArchivoPage';
 import EdicionesEspecialesPage from './pages/public/EdicionesEspecialesPage';
+import ColumnsPage from './pages/public/ColumnsPage';
 // Páginas admin
 import LoginPage from './pages/admin/LoginPage';
 import DashboardPage from './pages/admin/DashboardPage';
@@ -72,6 +73,7 @@ const router = createBrowserRouter([
           { path: 'ediciones',                element: <EdicionesPage /> },
           { path: 'archivo',                  element: <ArchivoPage /> },
           { path: 'ediciones-especiales',     element: <EdicionesEspecialesPage /> },
+          { path: 'columnas',                 element: <ColumnsPage /> },
         ]
       },
 

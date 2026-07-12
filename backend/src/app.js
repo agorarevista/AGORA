@@ -33,6 +33,7 @@ app.use('/api/likes',         require('./modules/likes/likes.routes'));
 app.use('/api/comments',      require('./modules/comments/comments.routes'));
 app.use('/api/shares',        require('./modules/shares/shares.routes'));
 app.use('/api/analytics',     require('./modules/analytics/analytics.routes'));
+app.use('/api/article-audio', require('./modules/articleAudio/articleAudio.routes'));
 
 // ── Health check ──────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

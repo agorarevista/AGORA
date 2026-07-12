@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { getEditions } from '../../api/editions.api';
 import { formatDate } from '../../utils/formatDate';
 import { Star } from 'lucide-react';
-import styles from './EdicionesPage.module.css'; // reutiliza el mismo CSS
+import styles from './EdicionesPage.module.css';
 
 export default function EdicionesEspecialesPage() {
   const [editions, setEditions] = useState([]);

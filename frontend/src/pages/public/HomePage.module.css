@@ -1987,16 +1987,98 @@
 
 @media (max-width: 560px) {
   .heroGrid {
-    grid-template-columns: 1fr;
+    width: 100%;
+    height: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+    gap: 6px;
+    align-items: stretch;
+    margin-bottom: 30px;
+    overflow: visible;
   }
 
   .heroCenterCol {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    order: -1;
+    width: 100%;
     max-width: 100%;
+    height: auto;
+    margin: 0 0 12px;
   }
 
-  .highlightCard,
+  .heroCenterCol .editionCard,
+  .heroCenterCol .editionImgButton,
+  .heroCenterCol .editionImgWrap {
+    width: 100%;
+    height: auto;
+  }
+
+  .heroCenterCol .editionImgWrap {
+    aspect-ratio: 1080 / 1350;
+  }
+
+  .heroCenterCol .editionImg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .heroSideCol {
+    display: contents;
+  }
+
+  .highlightCard {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 1 / 1;
+    border-radius: 2px;
+  }
+
   .highlightImg {
-    min-height: 260px;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .highlightImg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .highlightOverlay {
+    justify-content: flex-end;
+    gap: 5px;
+    padding: 12px 8px;
+    background:
+      linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.40) 0%,
+        rgba(0, 0, 0, 0.08) 55%,
+        rgba(0, 0, 0, 0) 100%
+      );
+  }
+
+  .highlightTitle {
+    max-width: 100%;
+    font-size: clamp(15px, 4.6vw, 20px);
+    line-height: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .highlightAuthor {
+    max-width: 100%;
+    font-size: 10px;
+    line-height: 1.1;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 }
 /* ══════════════════════════════════════════════════════
@@ -2187,8 +2269,64 @@
   color: white;
 }
 
-.edicionArrowLeft  { left: -14px; }
-.edicionArrowRight { right: -14px; }
+.edicionArrowLeft {
+  left: -14px;
+}
+
+.edicionArrowRight {
+  right: -14px;
+}
+
+.edicionMobileControls {
+  display: none;
+}
+
+.edicionMobileArrow {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--nav-border);
+  border-radius: 50%;
+  background: var(--nav-bg);
+  color: var(--nav-text);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.edicionMobileArrow:hover {
+  color: #A4518D;
+  border-color: #A4518D;
+}
+
+.edicionMobileDots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.edicionMobileDot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--nav-border);
+  cursor: pointer;
+  transition:
+    width 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.edicionMobileDotActive {
+  width: 22px;
+  background: #A4518D;
+}
 
 @media (max-width: 1100px) {
   .edicionTrack {
@@ -2209,20 +2347,97 @@
 }
 
 @media (max-width: 600px) {
+  .edicionSection {
+    margin-top: 44px;
+    margin-bottom: 42px;
+  }
+
+  .edicionCarousel {
+    width: 100%;
+  }
+
+  .edicionTrack {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+    padding: 0;
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+
   .edicionCard {
-    flex-basis: calc((100% - 18px) / 2);
-    max-width: calc((100% - 18px) / 2);
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    flex: none;
+    scroll-snap-align: none;
+    border-radius: 2px;
+    box-shadow: none;
+  }
+
+  .edicionCard:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .edicionCardImg {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+  }
+
+  .edicionCardImg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .edicionCardOverlay {
+    justify-content: flex-end;
+    padding: 11px 7px;
+  }
+
+  .edicionCardCats {
+    gap: 4px;
+    margin-bottom: 7px;
+  }
+
+  .edicionCardCat {
+    max-width: 100%;
+    padding: 4px 7px;
+    font-size: 8px;
+    letter-spacing: 0.8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .edicionCardTitle {
-    font-size: 19px;
+    font-size: clamp(15px, 4.5vw, 20px);
+    line-height: 1;
+    -webkit-line-clamp: 3;
   }
-}
 
-@media (max-width: 420px) {
-  .edicionCard {
-    flex-basis: 86%;
-    max-width: 86%;
+  .edicionCardAuthor {
+    margin-top: 6px;
+    font-size: 10px;
+    line-height: 1.1;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .edicionMobileControls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin-top: 18px;
+  }
+
+  .edicionMobileArrow {
+    display: flex;
   }
 }
 
@@ -2695,4 +2910,25 @@
   .triptychRankingMeta {
     font-size: 9px;
   }
+}
+
+/* Hover igual al de Highlights */
+.edicionCardTitle,
+.edicionCardAuthor {
+  transition:
+    color .22s ease,
+    text-shadow .22s ease;
+}
+
+.edicionCard:hover .edicionCardTitle {
+  color: #B75BA2;
+  text-shadow:
+    0 0 12px rgba(164,81,141,.35),
+    0 8px 24px rgba(0,0,0,.75);
+}
+
+.edicionCard:hover .edicionCardAuthor {
+  color: #A4518D;
+  text-shadow:
+    0 5px 18px rgba(0,0,0,.70);
 }
