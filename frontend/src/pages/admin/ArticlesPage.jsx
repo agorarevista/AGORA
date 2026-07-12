@@ -1,1190 +1,767 @@
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
-
-import {
-  Link,
-  useParams,
-} from 'react-router-dom';
-
-import {
-  AnimatePresence,
-  motion,
-} from 'framer-motion';
-
-import {
-  getArticle,
+  getArticles,
+  publishArticle,
+  deleteArticle,
 } from '../../api/articles.api';
 
 import {
-  getComments,
-} from '../../api/comments.api';
+  generateArticleVoice,
+  generateBothArticleVoices,
+  deleteArticleVoice,
+} from '../../api/articleAudio.api';
 
+import { formatDate } from '../../utils/formatDate';
+import useAlert   from '../../hooks/useAlert';
+import useConfirm from '../../hooks/useConfirm';
 import {
-  formatDate,
-} from '../../utils/formatDate';
-
-import {
-  ArrowLeft,
-  Clock,
-  Maximize2,
-  MessageCircle,
+  Plus,
+  Search,
+  Eye,
+  Edit,
+  Trash2,
+  Send,
+  FileText,
+  Filter,
+  ChevronDown,
   Mars,
-  Pause,
-  Play,
-  RotateCcw,
-  RotateCw,
   Venus,
+  AudioLines,
+  LoaderCircle,
 } from 'lucide-react';
-
-import {
-  FaFacebookF,
-  FaGlobe,
-  FaInstagram,
-  FaLink,
-  FaTiktok,
-  FaYoutube,
-} from 'react-icons/fa6';
-
-import LikeButton from '../../components/common/LikeButton/LikeButton';
-import ShareButtons from '../../components/common/ShareButtons/ShareButtons';
-import Comments from '../../components/common/Comments/Comments';
-import ImageViewer from '../../components/common/ImageViewer/ImageViewer';
 import styles from './ArticlesPage.module.css';
 
-
-const formatAudioTime = (value) => {
-  const totalSeconds = Math.max(
-    0,
-    Math.floor(Number(value) || 0)
-  );
-
-  const minutes = Math.floor(
-    totalSeconds / 60
-  );
-
-  const seconds =
-    totalSeconds % 60;
-
-  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+const STATUS_LABELS = {
+  draft:     { label: 'Borrador',  color: '#92400E', bg: '#FEF3C7' },
+  published: { label: 'Publicado', color: '#065F46', bg: '#D1FAE5' },
+  archived:  { label: 'Archivado', color: '#6B7280', bg: '#F3F4F6' },
 };
 
+export default function ArticlesPage() {
+  const navigate = useNavigate();
+  const alert    = useAlert();
+  const confirm  = useConfirm();
 
-export default function ArticlePage() {
-  const { slug } = useParams();
-
-  const [article, setArticle] =
-    useState(null);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState(null);
-
-  const [
-    showComments,
-    setShowComments,
-  ] = useState(false);
+  const [articles, setArticles]   = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [search, setSearch]       = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
 
   const [
-    commentCount,
-    setCommentCount,
-  ] = useState(0);
+    generatingAudio,
+    setGeneratingAudio,
+  ] = useState(null);
 
-  const [viewer, setViewer] =
-    useState(null);
+  const LIMIT = 15;
 
-  const [
-    selectedVoiceType,
-    setSelectedVoiceType,
-  ] = useState('female');
-
-  const [
-    isAudioPlaying,
-    setIsAudioPlaying,
-  ] = useState(false);
-
-  const [
-    audioCurrentTime,
-    setAudioCurrentTime,
-  ] = useState(0);
-
-  const [
-    audioDuration,
-    setAudioDuration,
-  ] = useState(0);
-
-  const [
-    playbackRate,
-    setPlaybackRate,
-  ] = useState(1);
-
-  const bodyRef = useRef(null);
-  const audioRef = useRef(null);
-
-
-  useEffect(() => {
+  const load = async () => {
     setLoading(true);
-    setError(null);
+    try {
+const params = { page, limit: LIMIT, status: statusFilter };
 
-    getArticle(slug)
-      .then(setArticle)
-      .catch(() => setError(true))
-      .finally(() =>
-        setLoading(false)
-      );
-  }, [slug]);
-
-
-  const loadCommentCount =
-    useCallback(async () => {
-      if (!article?.id) return;
-
-      try {
-        const data =
-          await getComments(article.id);
-
-        const totalCount =
-          (data || []).reduce(
-            (accumulator, item) => {
-              return (
-                accumulator +
-                1 +
-                (item.replies?.length || 0)
-              );
-            },
-            0
-          );
-
-        setCommentCount(totalCount);
-      } catch {
-        // No bloqueamos el artículo.
-      }
-    }, [article?.id]);
-
-
-  useEffect(() => {
-    if (!article?.id) return undefined;
-
-    loadCommentCount();
-
-    const interval = setInterval(
-      loadCommentCount,
-      2500
-    );
-
-    return () =>
-      clearInterval(interval);
-  }, [
-    article?.id,
-    loadCommentCount,
-  ]);
-
-
-  useEffect(() => {
-    const bodyElement =
-      bodyRef.current;
-
-    if (!bodyElement || !article) {
-      return undefined;
+      const res = await getArticles(params);
+      setArticles(res.data || []);
+      setTotal(res.total || 0);
+    } catch {
+      alert.error('Error', 'No se pudieron cargar los artículos');
+    } finally {
+      setLoading(false);
     }
-
-    const images = Array.from(
-      bodyElement.querySelectorAll('img')
-    );
-
-    const cleanups = [];
-
-    images.forEach(image => {
-      image.style.cursor = 'zoom-in';
-
-      const handleImageClick = event => {
-        const parentLink =
-          image.closest('a');
-
-        if (
-          parentLink &&
-          (
-            event.ctrlKey ||
-            event.metaKey
-          )
-        ) {
-          return;
-        }
-
-        event.preventDefault();
-        event.stopPropagation();
-
-        setViewer({
-          src:
-            image.currentSrc ||
-            image.src,
-
-          alt:
-            image.alt ||
-            '',
-        });
-      };
-
-      image.addEventListener(
-        'click',
-        handleImageClick
-      );
-
-      cleanups.push(() => {
-        image.removeEventListener(
-          'click',
-          handleImageClick
-        );
-      });
-    });
-
-    return () => {
-      cleanups.forEach(cleanup =>
-        cleanup()
-      );
-    };
-  }, [article]);
-
-
-  const maleAudioUrl =
-    article?.audio_male_url || '';
-
-  const femaleAudioUrl =
-    article?.audio_female_url || '';
-
-  const hasMaleAudio =
-    Boolean(maleAudioUrl);
-
-  const hasFemaleAudio =
-    Boolean(femaleAudioUrl);
-
-  const selectedAudioUrl =
-    selectedVoiceType === 'male'
-      ? maleAudioUrl
-      : femaleAudioUrl;
-
-  const storedDuration =
-    selectedVoiceType === 'male'
-      ? article?.audio_male_duration
-      : article?.audio_female_duration;
-
-
-  useEffect(() => {
-    if (
-      selectedVoiceType === 'female' &&
-      !hasFemaleAudio &&
-      hasMaleAudio
-    ) {
-      setSelectedVoiceType('male');
-    }
-
-    if (
-      selectedVoiceType === 'male' &&
-      !hasMaleAudio &&
-      hasFemaleAudio
-    ) {
-      setSelectedVoiceType('female');
-    }
-  }, [
-    hasFemaleAudio,
-    hasMaleAudio,
-    selectedVoiceType,
-  ]);
-
-
-  useEffect(() => {
-    const audio =
-      audioRef.current;
-
-    if (!audio) return;
-
-    audio.pause();
-    audio.currentTime = 0;
-    audio.playbackRate = playbackRate;
-
-    setIsAudioPlaying(false);
-    setAudioCurrentTime(0);
-    setAudioDuration(
-      Number(storedDuration) || 0
-    );
-
-    if (selectedAudioUrl) {
-      audio.load();
-    }
-  }, [
-    selectedAudioUrl,
-    storedDuration,
-    playbackRate,
-  ]);
-
-
-  useEffect(() => {
-    return () => {
-      const audio =
-        audioRef.current;
-
-      if (audio) {
-        audio.pause();
-      }
-    };
-  }, []);
-
-
-  const handleVoiceChange = (
-    nextVoice
-  ) => {
-    if (
-      nextVoice === 'male' &&
-      !hasMaleAudio
-    ) {
-      return;
-    }
-
-    if (
-      nextVoice === 'female' &&
-      !hasFemaleAudio
-    ) {
-      return;
-    }
-
-    setSelectedVoiceType(nextVoice);
   };
 
+  useEffect(() => { load(); }, [page, statusFilter]);
 
-  const handlePlayToggle =
-    async () => {
-      const audio =
-        audioRef.current;
+  // Filtro local por búsqueda
+  const filtered = articles.filter(a =>
+    a.title?.toLowerCase().includes(search.toLowerCase()) ||
+    a.collaborators?.name?.toLowerCase().includes(search.toLowerCase())
+  );
 
-      if (!audio || !selectedAudioUrl) {
-        return;
-      }
+const handlePublish = async (id) => {
+  const ok = await confirm({
+    type: 'info',
+    title: '¿Publicar este artículo?',
+    message: 'El artículo será visible para todos los lectores.',
+    confirmLabel: 'Sí, publicar',
+  });
+  if (!ok) return;
+    try {
+      await publishArticle(id);
+      alert.success('Publicado', 'El artículo ya está visible');
+      load();
+    } catch {
+      alert.error('Error', 'No se pudo publicar');
+    }
+  };
 
-      try {
-        if (audio.paused) {
-          await audio.play();
-        } else {
-          audio.pause();
-        }
-      } catch (playError) {
-        console.error(
-          'No se pudo reproducir el audio:',
-          playError
-        );
-      }
-    };
+const handleDelete = async (id) => {
+  const ok = await confirm({
+    type: 'danger',
+    title: '¿Eliminar este artículo?',
+    message: 'Esta acción eliminará el artículo permanentemente.',
+    confirmLabel: 'Sí, eliminar',
+  });
 
+  if (!ok) return;
 
-  const seekAudio = (
-    secondsToMove
-  ) => {
-    const audio =
-      audioRef.current;
+  try {
+    await deleteArticle(id);
 
-    if (!audio) return;
-
-    const nextTime = Math.min(
-      audio.duration || audioDuration || 0,
-      Math.max(
-        0,
-        audio.currentTime +
-        secondsToMove
+    setArticles(prev =>
+      prev.filter(article =>
+        article.id !== id
       )
     );
 
-    audio.currentTime = nextTime;
-    setAudioCurrentTime(nextTime);
-  };
-
-
-  const handleProgressChange = (
-    event
-  ) => {
-    const audio =
-      audioRef.current;
-
-    if (!audio) return;
-
-    const nextTime = Number(
-      event.target.value
+    setTotal(prev =>
+      Math.max(0, prev - 1)
     );
 
-    audio.currentTime = nextTime;
-    setAudioCurrentTime(nextTime);
-  };
-
-
-  const handleRateChange = (
-    event
-  ) => {
-    const nextRate = Number(
-      event.target.value
+    alert.success(
+      'Eliminado',
+      'El artículo fue eliminado correctamente'
     );
+  } catch (error) {
+    console.error(error);
 
-    setPlaybackRate(nextRate);
-
-    if (audioRef.current) {
-      audioRef.current.playbackRate =
-        nextRate;
-    }
-  };
-
-
-  if (loading) {
-    return <ArticleSkeleton />;
+    alert.error(
+      'Error',
+      'No se pudo eliminar el artículo'
+    );
   }
+};
 
-  if (error || !article) {
-    return <NotFound />;
-  }
+const handleGenerateVoice = async (
+  article,
+  voice
+) => {
+  const voiceName =
+    voice === 'male'
+      ? 'Jorge'
+      : 'Dalia';
 
+  const hasExistingAudio =
+    voice === 'male'
+      ? Boolean(article.audio_male_url)
+      : Boolean(article.audio_female_url);
 
-  const collab =
-    article.collaborators;
+  const ok = await confirm({
+    type: 'info',
 
-  const cats =
-    article.article_categories
-      ?.map(item => item.categories)
-      .filter(Boolean) || [];
+    title:
+      hasExistingAudio
+        ? `¿Regenerar la voz de ${voiceName}?`
+        : `¿Generar la voz de ${voiceName}?`,
 
-  const tags =
-    article.article_tags || [];
+    message:
+      hasExistingAudio
+        ? 'El audio anterior será sustituido por una narración nueva.'
+        : 'La narración se generará usando el texto actual del artículo.',
 
-  const hasAnyAudio =
-    hasMaleAudio ||
-    hasFemaleAudio;
+    confirmLabel:
+      hasExistingAudio
+        ? 'Sí, regenerar'
+        : 'Sí, generar',
+  });
 
+  if (!ok) return;
 
-  const renderSocialIcon = (
-    network
-  ) => {
-    const key = String(
-      network || ''
-    ).toLowerCase();
+  const operationKey =
+    `${article.id}:${voice}`;
 
-    if (key === 'instagram') {
-      return <FaInstagram size={26} />;
-    }
+  setGeneratingAudio(operationKey);
 
-    if (key === 'facebook') {
-      return <FaFacebookF size={24} />;
-    }
-
-    if (key === 'youtube') {
-      return <FaYoutube size={26} />;
-    }
-
-    if (key === 'tiktok') {
-      return <FaTiktok size={24} />;
-    }
-
-    if (key === 'website') {
-      return <FaGlobe size={24} />;
-    }
-
-    if (
-      key === 'twitter' ||
-      key === 'x'
-    ) {
-      return (
-        <svg
-          viewBox="0 0 24 24"
-          width="24"
-          height="24"
-          fill="currentColor"
-          aria-hidden="true"
-        >
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-        </svg>
-      );
-    }
-
-    return <FaLink size={24} />;
-  };
-
-
-  const socialEntries =
-    Object.entries(
-      collab?.social_links || {}
-    ).filter(([, url]) =>
-      Boolean(url)
+  try {
+    await generateArticleVoice(
+      article.id,
+      voice
     );
 
+    alert.success(
+      'Audio generado',
+      `La narración de ${voiceName} ya está disponible.`
+    );
+
+    await load();
+  } catch (error) {
+    console.error(error);
+
+    alert.error(
+      'Error de narración',
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      'No se pudo generar el audio.'
+    );
+  } finally {
+    setGeneratingAudio(null);
+  }
+};
+
+const handleGenerateBoth = async (
+  article
+) => {
+  const ok = await confirm({
+    type: 'info',
+    title: '¿Generar ambas voces?',
+    message:
+      'Jorge y Dalia se generarán simultáneamente. El proceso puede tardar alrededor de un minuto según la extensión del artículo.',
+    confirmLabel: 'Sí, generar ambas',
+  });
+
+  if (!ok) return;
+
+  const operationKey =
+    `${article.id}:both`;
+
+  setGeneratingAudio(operationKey);
+
+  try {
+    await generateBothArticleVoices(
+      article.id
+    );
+
+    alert.success(
+      'Narraciones generadas',
+      'Las voces de Jorge y Dalia ya están disponibles.'
+    );
+
+    await load();
+  } catch (error) {
+    console.error(error);
+
+    alert.error(
+      'Error de narración',
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      'No se pudieron generar ambas voces.'
+    );
+  } finally {
+    setGeneratingAudio(null);
+  }
+};
+
+const handleDeleteVoice = async (
+  article,
+  voice
+) => {
+  const voiceName =
+    voice === 'male'
+      ? 'Jorge'
+      : 'Dalia';
+
+  const ok = await confirm({
+    type: 'danger',
+    title:
+      `¿Eliminar el audio de ${voiceName}?`,
+    message:
+      'La narración dejará de estar disponible para los lectores.',
+    confirmLabel:
+      'Sí, eliminar audio',
+  });
+
+  if (!ok) return;
+
+  const operationKey =
+    `${article.id}:delete-${voice}`;
+
+  setGeneratingAudio(operationKey);
+
+  try {
+    await deleteArticleVoice(
+      article.id,
+      voice
+    );
+
+    alert.success(
+      'Audio eliminado',
+      `Se eliminó la narración de ${voiceName}.`
+    );
+
+    await load();
+  } catch (error) {
+    console.error(error);
+
+    alert.error(
+      'Error',
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      'No se pudo eliminar el audio.'
+    );
+  } finally {
+    setGeneratingAudio(null);
+  }
+};
+
+  const totalPages = Math.ceil(total / LIMIT);
 
   return (
     <div className={styles.page}>
-      <motion.header
-        initial={{
-          opacity: 0,
-          y: 20,
-        }}
-        animate={{
-          opacity: 1,
-          y: 0,
-        }}
-        transition={{
-          duration: 0.5,
-        }}
+
+      {/* ── Header ────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
         className={styles.header}
       >
-        <div className={styles.headerInner}>
-          <Link
-            to="/"
-            className={styles.back}
-          >
-            <ArrowLeft size={14} />
-            Inicio
-          </Link>
-
-          {cats.length > 0 && (
-            <div
-              className={styles.categories}
-            >
-              {cats.map(
-                (category, index) => (
-                  <Link
-                    key={
-                      category.id ||
-                      category.slug ||
-                      `${category.name}-${index}`
-                    }
-                    to={`/categoria/${category.slug}`}
-                    className={styles.categoryTag}
-                  >
-                    {category.name}
-                  </Link>
-                )
-              )}
-            </div>
-          )}
-
-          <h1 className={styles.title}>
-            {article.title}
-          </h1>
-
-          {article.subtitle && (
-            <p className={styles.subtitle}>
-              {article.subtitle}
-            </p>
-          )}
-
-          <div className={styles.meta}>
-            {collab && (
-              <Link
-                to={`/colaborador/${collab.slug}`}
-                className={styles.author}
-              >
-                {collab.photo_url && (
-                  <img
-                    src={collab.photo_url}
-                    alt={collab.name}
-                    className={styles.authorAvatar}
-                  />
-                )}
-
-                <span>{collab.name}</span>
-
-                {collab.section_name && (
-                  <span
-                    className={styles.authorSection}
-                  >
-                    · {collab.section_name}
-                  </span>
-                )}
-              </Link>
-            )}
-
-            <div className={styles.metaRight}>
-              <span
-                className={styles.publishDate}
-              >
-                {formatDate(
-                  article.published_at
-                )}
-              </span>
-
-              {hasAnyAudio && (
-                <>
-                  <span className={styles.dot}>
-                    ·
-                  </span>
-
-                  <div
-                    className={styles.speechControls}
-                  >
-                    <button
-                      type="button"
-                      className={`
-                        ${styles.speechPlayButton}
-                        ${
-                          isAudioPlaying
-                            ? styles.speechPlayButtonActive
-                            : ''
-                        }
-                      `}
-                      onClick={handlePlayToggle}
-                      title={
-                        isAudioPlaying
-                          ? 'Pausar'
-                          : 'Escuchar artículo'
-                      }
-                      aria-label={
-                        isAudioPlaying
-                          ? 'Pausar narración'
-                          : 'Reproducir narración'
-                      }
-                    >
-                      {isAudioPlaying ? (
-                        <Pause size={13} />
-                      ) : (
-                        <Play size={13} />
-                      )}
-                    </button>
-
-                    <div
-                      className={styles.speechVoiceButtons}
-                      role="group"
-                      aria-label="Seleccionar voz"
-                    >
-                      <button
-                        type="button"
-                        className={`
-                          ${styles.speechVoiceButton}
-                          ${
-                            selectedVoiceType === 'male'
-                              ? styles.speechVoiceButtonActive
-                              : ''
-                          }
-                        `}
-                        onClick={() =>
-                          handleVoiceChange('male')
-                        }
-                        disabled={!hasMaleAudio}
-                        title={
-                          hasMaleAudio
-                            ? 'Voz de Jorge'
-                            : 'Voz masculina no disponible'
-                        }
-                      >
-                        <Mars size={15} />
-                      </button>
-
-                      <button
-                        type="button"
-                        className={`
-                          ${styles.speechVoiceButton}
-                          ${
-                            selectedVoiceType === 'female'
-                              ? styles.speechVoiceButtonActive
-                              : ''
-                          }
-                        `}
-                        onClick={() =>
-                          handleVoiceChange('female')
-                        }
-                        disabled={!hasFemaleAudio}
-                        title={
-                          hasFemaleAudio
-                            ? 'Voz de Dalia'
-                            : 'Voz femenina no disponible'
-                        }
-                      >
-                        <Venus size={15} />
-                      </button>
-                    </div>
-
-                    <button
-                      type="button"
-                      className={styles.audioSkipButton}
-                      onClick={() =>
-                        seekAudio(-10)
-                      }
-                      title="Retroceder 10 segundos"
-                    >
-                      <RotateCcw size={13} />
-                    </button>
-
-                    <button
-                      type="button"
-                      className={styles.audioSkipButton}
-                      onClick={() =>
-                        seekAudio(10)
-                      }
-                      title="Adelantar 10 segundos"
-                    >
-                      <RotateCw size={13} />
-                    </button>
-
-                    <div
-                      className={styles.speechDuration}
-                    >
-                      <Clock size={12} />
-
-                      <span>
-                        {formatAudioTime(
-                          audioCurrentTime
-                        )}
-                        {' / '}
-                        {formatAudioTime(
-                          audioDuration ||
-                          storedDuration
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {hasAnyAudio && (
-            <div className={styles.audioProgressRow}>
-              <input
-                type="range"
-                min="0"
-                max={
-                  audioDuration ||
-                  storedDuration ||
-                  0
-                }
-                step="0.1"
-                value={Math.min(
-                  audioCurrentTime,
-                  audioDuration ||
-                  storedDuration ||
-                  0
-                )}
-                onChange={handleProgressChange}
-                className={styles.audioProgress}
-                aria-label="Posición de la narración"
-              />
-
-              <select
-                value={playbackRate}
-                onChange={handleRateChange}
-                className={styles.audioRate}
-                aria-label="Velocidad de reproducción"
-              >
-                <option value="0.75">
-                  0.75×
-                </option>
-
-                <option value="1">
-                  1×
-                </option>
-
-                <option value="1.25">
-                  1.25×
-                </option>
-
-                <option value="1.5">
-                  1.5×
-                </option>
-              </select>
-            </div>
-          )}
-
-          <audio
-            ref={audioRef}
-            src={selectedAudioUrl || undefined}
-            preload="metadata"
-            onPlay={() =>
-              setIsAudioPlaying(true)
-            }
-            onPause={() =>
-              setIsAudioPlaying(false)
-            }
-            onEnded={() => {
-              setIsAudioPlaying(false);
-              setAudioCurrentTime(0);
-            }}
-            onTimeUpdate={event =>
-              setAudioCurrentTime(
-                event.currentTarget.currentTime
-              )
-            }
-            onLoadedMetadata={event => {
-              const duration =
-                event.currentTarget.duration;
-
-              if (
-                Number.isFinite(duration)
-              ) {
-                setAudioDuration(duration);
-              }
-
-              event.currentTarget.playbackRate =
-                playbackRate;
-            }}
-          />
+        <div>
+          <div className={styles.headerLabel}>Contenido</div>
+          <h1 className={styles.headerTitle}>Artículos</h1>
         </div>
-      </motion.header>
-
-      <div className={styles.meander} />
-
-      {article.cover_image_url && (
-        <motion.div
-          initial={{
-            opacity: 0,
-            scale: 1.02,
-          }}
-          animate={{
-            opacity: 1,
-            scale: 1,
-          }}
-          transition={{
-            duration: 0.6,
-            delay: 0.1,
-          }}
-          className={styles.coverWrap}
-          onClick={() =>
-            setViewer({
-              src: article.cover_image_url,
-              alt: article.title,
-            })
-          }
-        >
-          <img
-            src={article.cover_image_url}
-            alt={article.title}
-            className={styles.cover}
-          />
-
-          <div
-            className={styles.coverExpand}
-          >
-            <Maximize2 size={18} />
-          </div>
-        </motion.div>
-      )}
-
-      <motion.div
-        initial={{
-          opacity: 0,
-          y: 20,
-        }}
-        animate={{
-          opacity: 1,
-          y: 0,
-        }}
-        transition={{
-          duration: 0.5,
-          delay: 0.2,
-        }}
-        className={styles.article}
-      >
-        {article.content_html && (
-          <div
-            ref={bodyRef}
-            className={styles.body}
-            dangerouslySetInnerHTML={{
-              __html:
-                article.content_html,
-            }}
-          />
-        )}
-
-        {tags.length > 0 && (
-          <div className={styles.tags}>
-            {tags.map((tag, index) => (
-              <span
-                key={
-                  tag.id ||
-                  `${tag.tag}-${tag.tag_type || 'tag'}-${index}`
-                }
-                className={styles.tag}
-              >
-                {tag.tag_type && (
-                  <span
-                    className={styles.tagType}
-                  >
-                    {tag.tag_type}
-                  </span>
-                )}
-
-                {tag.tag}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {collab && (
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 16,
-            }}
-            whileInView={{
-              opacity: 1,
-              y: 0,
-            }}
-            viewport={{
-              once: true,
-            }}
-            transition={{
-              duration: 0.4,
-            }}
-            className={styles.authorCard}
-          >
-            <Link
-              to={`/colaborador/${collab.slug}`}
-              className={styles.authorCardMain}
-            >
-              <div
-                className={styles.authorCardAvatarWrap}
-              >
-                {collab.photo_url ? (
-                  <img
-                    src={collab.photo_url}
-                    alt={collab.name}
-                    className={styles.authorCardAvatar}
-                  />
-                ) : (
-                  <div
-                    className={styles.authorCardAvatarFallback}
-                  >
-                    {collab.name
-                      ?.[0]
-                      ?.toUpperCase()}
-                  </div>
-                )}
-              </div>
-
-              <div
-                className={styles.authorCardInfo}
-              >
-                <div
-                  className={styles.authorCardLabel}
-                >
-                  Sobre el autor
-                </div>
-
-                <div
-                  className={styles.authorCardName}
-                >
-                  {collab.name}
-                </div>
-
-                {collab.section_name && (
-                  <div
-                    className={styles.authorCardSection}
-                  >
-                    {collab.section_name}
-                  </div>
-                )}
-
-                {collab.bio && (
-                  <p
-                    className={styles.authorCardBio}
-                  >
-                    {collab.bio}
-                  </p>
-                )}
-              </div>
-            </Link>
-
-            {socialEntries.length > 0 && (
-              <div
-                className={styles.authorSocials}
-              >
-                {socialEntries.map(
-                  ([network, url], index) => (
-                    <a
-                      key={`${network}-${index}`}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.socialIconLink}
-                      aria-label={network}
-                      title={network}
-                      onClick={event =>
-                        event.stopPropagation()
-                      }
-                    >
-                      {renderSocialIcon(network)}
-                    </a>
-                  )
-                )}
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        <div className={styles.actionsBar}>
-          <LikeButton
-            articleId={article.id}
-          />
-
-          <button
-            className={`
-              ${styles.actionIcon}
-              ${
-                showComments
-                  ? styles.actionIconActive
-                  : ''
-              }
-            `}
-            onClick={() =>
-              setShowComments(previous =>
-                !previous
-              )
-            }
-            title="Comentarios"
-          >
-            <span
-              className={styles.actionIconWrap}
-            >
-              <MessageCircle size={22} />
-            </span>
-
-            <span
-              className={styles.actionCount}
-            >
-              {commentCount}
-            </span>
-          </button>
-
-          <ShareButtons
-            article={article}
-          />
-        </div>
-
-        <AnimatePresence>
-          {showComments && (
-            <motion.div
-              initial={{
-                opacity: 0,
-                height: 0,
-              }}
-              animate={{
-                opacity: 1,
-                height: 'auto',
-              }}
-              exit={{
-                opacity: 0,
-                height: 0,
-              }}
-              transition={{
-                duration: 0.3,
-                ease: 'easeInOut',
-              }}
-              style={{
-                overflow: 'hidden',
-              }}
-            >
-              <Comments
-                articleId={article.id}
-                onCountChange={
-                  setCommentCount
-                }
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <Link to="/admin/articulos/nuevo" className={styles.newBtn}>
+          <Plus size={16} />
+          Nuevo artículo
+        </Link>
       </motion.div>
 
-      {viewer && (
-        <ImageViewer
-          src={viewer.src}
-          alt={viewer.alt}
-          onClose={() =>
-            setViewer(null)
-          }
-        />
-      )}
-    </div>
-  );
-}
-
-
-function ArticleSkeleton() {
-  return (
-    <div
-      style={{
-        padding: '48px 24px',
-        maxWidth: 760,
-        margin: '0 auto',
-      }}
-    >
-      {[300, 500, 60, 400, 400, 200]
-        .map((width, index) => (
-          <div
-            key={index}
-            style={{
-              height:
-                index === 1
-                  ? 48
-                  : 20,
-
-              width:
-                `${Math.min(width, 700)}px`,
-
-              maxWidth: '100%',
-
-              background:
-                'var(--color-gray-200)',
-
-              borderRadius: 4,
-              marginBottom: 16,
-            }}
+      {/* ── Filtros ───────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className={styles.filters}
+      >
+        {/* Búsqueda */}
+        <div className={styles.searchWrap}>
+          <Search size={15} className={styles.searchIcon} />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar por título o autor..."
+            className={styles.searchInput}
           />
-        ))}
+        </div>
+
+        {/* Filtro de estado */}
+        <div className={styles.filterWrap}>
+          <Filter size={14} />
+          <select
+            value={statusFilter}
+            onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+            className={styles.filterSelect}
+          >
+            <option value="all">Todos los estados</option>
+            <option value="draft">Borradores</option>
+            <option value="published">Publicados</option>
+            <option value="archived">Archivados</option>
+          </select>
+          <ChevronDown size={13} />
+        </div>
+
+        <div className={styles.totalCount}>
+          {total} artículo{total !== 1 ? 's' : ''}
+        </div>
+      </motion.div>
+
+      {/* ── Tabla ─────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1 }}
+        className={styles.tableWrap}
+      >
+        {loading ? (
+          <TableSkeleton />
+        ) : filtered.length === 0 ? (
+          <EmptyState search={search} />
+        ) : (
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Artículo</th>
+                <th>Autor</th>
+                <th>Secciones</th>
+                <th>Estado</th>
+                <th>Audio</th>
+                <th>Fecha</th>
+                <th>Vistas</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(art => {
+                const s = STATUS_LABELS[art.status] || STATUS_LABELS.draft;
+                const cats = art.article_categories?.map(ac => ac.categories?.name).filter(Boolean) || [];
+
+                return (
+                  <tr key={art.id}>
+                    {/* Artículo */}
+                    <td className={styles.tdArticle}>
+                      <div className={styles.articleInfo}>
+                        {art.cover_image_url ? (
+                          <img src={art.cover_image_url} alt="" className={styles.articleThumb} />
+                        ) : (
+                          <div className={styles.articleThumbEmpty}>
+                            <FileText size={14} />
+                          </div>
+                        )}
+                        <div>
+                          <div className={styles.articleTitle}>{art.title}</div>
+                          {art.subtitle && (
+                            <div className={styles.articleSubtitle}>{art.subtitle}</div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Autor */}
+                    <td className={styles.tdMuted}>
+                      {art.collaborators?.name || '—'}
+                    </td>
+
+                    {/* Secciones */}
+                    <td>
+                      <div className={styles.catTags}>
+                        {cats.slice(0, 2).map(c => (
+                          <span key={c} className={styles.catTag}>{c}</span>
+                        ))}
+                        {cats.length > 2 && (
+                          <span className={styles.catTagMore}>+{cats.length - 2}</span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Estado */}
+                    <td>
+                      <span
+                        className={styles.statusBadge}
+                        style={{
+                          background: s.bg,
+                          color: s.color,
+                        }}
+                      >
+                        {s.label}
+                      </span>
+                    </td>
+
+                    {/* Audio */}
+                    <td>
+                      <div className={styles.audioActions}>
+                        {/* Jorge */}
+                        <button
+                          type="button"
+                          className={`
+                            ${styles.audioVoiceBtn}
+                            ${
+                              art.audio_male_url
+                                ? styles.audioVoiceReady
+                                : ''
+                            }
+                          `}
+                          onClick={() =>
+                            handleGenerateVoice(
+                              art,
+                              'male'
+                            )
+                          }
+                          disabled={Boolean(
+                            generatingAudio
+                          )}
+                          title={
+                            art.audio_male_url
+                              ? 'Regenerar voz de Jorge'
+                              : 'Generar voz de Jorge'
+                          }
+                        >
+                          {
+                            generatingAudio ===
+                            `${art.id}:male`
+                              ? (
+                                <LoaderCircle
+                                  size={14}
+                                  className={styles.spinning}
+                                />
+                              )
+                              : (
+                                <Mars size={14} />
+                              )
+                          }
+                        </button>
+
+                        {/* Dalia */}
+                        <button
+                          type="button"
+                          className={`
+                            ${styles.audioVoiceBtn}
+                            ${
+                              art.audio_female_url
+                                ? styles.audioVoiceReady
+                                : ''
+                            }
+                          `}
+                          onClick={() =>
+                            handleGenerateVoice(
+                              art,
+                              'female'
+                            )
+                          }
+                          disabled={Boolean(
+                            generatingAudio
+                          )}
+                          title={
+                            art.audio_female_url
+                              ? 'Regenerar voz de Dalia'
+                              : 'Generar voz de Dalia'
+                          }
+                        >
+                          {
+                            generatingAudio ===
+                            `${art.id}:female`
+                              ? (
+                                <LoaderCircle
+                                  size={14}
+                                  className={styles.spinning}
+                                />
+                              )
+                              : (
+                                <Venus size={14} />
+                              )
+                          }
+                        </button>
+
+                        {/* Ambas voces */}
+                        <button
+                          type="button"
+                          className={styles.audioBothBtn}
+                          onClick={() =>
+                            handleGenerateBoth(art)
+                          }
+                          disabled={Boolean(
+                            generatingAudio
+                          )}
+                          title="Generar ambas voces"
+                        >
+                          {
+                            generatingAudio ===
+                            `${art.id}:both`
+                              ? (
+                                <LoaderCircle
+                                  size={14}
+                                  className={styles.spinning}
+                                />
+                              )
+                              : (
+                                <AudioLines size={14} />
+                              )
+                          }
+                        </button>
+
+                        {/* Eliminar Jorge */}
+                        {art.audio_male_url && (
+                          <button
+                            type="button"
+                            className={styles.audioDeleteBtn}
+                            onClick={() =>
+                              handleDeleteVoice(
+                                art,
+                                'male'
+                              )
+                            }
+                            disabled={Boolean(
+                              generatingAudio
+                            )}
+                            title="Eliminar voz de Jorge"
+                          >
+                            {
+                              generatingAudio ===
+                              `${art.id}:delete-male`
+                                ? (
+                                  <LoaderCircle
+                                    size={11}
+                                    className={styles.spinning}
+                                  />
+                                )
+                                : (
+                                  <>
+                                    <span>M</span>
+                                    <Trash2 size={11} />
+                                  </>
+                                )
+                            }
+                          </button>
+                        )}
+
+                        {/* Eliminar Dalia */}
+                        {art.audio_female_url && (
+                          <button
+                            type="button"
+                            className={styles.audioDeleteBtn}
+                            onClick={() =>
+                              handleDeleteVoice(
+                                art,
+                                'female'
+                              )
+                            }
+                            disabled={Boolean(
+                              generatingAudio
+                            )}
+                            title="Eliminar voz de Dalia"
+                          >
+                            {
+                              generatingAudio ===
+                              `${art.id}:delete-female`
+                                ? (
+                                  <LoaderCircle
+                                    size={11}
+                                    className={styles.spinning}
+                                  />
+                                )
+                                : (
+                                  <>
+                                    <span>F</span>
+                                    <Trash2 size={11} />
+                                  </>
+                                )
+                            }
+                          </button>
+                        )}
+                      </div>
+
+                      {art.audio_status === 'outdated' && (
+                        <div className={styles.audioOutdated}>
+                          Texto modificado
+                        </div>
+                      )}
+
+                      {art.audio_status === 'error' && (
+                        <div className={styles.audioError}>
+                          Error de audio
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Fecha */}
+                    <td className={styles.tdMuted}>
+                      {art.published_at
+                        ? formatDate(art.published_at)
+                        : formatDate(art.created_at)
+                      }
+                    </td>
+
+                    {/* Vistas */}
+                    <td className={styles.tdViews}>
+                      <div className={styles.viewsInline}>
+                        <Eye size={12} />
+                        <span>{art.views || 0}</span>
+                      </div>
+                    </td>
+
+                    {/* Acciones */}
+                    <td>
+                      <div className={styles.actions}>
+                        {/* Ver en sitio */}
+                        {art.status === 'published' && (
+                          <a
+                            href={`/articulos/${art.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.actionBtn}
+                            title="Ver en sitio"
+                          >
+                            <Eye size={14} />
+                          </a>
+                        )}
+
+                        {/* Editar */}
+                        <button
+                          onClick={() => navigate(`/admin/articulos/editar/${art.id}`)}
+                          className={styles.actionBtn}
+                          title="Editar"
+                        >
+                          <Edit size={14} />
+                        </button>
+
+                        {/* Publicar (solo borradores) */}
+                        {art.status === 'draft' && (
+                          <button
+                            onClick={() => handlePublish(art.id)}
+                            className={`${styles.actionBtn} ${styles.actionPublish}`}
+                            title="Publicar"
+                          >
+                            <Send size={14} />
+                          </button>
+                        )}
+
+                      {/* Eliminar */}
+                      <button
+                        onClick={() => handleDelete(art.id)}
+                        className={`${styles.actionBtn} ${styles.actionDelete}`}
+                        title="Eliminar"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </motion.div>
+
+      {/* ── Paginación ────────────────────────────────────── */}
+      {totalPages > 1 && (
+        <div className={styles.pagination}>
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className={styles.pageBtn}
+          >
+            ← Anterior
+          </button>
+          <span className={styles.pageInfo}>
+            Página {page} de {totalPages}
+          </span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className={styles.pageBtn}
+          >
+            Siguiente →
+          </button>
+        </div>
+      )}
+
     </div>
   );
 }
 
-
-function NotFound() {
+function TableSkeleton() {
   return (
-    <div
-      style={{
-        textAlign: 'center',
-        padding: '96px 24px',
-      }}
-    >
-      <div
-        style={{
-          fontFamily:
-            'var(--font-display)',
+    <div className={styles.skeleton}>
+      {[1,2,3,4,5].map(i => (
+        <div key={i} className={styles.skeletonRow} />
+      ))}
+    </div>
+  );
+}
 
-          fontSize: 64,
-
-          color:
-            'var(--color-gray-300)',
-        }}
-      >
-        Λ
-      </div>
-
-      <h2
-        style={{
-          fontFamily:
-            'var(--font-display)',
-
-          fontSize: 28,
-          marginBottom: 16,
-        }}
-      >
-        Artículo no encontrado
-      </h2>
-
-      <Link
-        to="/"
-        style={{
-          color:
-            'var(--color-accent)',
-
-          fontFamily:
-            'var(--font-sans)',
-        }}
-      >
-        Volver al inicio
-      </Link>
+function EmptyState({ search }) {
+  return (
+    <div className={styles.empty}>
+      <span className={styles.emptyIcon}>✦</span>
+      <h3>
+        {search
+          ? `Sin resultados para "${search}"`
+          : 'No hay artículos todavía'
+        }
+      </h3>
+      <p>
+        {search
+          ? 'Intenta con otro término de búsqueda'
+          : 'Crea el primer artículo de la revista'
+        }
+      </p>
+      {!search && (
+        <Link to="/admin/articulos/nuevo" className={styles.emptyBtn}>
+          <Plus size={14} /> Nuevo artículo
+        </Link>
+      )}
     </div>
   );
 }

@@ -14,7 +14,12 @@ const ALLOWED_FOLDERS = new Set([
   'editions',
   'sponsors',
   'submissions',
-]);
+
+  // Galerías fotográficas
+  'galleries',
+  'galleries/covers',
+  'galleries/photos',
+]); 
 
 const resolveFolder = (requestedFolder) => {
   const normalizedFolder = String(requestedFolder || 'misc')

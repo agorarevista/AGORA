@@ -523,15 +523,42 @@
 .emptyBtn:hover { background: var(--color-accent-light); color: white; }
 
 /* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .tableWrap {
+    overflow-x: auto;
+  }
+
+  .table {
+    min-width: 1040px;
+  }
+}
+
 @media (max-width: 768px) {
   .table th:nth-child(3),
   .table td:nth-child(3),
   .table th:nth-child(6),
-  .table td:nth-child(6) { display: none; }
+  .table td:nth-child(6) {
+    display: none;
+  }
+
+  .table {
+    min-width: 820px;
+  }
 }
 
 @media (max-width: 600px) {
   .table th:nth-child(2),
-  .table td:nth-child(2) { display: none; }
-  .headerTitle { font-size: 22px; }
+  .table td:nth-child(2),
+  .table th:nth-child(7),
+  .table td:nth-child(7) {
+    display: none;
+  }
+
+  .headerTitle {
+    font-size: 22px;
+  }
+
+  .audioActions {
+    min-width: 100px;
+  }
 }

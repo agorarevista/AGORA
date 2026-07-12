@@ -14,6 +14,60 @@ const CACHE_TTL = {
 const invalidateHomeCache = () => {
   setCache(CACHE_KEYS.HOME_PAYLOAD, null, 0);
 };
+
+const validateArticleCategories =
+  async categoryIds => {
+    const normalizedIds =
+      Array.isArray(categoryIds)
+        ? categoryIds.filter(Boolean)
+        : [];
+
+    if (
+      normalizedIds.length === 0
+    ) {
+      return;
+    }
+
+    const {
+      data: categories,
+      error,
+    } = await supabase
+      .from('categories')
+      .select(
+        'id, name, slug'
+      )
+      .in(
+        'id',
+        normalizedIds
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    const galleryCategory =
+      (categories || []).find(
+        category => {
+          return (
+            String(
+              category.slug || ''
+            )
+              .trim()
+              .toLowerCase() ===
+            'galeria'
+          );
+        }
+      );
+
+    if (galleryCategory) {
+      throw {
+        status: 400,
+
+        message:
+          'La sección Galería no acepta artículos tradicionales. Utiliza el módulo de galerías fotográficas.',
+      };
+    }
+  };
 // Campos base para listados
 const BASE_SELECT = `
   id,
@@ -364,13 +418,35 @@ const search = async (query, { page = 1, limit = 12 } = {}) => {
 
 const create = async (body) => {
   const {
-    title, subtitle, excerpt, content, content_html,
-    cover_image_url, collaborator_id, edition_id,
-    is_featured, featured_order, category_ids = [], tags = []
+    title,
+    subtitle,
+    excerpt,
+    content,
+    content_html,
+    cover_image_url,
+    collaborator_id,
+    edition_id,
+    is_featured,
+    featured_order,
+    category_ids = [],
+    tags = [],
   } = body;
 
-  const slug = slugify(title) + '-' + Date.now();
-  const reading_time = content_html ? readingTime(content_html) : 1;
+  await validateArticleCategories(
+    category_ids
+  );
+
+  const slug =
+    slugify(title) +
+    '-' +
+    Date.now();
+
+  const reading_time =
+    content_html
+      ? readingTime(
+          content_html
+        )
+      : 1;
 
   const { data: article, error } = await supabase
     .from('articles')
@@ -418,7 +494,10 @@ const create = async (body) => {
   return article;
 };
 
-const update = async (id, body) => {
+const update = async (
+  id,
+  body
+) => {
   const {
     category_ids,
     tags,
@@ -426,7 +505,19 @@ const update = async (id, body) => {
     ...rest
   } = body;
 
-  if (content_html !== undefined) {
+  if (
+    category_ids !==
+    undefined
+  ) {
+    await validateArticleCategories(
+      category_ids
+    );
+  }
+
+  if (
+    content_html !==
+    undefined
+  ) {
     rest.content_html = content_html;
 
     rest.reading_time =

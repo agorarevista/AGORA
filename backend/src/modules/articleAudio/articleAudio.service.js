@@ -408,15 +408,20 @@ const generateVoice = async (
 };
 
 const generateBoth = async (articleId) => {
-  const female = await generateVoice(
-    articleId,
-    'female'
-  );
+  const [
+    female,
+    male,
+  ] = await Promise.all([
+    generateVoice(
+      articleId,
+      'female'
+    ),
 
-  const male = await generateVoice(
-    articleId,
-    'male'
-  );
+    generateVoice(
+      articleId,
+      'male'
+    ),
+  ]);
 
   return {
     female,

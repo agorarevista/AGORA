@@ -1,171 +1,561 @@
 .sidebar {
   position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 260px;
-  background: var(--color-primary);
-  border-right: 1px solid #2A2A2A;
+  inset: 0 auto 0 0;
+  z-index: 1200;
+
   display: flex;
   flex-direction: column;
-  z-index: 50;
-  overflow-y: auto;
+
+  width: 260px;
+  height: 100vh;
+
+  overflow: hidden;
+
+  color: #d7d2cb;
+  background: #181818;
+  border-right: 1px solid #2a2a2a;
+
+  transition:
+    width 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.sidebarCollapsed {
+  width: 78px;
+}
+
+/* ══════════════════════════════════════════════════════
+   ENCABEZADO
+══════════════════════════════════════════════════════ */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  min-height: 82px;
+  padding: 16px 15px 16px 19px;
+
+  flex-shrink: 0;
 }
 
 .logo {
-  padding: 24px 20px;
-  border-bottom: 1px solid #2A2A2A;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 11px;
+
+  min-width: 0;
+
+  color: inherit;
   text-decoration: none;
 }
 
 .logoSymbol {
-  font-family: var(--font-display);
-  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 29px;
+  flex-shrink: 0;
+
   color: var(--color-accent);
+  font-family: var(--font-display);
+  font-size: 34px;
   line-height: 1;
 }
 
-.logoText { line-height: 1; }
+.logoText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
 
 .logoName {
+  color: #ffffff;
+
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
-  color: white;
   letter-spacing: 3px;
-  display: block;
+  line-height: 1;
 }
 
 .logoSub {
-  font-size: 10px;
-  color: var(--color-gray-500);
-  letter-spacing: 1px;
+  margin-top: 6px;
+
+  color: #77716d;
+
   font-family: var(--font-sans);
+  font-size: 9px;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+}
+
+.toggleButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+
+  padding: 0;
+
+  border: 1px solid transparent;
+  border-radius: 5px;
+
+  color: #8d8782;
+  background: transparent;
+
+  cursor: pointer;
+
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.toggleButton:hover {
+  color: #ffffff;
+  border-color: #373737;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .meander {
-  height: 2px;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--color-gold) 0px, var(--color-gold) 4px,
-    transparent 4px, transparent 8px
-  );
-  opacity: 0.3;
+  height: 3px;
+  flex-shrink: 0;
+
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--color-gold) 0,
+      var(--color-gold) 4px,
+      transparent 4px,
+      transparent 8px
+    );
+
+  opacity: 0.28;
 }
 
-.nav {
+/* ══════════════════════════════════════════════════════
+   NAVEGACIÓN
+══════════════════════════════════════════════════════ */
+
+.navigation {
   flex: 1;
-  padding: 16px 0;
+  min-height: 0;
+
+  padding: 15px 0 20px;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  scrollbar-width: thin;
+  scrollbar-color: #3d3d3d transparent;
 }
 
-.section {
-  margin-bottom: 8px;
+.navigation::-webkit-scrollbar {
+  width: 5px;
 }
 
-.sectionTitle {
+.navigation::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.navigation::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #3d3d3d;
+}
+
+.group + .group {
+  margin-top: 8px;
+}
+
+.groupLabel {
+  padding: 12px 20px 7px;
+
+  color: #625e5b;
+
   font-family: var(--font-sans);
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 9px;
+  font-weight: 800;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--color-gray-600);
-  padding: 12px 20px 6px;
 }
 
-.link {
+.groupItems {
+  display: flex;
+  flex-direction: column;
+}
+
+.navItem {
+  position: relative;
+
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 20px;
-  color: var(--color-gray-400);
+  gap: 11px;
+
+  min-height: 42px;
+  padding: 9px 19px;
+
+  border-left: 3px solid transparent;
+
+  color: #bbb5ae;
+  background: transparent;
+
   text-decoration: none;
+
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.navItem:hover {
+  color: #ffffff;
+  border-left-color: #67615e;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.navItemActive {
+  color: #ffffff;
+  border-left-color: var(--color-accent);
+  background:
+    rgba(164, 81, 141, 0.16);
+}
+
+.navIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 21px;
+  height: 21px;
+  flex-shrink: 0;
+
+  color: inherit;
+}
+
+.navLabel {
+  min-width: 0;
+
+  overflow: hidden;
+
   font-family: var(--font-sans);
   font-size: 13px;
-  transition: all 0.2s;
-  border-left: 3px solid transparent;
-  cursor: pointer;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.link:hover {
-  color: white;
-  background: rgba(255,255,255,0.05);
-  border-left-color: var(--color-gray-600);
-}
+/* ══════════════════════════════════════════════════════
+   USUARIO Y SESIÓN
+══════════════════════════════════════════════════════ */
 
-.link.active {
-  color: white;
-  background: rgba(139,26,74,0.15);
-  border-left-color: var(--color-accent);
-}
+.footer {
+  padding: 15px 17px 18px;
 
-.linkIcon {
-  font-size: 16px;
-  width: 20px;
-  text-align: center;
+  border-top: 1px solid #2a2a2a;
+
   flex-shrink: 0;
-}
-
-.bottom {
-  padding: 16px 20px;
-  border-top: 1px solid #2A2A2A;
 }
 
 .user {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
+
   margin-bottom: 12px;
 }
 
 .avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--color-accent);
   display: flex;
   align-items: center;
   justify-content: center;
+
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  color: #ffffff;
+  background: var(--color-accent);
+
   font-family: var(--font-display);
   font-size: 16px;
-  color: white;
-  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.userInfo {
+  min-width: 0;
 }
 
 .userName {
-  font-size: 13px;
-  color: white;
-  font-family: var(--font-sans);
-  font-weight: 600;
-  line-height: 1.2;
-}
+  overflow: hidden;
 
-.userRole {
-  font-size: 10px;
-  color: var(--color-gray-500);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
+  color: #ffffff;
 
-.logoutBtn {
-  width: 100%;
-  padding: 8px;
-  background: rgba(139,26,74,0.2);
-  border: 1px solid rgba(139,26,74,0.3);
-  border-radius: var(--radius-sm);
-  color: var(--color-accent-light);
   font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.2s;
+  line-height: 1.2;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.logoutBtn:hover {
+.userRole {
+  margin-top: 4px;
+
+  color: #746f6b;
+
+  font-family: var(--font-sans);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+
+.logoutButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 11px;
+
+  border:
+    1px solid
+    rgba(164, 81, 141, 0.32);
+
+  border-radius: var(--radius-sm);
+
+  color: #d771b5;
+  background:
+    rgba(164, 81, 141, 0.14);
+
+  cursor: pointer;
+
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.logoutButton:hover {
+  color: #ffffff;
+  border-color: var(--color-accent);
   background: var(--color-accent);
-  color: white;
+}
+
+/* ══════════════════════════════════════════════════════
+   ESTADO CONTRAÍDO
+══════════════════════════════════════════════════════ */
+
+.sidebarCollapsed .header {
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+
+  min-height: 104px;
+  padding: 12px 8px;
+}
+
+.sidebarCollapsed .logo {
+  justify-content: center;
+}
+
+.sidebarCollapsed .logoSymbol {
+  width: 34px;
+}
+
+.sidebarCollapsed .toggleButton {
+  width: 38px;
+  height: 30px;
+}
+
+.sidebarCollapsed .groupLabel {
+  display: none;
+}
+
+.sidebarCollapsed .group + .group {
+  margin-top: 7px;
+}
+
+.sidebarCollapsed .navItem {
+  justify-content: center;
+
+  min-height: 44px;
+  padding: 9px 8px;
+
+  border-left-width: 3px;
+}
+
+.sidebarCollapsed .navIcon {
+  width: 25px;
+  height: 25px;
+}
+
+.sidebarCollapsed .footer {
+  padding: 13px 9px 16px;
+}
+
+.sidebarCollapsed .user {
+  justify-content: center;
+}
+
+.sidebarCollapsed .avatar {
+  width: 38px;
+  height: 38px;
+}
+
+.sidebarCollapsed .logoutButton {
+  width: 42px;
+  margin: 0 auto;
+  padding-inline: 0;
+}
+
+/*
+ * Elementos que se ocultan únicamente cuando
+ * el Sidebar está contraído en escritorio.
+ *
+ * En móvil volverán a mostrarse dentro del
+ * bloque responsive de abajo.
+ */
+.desktopCollapsedOnly {
+  display: none;
+}
+
+/* ══════════════════════════════════════════════════════
+   TABLET Y MÓVIL
+══════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .sidebar,
+  .sidebarCollapsed {
+    width: min(310px, 88vw);
+
+    transform:
+      translateX(-105%);
+
+    box-shadow:
+      20px 0 55px
+      rgba(0, 0, 0, 0.38);
+  }
+
+  .sidebarMobileOpen {
+    transform:
+      translateX(0);
+  }
+
+  /*
+   * Aunque el Sidebar haya quedado contraído
+   * en escritorio, en móvil siempre se muestra
+   * completamente expandido.
+   */
+  .sidebarCollapsed .header {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 8px;
+
+    min-height: 82px;
+    padding: 16px 19px;
+  }
+
+  .sidebarCollapsed .logo {
+    justify-content: flex-start;
+  }
+
+  .sidebarCollapsed .logoSymbol {
+    width: 29px;
+  }
+
+  .sidebarCollapsed .group + .group {
+    margin-top: 8px;
+  }
+
+  .sidebarCollapsed .navItem {
+    justify-content: flex-start;
+
+    min-height: 42px;
+    padding: 9px 19px;
+  }
+
+  .sidebarCollapsed .navIcon {
+    width: 21px;
+    height: 21px;
+  }
+
+  .sidebarCollapsed .footer {
+    padding: 15px 17px 18px;
+  }
+
+  .sidebarCollapsed .user {
+    justify-content: flex-start;
+  }
+
+  .sidebarCollapsed .avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .sidebarCollapsed .logoutButton {
+    width: 100%;
+    margin: 0;
+    padding: 8px 11px;
+  }
+
+  /*
+   * Estos elementos fueron ocultados en
+   * escritorio contraído, pero en móvil deben
+   * volver a aparecer.
+   */
+  .logoText.desktopCollapsedOnly {
+    display: flex;
+  }
+
+  .groupLabel.desktopCollapsedOnly {
+    display: block;
+  }
+
+  .navLabel.desktopCollapsedOnly {
+    display: inline;
+  }
+
+  .userInfo.desktopCollapsedOnly {
+    display: block;
+  }
+
+  .logoutButton .desktopCollapsedOnly {
+    display: inline;
+  }
+
+  /*
+   * En móvil la apertura y cierre se controla
+   * desde el botón hamburguesa de AdminLayout.
+   */
+  .toggleButton {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .navItem,
+  .toggleButton,
+  .logoutButton {
+    transition: none;
+  }
 }

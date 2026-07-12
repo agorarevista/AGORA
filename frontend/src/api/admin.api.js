@@ -170,3 +170,30 @@ export const uploadFiles = (
     )
     .then(response => response.data);
 };
+export const deleteUploadedFile =
+  key => {
+    if (
+      !key ||
+      typeof key !== 'string'
+    ) {
+      return Promise.reject(
+        new Error(
+          'La key del archivo no es válida'
+        )
+      );
+    }
+
+    return api
+      .delete(
+        '/upload',
+        {
+          data: {
+            key,
+          },
+        }
+      )
+      .then(
+        response =>
+          response.data
+      );
+  };

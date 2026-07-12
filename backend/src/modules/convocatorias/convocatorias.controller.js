@@ -1,48 +1,74 @@
-const service = require('./convocatorias.service');
+const service =
+  require('./convocatorias.service');
 
-const getAll = async (req, res, next) => {
+const getAll = async (
+  req,
+  res,
+  next
+) => {
   try {
     res.json(
       await service.getAll()
     );
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 };
 
-const getActive = async (req, res, next) => {
+const getActive = async (
+  req,
+  res,
+  next
+) => {
   try {
     res.json(
       await service.getActive()
     );
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 };
 
-const getById = async (req, res, next) => {
+const getById = async (
+  req,
+  res,
+  next
+) => {
   try {
     res.json(
       await service.getById(
         req.params.id
       )
     );
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 };
 
-const create = async (req, res, next) => {
+const create = async (
+  req,
+  res,
+  next
+) => {
   try {
-    res.status(201).json(
-      await service.create(req.body)
-    );
-  } catch (err) {
-    next(err);
+    const data =
+      await service.create(
+        req.body
+      );
+
+    res
+      .status(201)
+      .json(data);
+  } catch (error) {
+    next(error);
   }
 };
 
-const update = async (req, res, next) => {
+const update = async (
+  req,
+  res,
+  next
+) => {
   try {
     res.json(
       await service.update(
@@ -50,44 +76,58 @@ const update = async (req, res, next) => {
         req.body
       )
     );
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 };
 
-const open = async (req, res, next) => {
+const open = async (
+  req,
+  res,
+  next
+) => {
   try {
-    const data = await service.open(
-      req.params.id
-    );
+    const data =
+      await service.open(
+        req.params.id
+      );
 
     res.json({
       message:
-        'Convocatoria abierta correctamente',
+        'Colaboración abierta correctamente',
       data,
     });
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 };
 
-const close = async (req, res, next) => {
+const close = async (
+  req,
+  res,
+  next
+) => {
   try {
-    const data = await service.close(
-      req.params.id
-    );
+    const data =
+      await service.close(
+        req.params.id
+      );
 
     res.json({
       message:
-        'Convocatoria cerrada correctamente',
+        'Colaboración cerrada correctamente',
       data,
     });
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 };
 
-const remove = async (req, res, next) => {
+const remove = async (
+  req,
+  res,
+  next
+) => {
   try {
     await service.remove(
       req.params.id
@@ -95,10 +135,10 @@ const remove = async (req, res, next) => {
 
     res.json({
       message:
-        'Convocatoria eliminada definitivamente',
+        'Colaboración eliminada definitivamente',
     });
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 };
 

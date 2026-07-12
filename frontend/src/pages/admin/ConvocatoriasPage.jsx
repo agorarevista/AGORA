@@ -1,42 +1,62 @@
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
-  getConvocatorias,
-  createConvocatoria,
-  updateConvocatoria,
-  openConvocatoria,
-  closeConvocatoria,
-  deleteConvocatoria,
-} from '../../api/convocatorias.api';
-import { uploadFile } from '../../api/admin.api';
-import useAlert   from '../../hooks/useAlert';
-import useConfirm from '../../hooks/useConfirm';
-import { formatDate } from '../../utils/formatDate';
-import { Link } from 'react-router-dom';
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+
 import {
-  Plus,
-  X,
+  AnimatePresence,
+  motion,
+} from 'framer-motion';
+
+import {
+  CalendarDays,
   Check,
-  Upload,
-  Trash2,
-  Edit,
-  Calendar,
-  Users,
-  FileText,
-  Image as ImgIcon,
-  Inbox,
-  Lock,
-  Play,
   Clock3,
+  Edit3,
+  Lock,
+  Mail,
+  Plus,
+  Play,
+  Trash2,
+  Users,
+  X,
 } from 'lucide-react';
+
+import {
+  closeConvocatoria,
+  createConvocatoria,
+  deleteConvocatoria,
+  getConvocatorias,
+  openConvocatoria,
+  updateConvocatoria,
+} from '../../api/convocatorias.api';
+
+import useAlert from '../../hooks/useAlert';
+import useConfirm from '../../hooks/useConfirm';
+
 import styles from './ConvocatoriasPage.module.css';
 
-const CATEGORIES = [
+const DEFAULT_CATEGORIES = [
   'Poesía',
-  'Ficción (cuento o narrativa breve)',
-  'No ficción (ensayo, crónica, reflexión, reportaje)',
-  'Visual (fotografía o ilustración)',
-  'Propuestas híbridas (poesía visual, minificción ilustrada)',
+  'Narrativa',
+  'Ensayo',
+  'Crítica',
+  'Pensamiento',
+  'Galería',
+  'Entrevista',
+  'Cultural',
+];
+
+const DEFAULT_RUBRICS = [
+  'Nombre completo del autor o autora',
+  'Breve semblanza de máximo 100 palabras',
+  'Fotografía de retrato',
+  'Ciudad de residencia',
+  'Usuario de Instagram',
+  'Categoría de participación',
+  'Título de la obra o propuesta',
+  'Obra o propuesta adjunta',
 ];
 
 const EMPTY_FORM = {
@@ -46,27 +66,24 @@ const EMPTY_FORM = {
   requirements: '',
   prizes: '',
   categories: [],
+  email_rubrics: DEFAULT_RUBRICS,
   contact_email:
     'contactoagorarevista@gmail.com',
-
   opens_at: '',
   closes_at: '',
-
   max_submissions: '',
+  filled_slots: 0,
   max_file_size_mb: 10,
-  cover_image_url: '',
-  gallery_images: [],
   is_active: true,
 };
 
-function toDateTimeInputValue(
-  dateValue
-) {
-  if (!dateValue) {
+const toInputDateTime = value => {
+  if (!value) {
     return '';
   }
 
-  const date = new Date(dateValue);
+  const date =
+    new Date(value);
 
   if (
     Number.isNaN(date.getTime())
@@ -74,8 +91,8 @@ function toDateTimeInputValue(
     return '';
   }
 
-  const pad = value =>
-    String(value).padStart(2, '0');
+  const pad = number =>
+    String(number).padStart(2, '0');
 
   return [
     date.getFullYear(),
@@ -88,16 +105,15 @@ function toDateTimeInputValue(
     ':',
     pad(date.getMinutes()),
   ].join('');
-}
+};
 
-function toIsoDateOrNull(
-  dateValue
-) {
-  if (!dateValue) {
+const toIsoDate = value => {
+  if (!value) {
     return null;
   }
 
-  const date = new Date(dateValue);
+  const date =
+    new Date(value);
 
   if (
     Number.isNaN(date.getTime())
@@ -106,754 +122,1301 @@ function toIsoDateOrNull(
   }
 
   return date.toISOString();
-}
+};
 
-function getConvocatoriaStatus(
-  convocatoria
-) {
-  const now = new Date();
+const getStatus = item => {
+  if (item.runtime_status) {
+    return item.runtime_status;
+  }
+
+  const now = Date.now();
 
   const opensAt =
-    convocatoria.opens_at
+    item.opens_at
       ? new Date(
-          convocatoria.opens_at
-        )
+          item.opens_at
+        ).getTime()
       : null;
 
   const closesAt =
-    convocatoria.closes_at
+    item.closes_at
       ? new Date(
-          convocatoria.closes_at
-        )
+          item.closes_at
+        ).getTime()
       : null;
 
-  if (!convocatoria.is_active) {
+  const full =
+    item.max_submissions !==
+      null &&
+    item.max_submissions !==
+      undefined &&
+    Number(item.filled_slots || 0) >=
+      Number(item.max_submissions);
+
+  if (!item.is_active) {
     return 'closed';
   }
 
   if (
-    opensAt &&
+    opensAt !== null &&
     opensAt > now
   ) {
     return 'scheduled';
   }
 
   if (
-    closesAt &&
+    closesAt !== null &&
     closesAt <= now
   ) {
     return 'closed';
   }
 
+  if (full) {
+    return 'full';
+  }
+
   return 'open';
-}
+};
+
+const formatDateTime = value => {
+  if (!value) {
+    return 'Sin definir';
+  }
+
+  return new Intl.DateTimeFormat(
+    'es-MX',
+    {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }
+  ).format(
+    new Date(value)
+  );
+};
 
 export default function ConvocatoriasPage() {
-  const alert   = useAlert();
+  const alert = useAlert();
   const confirm = useConfirm();
-  const [convs, setConvs]       = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [preview, setPreview]   = useState(false);
-  const [editing, setEditing]   = useState(null);
-  const [form, setForm]         = useState(EMPTY_FORM);
-  const [saving, setSaving]     = useState(false);
-  const [uploadingCover, setUploadingCover] = useState(false);
-  const [uploadingGallery, setUploadingGallery] = useState(false);
+
+  const [
+    convocatorias,
+    setConvocatorias,
+  ] = useState([]);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    showForm,
+    setShowForm,
+  ] = useState(false);
+
+  const [
+    editingId,
+    setEditingId,
+  ] = useState(null);
+
+  const [
+    saving,
+    setSaving,
+  ] = useState(false);
+
+  const [
+    form,
+    setForm,
+  ] = useState(
+    EMPTY_FORM
+  );
+
+  const setField = (
+    key,
+    value
+  ) => {
+    setForm(previous => ({
+      ...previous,
+      [key]: value,
+    }));
+  };
 
   const load = async () => {
     setLoading(true);
-    try { setConvs(await getConvocatorias()); }
-    catch { alert.error('Error', 'No se pudieron cargar las convocatorias'); }
-    finally { setLoading(false); }
+
+    try {
+      const data =
+        await getConvocatorias();
+
+      setConvocatorias(
+        Array.isArray(data)
+          ? data
+          : []
+      );
+    } catch (error) {
+      alert.error(
+        'Error',
+        error?.response?.data?.message ||
+          'No se pudieron cargar las colaboraciones'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
-  const setF = (key, val) => setForm(f => ({ ...f, [key]: val }));
+  const grouped =
+    useMemo(() => {
+      return {
+        scheduled:
+          convocatorias.filter(
+            item =>
+              getStatus(item) ===
+              'scheduled'
+          ),
+
+        open:
+          convocatorias.filter(
+            item =>
+              getStatus(item) ===
+              'open'
+          ),
+
+        full:
+          convocatorias.filter(
+            item =>
+              getStatus(item) ===
+              'full'
+          ),
+
+        closed:
+          convocatorias.filter(
+            item =>
+              getStatus(item) ===
+              'closed'
+          ),
+      };
+    }, [convocatorias]);
 
   const openNew = () => {
-    setEditing(null);
-    setForm(EMPTY_FORM);
-    setPreview(false);
-    setShowForm(true);
-  };
-
-  const openEdit = (c) => {
-    setEditing(c.id);
+    setEditingId(null);
     setForm({
-      title:           c.title || '',
-      subtitle:        c.subtitle || '',
-      description:     c.description || '',
-      requirements:    c.requirements || '',
-      prizes:          c.prizes || '',
-      categories:      c.categories || [],
-      contact_email:
-        c.contact_email ||
-        'contactoagorarevista@gmail.com',
-
-      opens_at:
-        toDateTimeInputValue(
-          c.opens_at
-        ),
-
-      closes_at:
-        toDateTimeInputValue(
-          c.closes_at
-        ),
-
-      max_submissions:
-        c.max_submissions || '',
-      max_file_size_mb: c.max_file_size_mb || 10,
-      cover_image_url: c.cover_image_url || '',
-      gallery_images:  c.gallery_images || [],
-      is_active:       c.is_active ?? true,
+      ...EMPTY_FORM,
+      email_rubrics: [
+        ...DEFAULT_RUBRICS,
+      ],
     });
-    setPreview(false);
     setShowForm(true);
   };
+
+  const openEdit = item => {
+    setEditingId(item.id);
+
+    setForm({
+      title:
+        item.title || '',
+      subtitle:
+        item.subtitle || '',
+      description:
+        item.description || '',
+      requirements:
+        item.requirements || '',
+      prizes:
+        item.prizes || '',
+      categories:
+        Array.isArray(
+          item.categories
+        )
+          ? item.categories
+          : [],
+      email_rubrics:
+        Array.isArray(
+          item.email_rubrics
+        ) &&
+        item.email_rubrics.length
+          ? item.email_rubrics
+          : [...DEFAULT_RUBRICS],
+      contact_email:
+        item.contact_email ||
+        'contactoagorarevista@gmail.com',
+      opens_at:
+        toInputDateTime(
+          item.opens_at
+        ),
+      closes_at:
+        toInputDateTime(
+          item.closes_at
+        ),
+      max_submissions:
+        item.max_submissions ??
+        '',
+      filled_slots:
+        item.filled_slots || 0,
+      max_file_size_mb:
+        item.max_file_size_mb ||
+        10,
+      is_active:
+        item.is_active ?? true,
+    });
+
+    setShowForm(true);
+  };
+
+  const closeModal = () => {
+    if (saving) {
+      return;
+    }
+
+    setShowForm(false);
+    setEditingId(null);
+  };
+
+  const toggleCategory =
+    category => {
+      setForm(previous => {
+        const current =
+          previous.categories || [];
+
+        return {
+          ...previous,
+          categories:
+            current.includes(
+              category
+            )
+              ? current.filter(
+                  item =>
+                    item !==
+                    category
+                )
+              : [
+                  ...current,
+                  category,
+                ],
+        };
+      });
+    };
+
+  const updateRubric = (
+    index,
+    value
+  ) => {
+    setForm(previous => ({
+      ...previous,
+      email_rubrics:
+        previous.email_rubrics.map(
+          (item, itemIndex) =>
+            itemIndex === index
+              ? value
+              : item
+        ),
+    }));
+  };
+
+  const addRubric = () => {
+    setForm(previous => ({
+      ...previous,
+      email_rubrics: [
+        ...previous.email_rubrics,
+        '',
+      ],
+    }));
+  };
+
+  const removeRubric =
+    index => {
+      setForm(previous => ({
+        ...previous,
+        email_rubrics:
+          previous.email_rubrics.filter(
+            (
+              _,
+              itemIndex
+            ) =>
+              itemIndex !== index
+          ),
+      }));
+    };
 
   const handleSave = async () => {
     if (!form.title.trim()) {
-      alert.warning('Falta el título', 'La convocatoria necesita un título');
+      alert.warning(
+        'Falta el título',
+        'Escribe un título para la colaboración'
+      );
       return;
     }
-    setSaving(true);
-    try {
-      const opensAt =
-        toIsoDateOrNull(
-          form.opens_at
-        );
 
-      const closesAt =
-        toIsoDateOrNull(
-          form.closes_at
-        );
+    if (!form.closes_at) {
+      alert.warning(
+        'Falta el cierre',
+        'Selecciona la fecha y hora de cierre'
+      );
+      return;
+    }
 
-      if (
-        opensAt &&
-        closesAt &&
-        new Date(opensAt) >=
-          new Date(closesAt)
-      ) {
-        alert.warning(
-          'Fechas incorrectas',
-          'La fecha de cierre debe ser posterior a la fecha de apertura'
-        );
+    const opensAt =
+      toIsoDate(
+        form.opens_at
+      );
 
-        setSaving(false);
-        return;
-      }
+    const closesAt =
+      toIsoDate(
+        form.closes_at
+      );
 
-      const payload = {
-        ...form,
+    if (!closesAt) {
+      alert.warning(
+        'Fecha inválida',
+        'La fecha de cierre no es válida'
+      );
+      return;
+    }
 
-        opens_at:
-          opensAt,
+    if (
+      opensAt &&
+      new Date(opensAt) >=
+        new Date(closesAt)
+    ) {
+      alert.warning(
+        'Fechas incorrectas',
+        'La fecha de cierre debe ser posterior a la apertura'
+      );
+      return;
+    }
 
-        closes_at:
-          closesAt,
-
-        max_submissions:
-          form.max_submissions
-            ? parseInt(
-                form.max_submissions,
-                10
-              )
-            : null,
-
-        max_file_size_mb:
-          parseInt(
-            form.max_file_size_mb,
+    const maxSubmissions =
+      form.max_submissions === ''
+        ? null
+        : Number.parseInt(
+            form.max_submissions,
             10
-          ) || 10,
-      };
-      if (editing) {
-        await updateConvocatoria(editing, payload);
-        alert.success('Actualizada', 'Convocatoria actualizada correctamente');
+          );
+
+    const filledSlots =
+      Number.parseInt(
+        form.filled_slots,
+        10
+      ) || 0;
+
+    if (
+      maxSubmissions !== null &&
+      filledSlots >
+        maxSubmissions
+    ) {
+      alert.warning(
+        'Cupos incorrectos',
+        'Los cupos ocupados no pueden superar el cupo total'
+      );
+      return;
+    }
+
+    const cleanRubrics =
+      form.email_rubrics
+        .map(item =>
+          item.trim()
+        )
+        .filter(Boolean);
+
+    if (!cleanRubrics.length) {
+      alert.warning(
+        'Faltan rúbricas',
+        'Agrega al menos un requisito para el correo'
+      );
+      return;
+    }
+
+    const payload = {
+      ...form,
+      title:
+        form.title.trim(),
+      subtitle:
+        form.subtitle.trim() ||
+        null,
+      description:
+        form.description.trim() ||
+        null,
+      requirements:
+        form.requirements.trim() ||
+        null,
+      prizes:
+        form.prizes.trim() ||
+        null,
+      contact_email:
+        form.contact_email.trim() ||
+        'contactoagorarevista@gmail.com',
+      categories:
+        form.categories,
+      email_rubrics:
+        cleanRubrics,
+      opens_at:
+        opensAt,
+      closes_at:
+        closesAt,
+      max_submissions:
+        maxSubmissions,
+      filled_slots:
+        filledSlots,
+      max_file_size_mb:
+        Number.parseInt(
+          form.max_file_size_mb,
+          10
+        ) || 10,
+      is_active:
+        Boolean(
+          form.is_active
+        ),
+    };
+
+    setSaving(true);
+
+    try {
+      if (editingId) {
+        await updateConvocatoria(
+          editingId,
+          payload
+        );
+
+        alert.success(
+          'Actualizada',
+          'La colaboración se actualizó correctamente'
+        );
       } else {
-        await createConvocatoria(payload);
+        await createConvocatoria(
+          payload
+        );
+
         alert.success(
           'Creada',
           opensAt &&
-          new Date(opensAt) > new Date()
-            ? 'Convocatoria programada correctamente'
-            : 'Convocatoria creada y publicada'
+          new Date(opensAt) >
+            new Date()
+            ? 'La colaboración quedó programada'
+            : 'La colaboración quedó publicada'
         );
       }
-      setShowForm(false);
-      load();
-    } catch (err) {
-      alert.error('Error', err.response?.data?.error || 'No se pudo guardar');
+
+      closeModal();
+      await load();
+    } catch (error) {
+      alert.error(
+        'No se pudo guardar',
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          'Ocurrió un error al guardar'
+      );
     } finally {
       setSaving(false);
     }
   };
 
-  const handleOpen = async convocatoria => {
-    const ok = await confirm({
-      type: 'success',
-      title: '¿Abrir esta convocatoria?',
-      message:
-        `"${convocatoria.title}" quedará visible inmediatamente y podrá recibir envíos.`,
-      confirmLabel: 'Sí, abrir',
-    });
+  const handleOpen =
+    async item => {
+      const accepted =
+        await confirm({
+          type: 'success',
+          title:
+            '¿Abrir esta colaboración ahora?',
+          message:
+            `"${item.title}" quedará visible inmediatamente.`,
+          confirmLabel:
+            'Sí, abrir',
+        });
 
-    if (!ok) {
-      return;
-    }
+      if (!accepted) {
+        return;
+      }
 
-    try {
-      await openConvocatoria(
-        convocatoria.id
-      );
+      try {
+        await openConvocatoria(
+          item.id
+        );
 
-      alert.success(
-        'Abierta',
-        'La convocatoria ya está recibiendo envíos'
-      );
+        alert.success(
+          'Colaboración abierta',
+          'Ya se encuentra visible al público'
+        );
 
-      await load();
-    } catch (error) {
-      alert.error(
-        'Error',
-        error?.response?.data?.error ||
-        error?.response?.data?.message ||
-        'No se pudo abrir la convocatoria'
-      );
-    }
-  };
+        await load();
+      } catch (error) {
+        alert.error(
+          'No se pudo abrir',
+          error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            'Actualiza la fecha de cierre e inténtalo nuevamente'
+        );
+      }
+    };
 
-  const handleClose = async convocatoria => {
-    const ok = await confirm({
-      type: 'warning',
-      title: '¿Cerrar esta convocatoria?',
-      message:
-        `"${convocatoria.title}" dejará de recibir envíos, pero permanecerá guardada en el panel.`,
-      confirmLabel: 'Sí, cerrar',
-    });
+  const handleClose =
+    async item => {
+      const accepted =
+        await confirm({
+          type: 'warning',
+          title:
+            '¿Cerrar esta colaboración?',
+          message:
+            `"${item.title}" dejará de mostrarse al público.`,
+          confirmLabel:
+            'Sí, cerrar',
+        });
 
-    if (!ok) {
-      return;
-    }
+      if (!accepted) {
+        return;
+      }
 
-    try {
-      await closeConvocatoria(
-        convocatoria.id
-      );
+      try {
+        await closeConvocatoria(
+          item.id
+        );
 
-      alert.success(
-        'Cerrada',
-        'La convocatoria dejó de recibir envíos'
-      );
+        alert.success(
+          'Colaboración cerrada',
+          'Ya no está visible al público'
+        );
 
-      await load();
-    } catch (error) {
-      alert.error(
-        'Error',
-        error?.response?.data?.error ||
-        error?.response?.data?.message ||
-        'No se pudo cerrar la convocatoria'
-      );
-    }
-  };
+        await load();
+      } catch (error) {
+        alert.error(
+          'No se pudo cerrar',
+          error?.response?.data?.message ||
+            'Intenta nuevamente'
+        );
+      }
+    };
 
-  const handleDelete = async convocatoria => {
-    const ok = await confirm({
-      type: 'error',
-      title:
-        '¿Eliminar definitivamente esta convocatoria?',
-      message:
-        `"${convocatoria.title}" y todos sus envíos asociados serán eliminados. Esta acción no se puede deshacer.`,
-      confirmLabel:
-        'Sí, eliminar',
-    });
+  const handleDelete =
+    async item => {
+      const accepted =
+        await confirm({
+          type: 'error',
+          title:
+            '¿Eliminar definitivamente?',
+          message:
+            `"${item.title}" será eliminada y esta acción no se puede deshacer.`,
+          confirmLabel:
+            'Sí, eliminar',
+        });
 
-    if (!ok) {
-      return;
-    }
+      if (!accepted) {
+        return;
+      }
 
-    try {
-      await deleteConvocatoria(
-        convocatoria.id
-      );
+      try {
+        await deleteConvocatoria(
+          item.id
+        );
 
-      alert.success(
-        'Eliminada',
-        'La convocatoria fue eliminada definitivamente'
-      );
+        alert.success(
+          'Eliminada',
+          'La colaboración fue eliminada'
+        );
 
-      await load();
-    } catch (error) {
-      alert.error(
-        'Error',
-        error?.response?.data?.error ||
-        error?.response?.data?.message ||
-        'No se pudo eliminar la convocatoria'
-      );
-    }
-  };
-
-  const handleCoverUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingCover(true);
-    try {
-      const res = await uploadFile(file, 'convocatorias');
-      setF('cover_image_url', res.url);
-      alert.success('Imagen subida', 'Portada cargada correctamente');
-    } catch { alert.error('Error', 'No se pudo subir la imagen'); }
-    finally { setUploadingCover(false); }
-  };
-
-  const handleGalleryUpload = async (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    setUploadingGallery(true);
-    try {
-      const urls = await Promise.all(files.map(f => uploadFile(f, 'convocatorias').then(r => r.url)));
-      setF('gallery_images', [...(form.gallery_images || []), ...urls]);
-      alert.success('Imágenes subidas', `${urls.length} imagen(es) agregada(s)`);
-    } catch { alert.error('Error', 'No se pudieron subir las imágenes'); }
-    finally { setUploadingGallery(false); }
-  };
-
-  const removeGalleryImg = (idx) => {
-    setF('gallery_images', form.gallery_images.filter((_, i) => i !== idx));
-  };
-
-  const toggleCategory = (cat) => {
-    const arr = form.categories || [];
-    setF('categories', arr.includes(cat) ? arr.filter(c => c !== cat) : [...arr, cat]);
-  };
-  const scheduled = convs.filter(
-    convocatoria =>
-      getConvocatoriaStatus(
-        convocatoria
-      ) === 'scheduled'
-  );
-
-  const active = convs.filter(
-    convocatoria =>
-      getConvocatoriaStatus(
-        convocatoria
-      ) === 'open'
-  );
-
-  const closed = convs.filter(
-    convocatoria =>
-      getConvocatoriaStatus(
-        convocatoria
-      ) === 'closed'
-  );
+        await load();
+      } catch (error) {
+        alert.error(
+          'No se pudo eliminar',
+          error?.response?.data?.message ||
+            'Intenta nuevamente'
+        );
+      }
+    };
 
   return (
-    <div className={styles.page}>
-
-      {/* ── Header ──────────────────────────────────────── */}
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className={styles.header}>
+    <main className={styles.page}>
+      <motion.header
+        initial={{
+          opacity: 0,
+          y: 14,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        className={styles.header}
+      >
         <div>
-          <div className={styles.headerLabel}>Editorial</div>
-          <h1 className={styles.headerTitle}>Convocatorias</h1>
+          <span
+            className={
+              styles.headerLabel
+            }
+          >
+            Editorial
+          </span>
+
+          <h1>
+            Colaboraciones
+          </h1>
+
+          <p>
+            Programa aperturas, cierres y
+            requisitos para recibir
+            propuestas por correo.
+          </p>
         </div>
-        <button onClick={openNew} className={styles.newBtn}>
-          <Plus size={16} /> Nueva convocatoria
+
+        <button
+          type="button"
+          className={styles.newButton}
+          onClick={openNew}
+        >
+          <Plus size={16} />
+          Nueva colaboración
         </button>
-      </motion.div>
+      </motion.header>
 
-      {/* ── Modal ──────────────────────────────────────── */}
-      <AnimatePresence>
-        {showForm && (
-          <div className={styles.overlay} onClick={() => setShowForm(false)}>
-            <motion.div
-              className={styles.modal}
-              onClick={e => e.stopPropagation()}
-              initial={{ opacity: 0, scale: 0.94, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, y: 20 }}
-              transition={{ duration: 0.22 }}
+      {loading ? (
+        <div className={styles.loading}>
+          Cargando colaboraciones…
+        </div>
+      ) : (
+        <div
+          className={
+            styles.sections
+          }
+        >
+          <StatusSection
+            title="Abiertas"
+            items={grouped.open}
+            status="open"
+            onEdit={openEdit}
+            onOpen={handleOpen}
+            onClose={handleClose}
+            onDelete={handleDelete}
+          />
+
+          <StatusSection
+            title="Programadas"
+            items={
+              grouped.scheduled
+            }
+            status="scheduled"
+            onEdit={openEdit}
+            onOpen={handleOpen}
+            onClose={handleClose}
+            onDelete={handleDelete}
+          />
+
+          <StatusSection
+            title="Cupos agotados"
+            items={grouped.full}
+            status="full"
+            onEdit={openEdit}
+            onOpen={handleOpen}
+            onClose={handleClose}
+            onDelete={handleDelete}
+          />
+
+          <StatusSection
+            title="Cerradas"
+            items={grouped.closed}
+            status="closed"
+            onEdit={openEdit}
+            onOpen={handleOpen}
+            onClose={handleClose}
+            onDelete={handleDelete}
+          />
+
+          {!convocatorias.length && (
+            <div
+              className={
+                styles.empty
+              }
             >
-              {/* Modal header */}
-              <div className={styles.modalHeader}>
-                <h3>{editing ? 'Editar convocatoria' : 'Nueva convocatoria'}</h3>
-                <div className={styles.modalHeaderActions}>
-                  <button
-                    className={`${styles.previewToggle} ${preview ? styles.previewToggleActive : ''}`}
-                    onClick={() => setPreview(p => !p)}
-                  >
-                    <Eye size={14} /> {preview ? 'Editar' : 'Preview'}
-                  </button>
-                  <button onClick={() => setShowForm(false)} className={styles.modalClose}>
-                    <X size={18} />
-                  </button>
-                </div>
-              </div>
+              <span>Λ</span>
 
-              {/* Preview */}
-              {preview ? (
-                <div className={styles.previewWrap}>
-                  <PreviewConvocatoria form={form} />
-                </div>
-              ) : (
-                <>
-                  <div className={styles.modalBody}>
+              <h2>
+                No hay colaboraciones todavía
+              </h2>
 
-                    {/* ── SECCIÓN: Identidad ─────────────────────── */}
-                    <SectionLabel>Identidad</SectionLabel>
+              <p>
+                Crea la primera para programar su apertura y cierre.
+              </p>
 
-                    <div className={styles.formGrid}>
-                      <div className={`${styles.formGroup} ${styles.span2}`}>
-                        <label className={styles.label}>Título *</label>
-                        <input
-                          type="text"
-                          value={form.title}
-                          onChange={e => setF('title', e.target.value)}
-                          className={styles.input}
-                          placeholder='ej: Convocatoria Agorá 11 — "La creación en tiempos de fractura"'
-                        />
-                      </div>
-                      <div className={`${styles.formGroup} ${styles.span2}`}>
-                        <label className={styles.label}>Subtítulo / bajada</label>
-                        <input
-                          type="text"
-                          value={form.subtitle}
-                          onChange={e => setF('subtitle', e.target.value)}
-                          className={styles.input}
-                          placeholder="Descripción breve que aparece en el header"
-                        />
-                      </div>
-                    </div>
-
-                    {/* ── SECCIÓN: Imagen ────────────────────────── */}
-                    <SectionLabel>Imagen de portada y galería</SectionLabel>
-
-                    <div className={styles.formGrid}>
-                      <div className={styles.formGroup}>
-                        <label className={styles.label}>Portada</label>
-                        <div className={styles.imgUploadBox}>
-                          {form.cover_image_url ? (
-                            <div className={styles.imgPreview}>
-                              <img src={form.cover_image_url} alt="Portada" />
-                              <button className={styles.imgRemove} onClick={() => setF('cover_image_url', '')}>
-                                <X size={12} />
-                              </button>
-                            </div>
-                          ) : (
-                            <label className={styles.uploadBtn}>
-                              <Upload size={14} />
-                              {uploadingCover ? 'Subiendo...' : 'Subir portada'}
-                              <input type="file" accept="image/*" onChange={handleCoverUpload} hidden />
-                            </label>
-                          )}
-                          <input
-                            type="text"
-                            value={form.cover_image_url}
-                            onChange={e => setF('cover_image_url', e.target.value)}
-                            className={styles.input}
-                            placeholder="O pega URL..."
-                            style={{ marginTop: 6 }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label className={styles.label}>Galería de imágenes (flyer, bases, etc.)</label>
-                        <label className={styles.uploadBtn}>
-                          <ImgIcon size={14} />
-                          {uploadingGallery ? 'Subiendo...' : 'Subir imágenes'}
-                          <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} hidden />
-                        </label>
-                        {form.gallery_images?.length > 0 && (
-                          <div className={styles.galleryGrid}>
-                            {form.gallery_images.map((url, i) => (
-                              <div key={i} className={styles.galleryThumb}>
-                                <img src={url} alt={`img-${i}`} />
-                                <button className={styles.galleryRemove} onClick={() => removeGalleryImg(i)}>
-                                  <X size={10} />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* ── SECCIÓN: Contenido ─────────────────────── */}
-                    <SectionLabel>Contenido</SectionLabel>
-
-                    <div className={styles.formGroup}>
-                      <label className={styles.label}>Descripción / cuerpo de la convocatoria *</label>
-                      <textarea
-                        value={form.description}
-                        onChange={e => setF('description', e.target.value)}
-                        className={`${styles.textarea} ${styles.textareaLg}`}
-                        rows={8}
-                        placeholder="Describe la convocatoria, temática, espíritu, a quién va dirigida..."
-                      />
-                    </div>
-
-                    <div className={styles.formGroup}>
-                      <label className={styles.label}>Requisitos de envío</label>
-                      <textarea
-                        value={form.requirements}
-                        onChange={e => setF('requirements', e.target.value)}
-                        className={styles.textarea}
-                        rows={5}
-                        placeholder="Qué debe incluir el correo, formatos aceptados, extensión máxima, idioma..."
-                      />
-                    </div>
-
-                    <div className={styles.formGroup}>
-                      <label className={styles.label}>Premios y reconocimientos (opcional)</label>
-                      <textarea
-                        value={form.prizes}
-                        onChange={e => setF('prizes', e.target.value)}
-                        className={styles.textarea}
-                        rows={3}
-                        placeholder="Publicación en la edición, difusión en redes, compensación económica..."
-                      />
-                    </div>
-
-                    {/* ── SECCIÓN: Categorías ────────────────────── */}
-                    <SectionLabel>Categorías aceptadas</SectionLabel>
-
-                    <div className={styles.categoriesGrid}>
-                      {CATEGORIES.map(cat => (
-                        <label key={cat} className={`${styles.catCheck} ${form.categories?.includes(cat) ? styles.catCheckActive : ''}`}>
-                          <input
-                            type="checkbox"
-                            checked={form.categories?.includes(cat)}
-                            onChange={() => toggleCategory(cat)}
-                          />
-                          <span>{cat}</span>
-                        </label>
-                      ))}
-                      {/* Categoría personalizada */}
-                      <input
-                        type="text"
-                        className={styles.input}
-                        placeholder="+ Otra categoría (presiona Enter)"
-                        onKeyDown={e => {
-                          if (e.key === 'Enter' && e.target.value.trim()) {
-                            e.preventDefault();
-                            toggleCategory(e.target.value.trim());
-                            e.target.value = '';
-                          }
-                        }}
-                      />
-                    </div>
-
-                    {/* ── SECCIÓN: Envío y límites ───────────────── */}
-                    <SectionLabel>Envío y límites</SectionLabel>
-
-                    <div className={styles.formGrid}>
-                      <div className={styles.formGroup}>
-                        <label className={styles.label}>Email de recepción *</label>
-                        <input
-                          type="email"
-                          value={form.contact_email}
-                          onChange={e => setF('contact_email', e.target.value)}
-                          className={styles.input}
-                          placeholder="contacto@agorarevista.com"
-                        />
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label className={styles.label}>
-                          Apertura programada
-                        </label>
-
-                        <input
-                          type="datetime-local"
-                          value={form.opens_at}
-                          onChange={event =>
-                            setF(
-                              'opens_at',
-                              event.target.value
-                            )
-                          }
-                          className={styles.input}
-                        />
-
-                        <div className={styles.fieldHint}>
-                          Déjalo vacío para abrirla inmediatamente
-                          al publicarla.
-                        </div>
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label className={styles.label}>
-                          Cierre programado
-                        </label>
-
-                        <input
-                          type="datetime-local"
-                          value={form.closes_at}
-                          onChange={event =>
-                            setF(
-                              'closes_at',
-                              event.target.value
-                            )
-                          }
-                          className={styles.input}
-                        />
-
-                        <div className={styles.fieldHint}>
-                          Dejará de recibir envíos automáticamente
-                          en la fecha y hora indicadas.
-                        </div>
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label className={styles.label}>Cupo máximo de envíos</label>
-                        <input
-                          type="number"
-                          value={form.max_submissions}
-                          onChange={e => setF('max_submissions', e.target.value)}
-                          className={styles.input}
-                          placeholder="Sin límite"
-                          min={1}
-                        />
-                        <div className={styles.fieldHint}>Se cierra al alcanzar el límite</div>
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label className={styles.label}>Tamaño máximo de archivo (MB)</label>
-                        <input
-                          type="number"
-                          value={form.max_file_size_mb}
-                          onChange={e => setF('max_file_size_mb', e.target.value)}
-                          className={styles.input}
-                          min={1}
-                          max={100}
-                        />
-                        <div className={styles.fieldHint}>Para adjuntos en el correo de envío</div>
-                      </div>
-                    </div>
-
-                    {/* ── SECCIÓN: Estado ────────────────────────── */}
-                    <SectionLabel>Estado</SectionLabel>
-
-                    <label className={styles.toggleRow}>
-                      <div>
-                        <div className={styles.toggleLabel}>Convocatoria activa (visible al público)</div>
-                        <div className={styles.toggleDesc}>Si está inactiva no aparece en el sitio</div>
-                      </div>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={form.is_active}
-                        onClick={() => setF('is_active', !form.is_active)}
-                        className={`${styles.toggle} ${form.is_active ? styles.toggleOn : ''}`}
-                      >
-                        <span className={styles.toggleThumb} />
-                      </button>
-                    </label>
-
-                  </div>
-
-                  {/* Footer */}
-                  <div className={styles.modalFooter}>
-                    <button onClick={() => setShowForm(false)} className={styles.cancelBtn}>Cancelar</button>
-                    <button onClick={() => setPreview(true)} className={styles.previewBtn}>
-                      <Eye size={14} /> Vista previa
-                    </button>
-                    <button onClick={handleSave} disabled={saving} className={styles.saveBtn}>
-                      <Check size={14} />
-                      {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Publicar convocatoria'}
-                    </button>
-                  </div>
-                </>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Lista activas ────────────────────────────────── */}
-      {loading ? <Skeleton /> : (
-        <>
-          {scheduled.length > 0 && (
-            <div className={styles.section}>
-              <div className={styles.sectionLabel}>
-                Programadas
-              </div>
-
-              <div className={styles.list}>
-                {scheduled.map((convocatoria, index) => (
-                  <ConvRow
-                    key={convocatoria.id}
-                    conv={convocatoria}
-                    index={index}
-                    status="scheduled"
-                    onEdit={openEdit}
-                    onOpen={handleOpen}
-                    onClose={handleClose}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {active.length > 0 && (
-            <div className={styles.section}>
-              <div className={styles.sectionLabel}>Abiertas</div>
-              <div className={styles.list}>
-                {active.map((c, i) => (
-                  <ConvRow
-                    key={c.id}
-                    conv={c}
-                    index={i}
-                    status="open"
-                    onEdit={openEdit}
-                    onOpen={handleOpen}
-                    onClose={handleClose}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {closed.length > 0 && (
-            <div className={styles.section}>
-              <div className={styles.sectionLabel}>Cerradas</div>
-              <div className={styles.list}>
-                {closed.map((c, i) => (
-                  <ConvRow
-                    key={c.id}
-                    conv={c}
-                    index={i}
-                    status="closed"
-                    onEdit={openEdit}
-                    onOpen={handleOpen}
-                    onClose={handleClose}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {convs.length === 0 && (
-            <div className={styles.empty}>
-              <span>◈</span>
-              <p>No hay convocatorias todavía.</p>
-              <button onClick={openNew} className={styles.newBtn}>
-                <Plus size={14} /> Crear primera convocatoria
+              <button
+                type="button"
+                className={
+                  styles.newButton
+                }
+                onClick={openNew}
+              >
+                <Plus size={15} />
+                Crear colaboración
               </button>
             </div>
           )}
-        </>
+        </div>
       )}
-    </div>
+
+      <AnimatePresence>
+        {showForm && (
+          <div
+            className={
+              styles.backdrop
+            }
+            onMouseDown={event => {
+              if (
+                event.target ===
+                event.currentTarget
+              ) {
+                closeModal();
+              }
+            }}
+          >
+            <motion.section
+              initial={{
+                opacity: 0,
+                scale: 0.97,
+                y: 16,
+              }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                y: 0,
+              }}
+              exit={{
+                opacity: 0,
+                scale: 0.97,
+                y: 16,
+              }}
+              className={
+                styles.modal
+              }
+            >
+              <header
+                className={
+                  styles.modalHeader
+                }
+              >
+                <div>
+                  <span>
+                    Gestión editorial
+                  </span>
+
+                  <h2>
+                    {editingId
+                      ? 'Editar colaboración'
+                      : 'Nueva colaboración'}
+                  </h2>
+                </div>
+
+                <button
+                  type="button"
+                  className={
+                    styles.iconButton
+                  }
+                  onClick={closeModal}
+                >
+                  <X size={18} />
+                </button>
+              </header>
+
+              <div
+                className={
+                  styles.modalBody
+                }
+              >
+                <FormSection
+                  title="Información principal"
+                >
+                  <div
+                    className={
+                      styles.formGrid
+                    }
+                  >
+                    <FormField
+                      label="Título"
+                      wide
+                    >
+                      <input
+                        value={
+                          form.title
+                        }
+                        onChange={
+                          event =>
+                            setField(
+                              'title',
+                              event.target
+                                .value
+                            )
+                        }
+                        placeholder="Título de la colaboración"
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Subtítulo"
+                      wide
+                    >
+                      <input
+                        value={
+                          form.subtitle
+                        }
+                        onChange={
+                          event =>
+                            setField(
+                              'subtitle',
+                              event.target
+                                .value
+                            )
+                        }
+                        placeholder="Una breve invitación"
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Descripción"
+                      wide
+                    >
+                      <textarea
+                        rows={6}
+                        value={
+                          form.description
+                        }
+                        onChange={
+                          event =>
+                            setField(
+                              'description',
+                              event.target
+                                .value
+                            )
+                        }
+                        placeholder="Explica el espíritu de la colaboración"
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Bases y requisitos"
+                      wide
+                    >
+                      <textarea
+                        rows={5}
+                        value={
+                          form.requirements
+                        }
+                        onChange={
+                          event =>
+                            setField(
+                              'requirements',
+                              event.target
+                                .value
+                            )
+                        }
+                        placeholder="Formatos, extensión, condiciones y demás bases"
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Publicación o reconocimientos"
+                      wide
+                    >
+                      <textarea
+                        rows={4}
+                        value={
+                          form.prizes
+                        }
+                        onChange={
+                          event =>
+                            setField(
+                              'prizes',
+                              event.target
+                                .value
+                            )
+                        }
+                        placeholder="Publicación, difusión, premios o reconocimientos"
+                      />
+                    </FormField>
+                  </div>
+                </FormSection>
+
+                <FormSection
+                  title="Categorías aceptadas"
+                >
+                  <div
+                    className={
+                      styles.categoryGrid
+                    }
+                  >
+                    {DEFAULT_CATEGORIES.map(
+                      category => (
+                        <button
+                          key={category}
+                          type="button"
+                          className={`${styles.categoryButton} ${
+                            form.categories.includes(
+                              category
+                            )
+                              ? styles.categoryButtonActive
+                              : ''
+                          }`}
+                          onClick={() =>
+                            toggleCategory(
+                              category
+                            )
+                          }
+                        >
+                          {form.categories.includes(
+                            category
+                          ) && (
+                            <Check
+                              size={13}
+                            />
+                          )}
+
+                          {category}
+                        </button>
+                      )
+                    )}
+                  </div>
+                </FormSection>
+
+                <FormSection
+                  title="Correo y rúbricas"
+                >
+                  <div
+                    className={
+                      styles.formGrid
+                    }
+                  >
+                    <FormField
+                      label="Correo receptor"
+                      wide
+                    >
+                      <input
+                        type="email"
+                        value={
+                          form.contact_email
+                        }
+                        onChange={
+                          event =>
+                            setField(
+                              'contact_email',
+                              event.target
+                                .value
+                            )
+                        }
+                      />
+                    </FormField>
+                  </div>
+
+                  <div
+                    className={
+                      styles.rubricList
+                    }
+                  >
+                    {form.email_rubrics.map(
+                      (
+                        rubric,
+                        index
+                      ) => (
+                        <div
+                          key={index}
+                          className={
+                            styles.rubricRow
+                          }
+                        >
+                          <span>
+                            {index + 1}
+                          </span>
+
+                          <input
+                            value={
+                              rubric
+                            }
+                            onChange={
+                              event =>
+                                updateRubric(
+                                  index,
+                                  event.target
+                                    .value
+                                )
+                            }
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              removeRubric(
+                                index
+                              )
+                            }
+                            disabled={
+                              form.email_rubrics
+                                .length ===
+                              1
+                            }
+                          >
+                            <Trash2
+                              size={14}
+                            />
+                          </button>
+                        </div>
+                      )
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    className={
+                      styles.secondaryButton
+                    }
+                    onClick={addRubric}
+                  >
+                    <Plus size={14} />
+                    Agregar rúbrica
+                  </button>
+                </FormSection>
+
+                <FormSection
+                  title="Programación y cupos"
+                >
+                  <div
+                    className={
+                      styles.formGrid
+                    }
+                  >
+                    <FormField
+                      label="Fecha de apertura"
+                    >
+                      <input
+                        type="datetime-local"
+                        value={
+                          form.opens_at
+                        }
+                        onChange={
+                          event =>
+                            setField(
+                              'opens_at',
+                              event.target
+                                .value
+                            )
+                        }
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Fecha de cierre"
+                    >
+                      <input
+                        type="datetime-local"
+                        value={
+                          form.closes_at
+                        }
+                        onChange={
+                          event =>
+                            setField(
+                              'closes_at',
+                              event.target
+                                .value
+                            )
+                        }
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Cupo total"
+                    >
+                      <input
+                        type="number"
+                        min="1"
+                        value={
+                          form.max_submissions
+                        }
+                        onChange={
+                          event =>
+                            setField(
+                              'max_submissions',
+                              event.target
+                                .value
+                            )
+                        }
+                        placeholder="Sin límite"
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Cupos ocupados"
+                    >
+                      <input
+                        type="number"
+                        min="0"
+                        value={
+                          form.filled_slots
+                        }
+                        onChange={
+                          event =>
+                            setField(
+                              'filled_slots',
+                              event.target
+                                .value
+                            )
+                        }
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Peso máximo por adjunto"
+                    >
+                      <div
+                        className={
+                          styles.inputSuffix
+                        }
+                      >
+                        <input
+                          type="number"
+                          min="1"
+                          value={
+                            form.max_file_size_mb
+                          }
+                          onChange={
+                            event =>
+                              setField(
+                                'max_file_size_mb',
+                                event.target
+                                  .value
+                              )
+                          }
+                        />
+
+                        <span>MB</span>
+                      </div>
+                    </FormField>
+                  </div>
+
+                  <label
+                    className={
+                      styles.toggleRow
+                    }
+                  >
+                    <div>
+                      <strong>
+                        Colaboración habilitada
+                      </strong>
+
+                      <span>
+                        Las fechas seguirán determinando si está programada, abierta o cerrada.
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={
+                        form.is_active
+                      }
+                      className={`${styles.toggle} ${
+                        form.is_active
+                          ? styles.toggleActive
+                          : ''
+                      }`}
+                      onClick={() =>
+                        setField(
+                          'is_active',
+                          !form.is_active
+                        )
+                      }
+                    >
+                      <span />
+                    </button>
+                  </label>
+                </FormSection>
+              </div>
+
+              <footer
+                className={
+                  styles.modalFooter
+                }
+              >
+                <button
+                  type="button"
+                  className={
+                    styles.cancelButton
+                  }
+                  onClick={closeModal}
+                  disabled={saving}
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  className={
+                    styles.saveButton
+                  }
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  <Check size={15} />
+
+                  {saving
+                    ? 'Guardando…'
+                    : editingId
+                      ? 'Guardar cambios'
+                      : 'Crear colaboración'}
+                </button>
+              </footer>
+            </motion.section>
+          </div>
+        )}
+      </AnimatePresence>
+    </main>
   );
 }
 
-/* ── Fila de convocatoria ──────────────────────────────── */
-function ConvRow({
-  conv: convocatoria,
+function StatusSection({
+  title,
+  items,
+  status,
+  onEdit,
+  onOpen,
+  onClose,
+  onDelete,
+}) {
+  if (!items.length) {
+    return null;
+  }
+
+  return (
+    <section
+      className={
+        styles.statusSection
+      }
+    >
+      <div
+        className={
+          styles.statusHeading
+        }
+      >
+        <h2>{title}</h2>
+        <span>{items.length}</span>
+      </div>
+
+      <div className={styles.list}>
+        {items.map(
+          (
+            item,
+            index
+          ) => (
+            <CollaborationRow
+              key={item.id}
+              item={item}
+              index={index}
+              status={status}
+              onEdit={onEdit}
+              onOpen={onOpen}
+              onClose={onClose}
+              onDelete={onDelete}
+            />
+          )
+        )}
+      </div>
+    </section>
+  );
+}
+
+function CollaborationRow({
+  item,
   index,
   status,
   onEdit,
@@ -861,44 +1424,28 @@ function ConvRow({
   onClose,
   onDelete,
 }) {
-  const now = new Date();
-
-  const opensAt =
-    convocatoria.opens_at
-      ? new Date(
-          convocatoria.opens_at
-        )
-      : null;
-
-  const closesAt =
-    convocatoria.closes_at
-      ? new Date(
-          convocatoria.closes_at
-        )
-      : null;
-
-  const daysLeft =
-    closesAt &&
-    closesAt > now
-      ? Math.ceil(
-          (
-            closesAt.getTime() -
-            now.getTime()
-          ) /
-          (
-            1000 *
-            60 *
-            60 *
-            24
+  const available =
+    item.available_slots ??
+    (
+      item.max_submissions !==
+        null &&
+      item.max_submissions !==
+        undefined
+        ? Math.max(
+            0,
+            Number(
+              item.max_submissions
+            ) -
+              Number(
+                item.filled_slots ||
+                0
+              )
           )
-        )
-      : null;
-
-  const isClosed =
-    status === 'closed';
+        : null
+    );
 
   return (
-    <motion.div
+    <motion.article
       initial={{
         opacity: 0,
         y: 10,
@@ -908,261 +1455,189 @@ function ConvRow({
         y: 0,
       }}
       transition={{
-        delay: index * 0.04,
+        delay:
+          index * 0.04,
       }}
-      className={`
-        ${styles.convRow}
-        ${isClosed
-          ? styles.convRowClosed
-          : ''}
-      `}
+      className={
+        styles.row
+      }
     >
-      <div className={styles.convRowImg}>
-        {convocatoria.cover_image_url ? (
-          <img
-            src={
-              convocatoria.cover_image_url
-            }
-            alt={convocatoria.title}
-          />
-        ) : (
-          <div className={styles.convRowImgEmpty}>
-            <ImgIcon size={22} />
-          </div>
-        )}
-      </div>
+      <div
+        className={`${styles.statusBar} ${styles[`status_${status}`]}`}
+      />
 
-      <div className={styles.convRowInfo}>
-        <div className={styles.convRowTitle}>
-          {convocatoria.title}
+      <div
+        className={
+          styles.rowContent
+        }
+      >
+        <div
+          className={
+            styles.rowTop
+          }
+        >
+          <div>
+            <span
+              className={`${styles.statusBadge} ${styles[`badge_${status}`]}`}
+            >
+              {status === 'open' &&
+                'Abierta'}
+
+              {status ===
+                'scheduled' &&
+                'Programada'}
+
+              {status === 'full' &&
+                'Cupo agotado'}
+
+              {status ===
+                'closed' &&
+                'Cerrada'}
+            </span>
+
+            <h3>{item.title}</h3>
+
+            {item.subtitle && (
+              <p>{item.subtitle}</p>
+            )}
+          </div>
+
+          <div
+            className={
+              styles.rowActions
+            }
+          >
+            <button
+              type="button"
+              onClick={() =>
+                onEdit(item)
+              }
+              title="Editar"
+            >
+              <Edit3 size={15} />
+            </button>
+
+            {status === 'open' ? (
+              <button
+                type="button"
+                onClick={() =>
+                  onClose(item)
+                }
+                title="Cerrar"
+              >
+                <Lock size={15} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() =>
+                  onOpen(item)
+                }
+                title="Abrir ahora"
+              >
+                <Play size={15} />
+              </button>
+            )}
+
+            <button
+              type="button"
+              className={
+                styles.deleteButton
+              }
+              onClick={() =>
+                onDelete(item)
+              }
+              title="Eliminar"
+            >
+              <Trash2 size={15} />
+            </button>
+          </div>
         </div>
 
-        {convocatoria.subtitle && (
-          <div className={styles.convRowSubtitle}>
-            {convocatoria.subtitle}
-          </div>
-        )}
+        <div
+          className={
+            styles.rowMetadata
+          }
+        >
+          <span>
+            <CalendarDays
+              size={13}
+            />
 
-        <div className={styles.convRowMeta}>
-          {status === 'scheduled' && opensAt && (
-            <span
-              className={`
-                ${styles.metaPill}
-                ${styles.metaPillScheduled}
-              `}
-            >
-              <Clock3 size={11} />
-
-              Abre el{' '}
-              {formatDate(
-                convocatoria.opens_at
+            Apertura:
+            <strong>
+              {formatDateTime(
+                item.opens_at
               )}
-            </span>
-          )}
+            </strong>
+          </span>
 
-          {status === 'open' && closesAt && (
-            <span
-              className={`
-                ${styles.metaPill}
-                ${styles.metaPillOpen}
-              `}
-            >
-              <Calendar size={11} />
+          <span>
+            <Clock3 size={13} />
 
-              {daysLeft !== null
-                ? `Cierra en ${daysLeft} ${
-                    daysLeft === 1
-                      ? 'día'
-                      : 'días'
-                  }`
-                : `Cierra el ${formatDate(
-                    convocatoria.closes_at
-                  )}`}
-            </span>
-          )}
+            Cierre:
+            <strong>
+              {formatDateTime(
+                item.closes_at
+              )}
+            </strong>
+          </span>
 
-          {status === 'open' && !closesAt && (
-            <span
-              className={`
-                ${styles.metaPill}
-                ${styles.metaPillOpen}
-              `}
-            >
-              Sin fecha de cierre
-            </span>
-          )}
+          <span>
+            <Users size={13} />
 
-          {status === 'closed' && (
-            <span
-              className={`
-                ${styles.metaPill}
-                ${styles.metaPillDead}
-              `}
-            >
-              <Lock size={11} />
+            Cupos:
+            <strong>
+              {item.max_submissions
+                ? `${available} de ${item.max_submissions}`
+                : 'Sin límite'}
+            </strong>
+          </span>
 
-              Convocatoria cerrada
-            </span>
-          )}
+          <span>
+            <Mail size={13} />
 
-          {convocatoria.max_submissions && (
-            <span className={styles.metaPill}>
-              <Users size={11} />
-
-              Cupo:{' '}
-              {convocatoria.max_submissions}
-            </span>
-          )}
-
-          {convocatoria.categories?.length > 0 && (
-            <span className={styles.metaPill}>
-              <FileText size={11} />
-
-              {convocatoria.categories.length}{' '}
-              {convocatoria.categories.length === 1
-                ? 'categoría'
-                : 'categorías'}
-            </span>
-          )}
+            <strong>
+              {item.contact_email}
+            </strong>
+          </span>
         </div>
       </div>
-
-      <div className={styles.convRowActions}>
-        <Link
-          to={
-            `/admin/convocatorias/${convocatoria.id}/envios`
-          }
-          className={styles.actionBtn}
-          title="Ver envíos"
-        >
-          <Inbox size={14} />
-        </Link>
-
-        <button
-          type="button"
-          className={styles.actionBtn}
-          onClick={() =>
-            onEdit(convocatoria)
-          }
-          title="Editar"
-        >
-          <Edit size={14} />
-        </button>
-
-        {status === 'open' ? (
-          <button
-            type="button"
-            className={styles.actionBtn}
-            onClick={() =>
-              onClose(convocatoria)
-            }
-            title="Cerrar convocatoria"
-          >
-            <Lock size={14} />
-          </button>
-        ) : (
-          <button
-            type="button"
-            className={styles.actionBtn}
-            onClick={() =>
-              onOpen(convocatoria)
-            }
-            title="Abrir ahora"
-          >
-            <Play size={14} />
-          </button>
-        )}
-
-        <button
-          type="button"
-          className={`
-            ${styles.actionBtn}
-            ${styles.actionDanger}
-          `}
-          onClick={() =>
-            onDelete(convocatoria)
-          }
-          title="Eliminar definitivamente"
-        >
-          <Trash2 size={14} />
-        </button>
-      </div>
-    </motion.div>
-  );
-}
-/* ── Preview ───────────────────────────────────────────── */
-function PreviewConvocatoria({ form }) {
-  const deadline = form.closes_at ? new Date(form.closes_at + 'T23:59:59') : null;
-  const isPast   = deadline && deadline < new Date();
-
-  return (
-    <div className={styles.previewInner}>
-      <div className={styles.previewBadge}>
-        {form.is_active && !isPast ? '● Convocatoria abierta' : '○ Convocatoria cerrada'}
-      </div>
-      <h1 className={styles.previewTitle}>{form.title || 'Sin título'}</h1>
-      {form.subtitle && <p className={styles.previewSubtitle}>{form.subtitle}</p>}
-
-      {deadline && (
-        <div className={styles.previewDeadline}>
-          <Calendar size={13} />
-          Fecha límite: <strong>{formatDate(form.closes_at)}</strong>
-        </div>
-      )}
-
-      {form.cover_image_url && (
-        <img src={form.cover_image_url} alt="Portada" className={styles.previewCover} />
-      )}
-
-      {form.description && (
-        <div className={styles.previewBody}>{form.description}</div>
-      )}
-
-      {form.categories?.length > 0 && (
-        <div className={styles.previewSection}>
-          <strong>Categorías:</strong>
-          <ul>
-            {form.categories.map(c => <li key={c}>{c}</li>)}
-          </ul>
-        </div>
-      )}
-
-      {form.requirements && (
-        <div className={styles.previewSection}>
-          <strong>Requisitos:</strong>
-          <p>{form.requirements}</p>
-        </div>
-      )}
-
-      {form.contact_email && (
-        <div className={styles.previewEmail}>
-          Envíos al correo: <strong>{form.contact_email}</strong>
-        </div>
-      )}
-
-      {form.max_submissions && (
-        <div className={styles.previewLimit}>Cupo: {form.max_submissions} participantes</div>
-      )}
-
-      {form.gallery_images?.length > 0 && (
-        <div className={styles.previewGallery}>
-          {form.gallery_images.map((url, i) => (
-            <img key={i} src={url} alt={`galería-${i}`} />
-          ))}
-        </div>
-      )}
-    </div>
+    </motion.article>
   );
 }
 
-function SectionLabel({ children }) {
-  return <div className={styles.sectionDivider}>{children}</div>;
+function FormSection({
+  title,
+  children,
+}) {
+  return (
+    <section
+      className={
+        styles.formSection
+      }
+    >
+      <h3>{title}</h3>
+      {children}
+    </section>
+  );
 }
 
-function Skeleton() {
+function FormField({
+  label,
+  children,
+  wide = false,
+}) {
   return (
-    <div className={styles.skeletonList}>
-      {[1,2].map(i => <div key={i} className={styles.skeletonRow} />)}
-    </div>
+    <label
+      className={`${styles.formField} ${
+        wide
+          ? styles.formFieldWide
+          : ''
+      }`}
+    >
+      <span>{label}</span>
+      {children}
+    </label>
   );
 }

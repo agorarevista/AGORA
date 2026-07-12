@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getHome } from '../../api/articles.api';
@@ -89,7 +89,46 @@ const [featured, setFeatured]           = useState([]);
       setCollaborators(Array.isArray(payload.collaborators) ? payload.collaborators : []);
     };
 
+    const loadSponsors = async () => {
+      try {
+        const sponsorsResponse = await getSponsors();
+
+        console.log(
+          'RESPUESTA COMPLETA DE SPONSORS:',
+          sponsorsResponse
+        );
+
+        const sponsorsList =
+          Array.isArray(sponsorsResponse)
+            ? sponsorsResponse
+            : Array.isArray(sponsorsResponse?.data)
+              ? sponsorsResponse.data
+              : Array.isArray(sponsorsResponse?.items)
+                ? sponsorsResponse.items
+                : Array.isArray(sponsorsResponse?.sponsors)
+                  ? sponsorsResponse.sponsors
+                  : [];
+
+        if (mounted) {
+          setSponsors(sponsorsList);
+        }
+      } catch (error) {
+        console.error(
+          'ERROR AL CARGAR SPONSORS:',
+          error?.response?.data ||
+          error?.message ||
+          error
+        );
+
+        if (mounted) {
+          setSponsors([]);
+        }
+      }
+    };
+
     const load = async ({ forceFresh = false } = {}) => {
+      loadSponsors();
+
       try {
         if (!forceFresh) {
           const cachedHome = cacheGet(HOME_CACHE_KEY);
@@ -123,11 +162,7 @@ const safePayload = {
           if (mounted) setConvocatorias(Array.isArray(convs) ? convs : []);
         } catch {}
 
-        // Fetch sponsors y noticias
-        try {
-          const sp = await getSponsors();
-          if (mounted) setSponsors(Array.isArray(sp) ? sp : []);
-        } catch {}
+ 
       } catch (e) {
         console.error('ERROR getHome()', e);
 
@@ -245,20 +280,7 @@ return (
   </div>
 
 </div>
-{/* ── SPONSORS Y NOTICIAS ──────────────────────── */}
-      {sponsors.length > 0 && (
-        <section className={styles.sponsorsSection}>
-          <div className={styles.featureSectionHeader}>
-            <div>
-              <span className={styles.featureEyebrow}>Comunidad</span>
-              <h2 className={styles.featureTitle}>Sponsors y Noticias</h2>
-            </div>
-          </div>
-          <SponsorsCarousel items={sponsors} />
-        </section>
-      )}
-
-      {/* ── CARRUSEL EDICIÓN ACTUAL ──────────────────── */}
+{/* ── CARRUSEL EDICIÓN ACTUAL ──────────────────── */}
       {edicionArticles.length > 0 && (
         <section className={styles.edicionSection}>
           <div className={styles.featureSectionHeader}>
@@ -267,7 +289,15 @@ return (
               <h2 className={styles.featureTitle}>Todo Nuestro Contenido</h2>
             </div>
           </div>
+
           <EdicionCarousel articles={edicionArticles} />
+        </section>
+      )}
+
+      {/* ── NOTICIAS Y SPONSORS ──────────────────────── */}
+      {sponsors.length > 0 && (
+        <section className={styles.sponsorsSection}>
+          <SponsorsCarousel items={sponsors} />
         </section>
       )}
 
@@ -943,271 +973,669 @@ function ConvocatoriaCard({ conv, index }) {
   );
 }
 function SponsorsCarousel({ items }) {
-  const trackRef = useRef(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
-  const scroll = (dir) => {
-    const el = trackRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * el.clientWidth, behavior: 'smooth' });
-  };
+  const visibleItems = useMemo(
+    () => items.filter(item => item?.is_active !== false),
+    [items]
+  );
 
-  const typeLabel = (t) => {
-    if (t === 'sponsor') return 'Sponsor';
-    if (t === 'patrocinador') return 'Patrocinador';
+  const total = visibleItems.length;
+
+  useEffect(() => {
+    if (total <= 1 || isPaused) return undefined;
+
+    const interval = window.setInterval(() => {
+      setActiveIndex(currentIndex =>
+        currentIndex === total - 1
+          ? 0
+          : currentIndex + 1
+      );
+    }, 30000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [total, isPaused]);
+
+  useEffect(() => {
+    if (activeIndex >= total) {
+      setActiveIndex(0);
+    }
+  }, [activeIndex, total]);
+
+  if (!total) return null;
+
+  const currentItem = visibleItems[activeIndex];
+
+  const typeLabel = type => {
+    if (type === 'sponsor') return 'Sponsor';
+    if (type === 'patrocinador') return 'Patrocinador';
     return 'Noticia';
   };
 
-  return (
-    <div className={styles.sponsorsCarousel}>
-      <button
-        type="button"
-        className={`${styles.edicionArrow} ${styles.edicionArrowLeft}`}
-        onClick={() => scroll(-1)}
-        aria-label="Anterior"
-      >
-        <ChevronLeft size={20} />
-      </button>
+  const renderBannerContent = item => (
+    <>
+      {item.image_url ? (
+        <img
+          src={item.image_url}
+          alt={
+            item.title ||
+            typeLabel(item.type)
+          }
+          className={
+            styles.sponsorBannerImage
+          }
+          style={{
+            objectPosition:
+              `${Number(item.image_x) || 50}% ${Number(item.image_y) || 50}%`,
 
-      <div ref={trackRef} className={styles.sponsorsTrack}>
-        {items.map(item => {
-          const Wrapper = item.link_url ? 'a' : 'div';
-          const wrapperProps = item.link_url
-            ? { href: item.link_url, target: '_blank', rel: 'noopener noreferrer' }
-            : {};
+            transform:
+              `scale(${Number(item.image_zoom) || 1})`,
 
-          return (
-            <Wrapper
-              key={item.id}
-              {...wrapperProps}
-              className={`${styles.sponsorCard} ${!item.image_url ? styles.sponsorCardEditorial : ''}`}
-            >
-              <span className={styles.sponsorType} data-type={item.type}>
-                {typeLabel(item.type)}
-              </span>
+            transformOrigin:
+              `${Number(item.image_x) || 50}% ${Number(item.image_y) || 50}%`,
+          }}
+        />
+      ) : (
+        <div className={styles.sponsorBannerFallback}>
+          <span className={styles.sponsorBannerFallbackSymbol}>Λ</span>
+        </div>
+      )}
 
-              {item.image_url ? (
-                <div className={styles.sponsorImg}>
-                  <img src={item.image_url} alt={item.title} />
-                </div>
-              ) : (
-                <div className={styles.sponsorGreek}>
-                  <span className={styles.sponsorGreekSymbol}>Λ</span>
-                </div>
-              )}
+      <div className={styles.sponsorBannerShade} />
 
-              <div className={styles.sponsorBody}>
-                <div className={styles.sponsorTitle}>{item.title}</div>
-                {item.body && <p className={styles.sponsorText}>{item.body}</p>}
-                {item.link_url && (
-                  <span className={styles.sponsorCta}>Ver más →</span>
-                )}
-              </div>
-            </Wrapper>
-          );
-        })}
+      <div className={styles.sponsorBannerContent}>
+        <span
+          className={styles.sponsorBannerType}
+          data-type={item.type}
+        >
+          {typeLabel(item.type)}
+        </span>
+
+        {item.title && (
+          <h2 className={styles.sponsorBannerTitle}>
+            {item.title}
+          </h2>
+        )}
+
+        {item.body && (
+          <p className={styles.sponsorBannerText}>
+            {item.body}
+          </p>
+        )}
+
+        {item.link_url && (
+          <span className={styles.sponsorBannerCta}>
+            Conocer más
+            <ArrowRight size={18} />
+          </span>
+        )}
       </div>
+    </>
+  );
 
-      <button
-        type="button"
-        className={`${styles.edicionArrow} ${styles.edicionArrowRight}`}
-        onClick={() => scroll(1)}
-        aria-label="Siguiente"
-      >
-        <ChevronRight size={20} />
-      </button>
+  return (
+    <div
+      className={styles.sponsorsCarousel}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onFocusCapture={() => setIsPaused(true)}
+      onBlurCapture={() => setIsPaused(false)}
+    >
+      <div className={styles.sponsorBannerViewport}>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={currentItem.id}
+            className={styles.sponsorBannerSlide}
+            initial={{
+              opacity: 0,
+              x: 42,
+              scale: 1.01,
+            }}
+            animate={{
+              opacity: 1,
+              x: 0,
+              scale: 1,
+            }}
+            exit={{
+              opacity: 0,
+              x: -42,
+              scale: 0.99,
+            }}
+            transition={{
+              duration: 0.65,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+          >
+            {currentItem.link_url ? (
+              <a
+                href={currentItem.link_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.sponsorBannerLink}
+                aria-label={`Abrir ${currentItem.title || typeLabel(currentItem.type)}`}
+              >
+                {renderBannerContent(currentItem)}
+              </a>
+            ) : (
+              <div className={styles.sponsorBannerStatic}>
+                {renderBannerContent(currentItem)}
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        {total > 1 && (
+          <div
+            className={styles.sponsorBannerDots}
+            aria-label="Seleccionar banner"
+          >
+            {visibleItems.map((item, index) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`${styles.sponsorBannerDot} ${
+                  index === activeIndex
+                    ? styles.sponsorBannerDotActive
+                    : ''
+                }`}
+                onClick={() => setActiveIndex(index)}
+                aria-label={`Mostrar banner ${index + 1}: ${item.title || typeLabel(item.type)}`}
+                aria-current={index === activeIndex ? 'true' : undefined}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 function EdicionCarousel({ articles }) {
-  const trackRef = useRef(null);
+  const [isMobile, setIsMobile] =
+    useState(false);
 
-  const [isMobile, setIsMobile] = useState(false);
-  const [mobilePage, setMobilePage] = useState(0);
+  const [
+    desktopPage,
+    setDesktopPage,
+  ] = useState(0);
 
+  const [
+    desktopDirection,
+    setDesktopDirection,
+  ] = useState(1);
+
+  const [
+    mobilePage,
+    setMobilePage,
+  ] = useState(0);
+
+  const desktopPerPage = 5;
   const mobilePerPage = 4;
-  const mobileTotalPages = Math.ceil(articles.length / mobilePerPage);
+
+  const desktopTotalPages =
+    Math.ceil(
+      articles.length /
+        desktopPerPage
+    );
+
+  const mobileTotalPages =
+    Math.ceil(
+      articles.length /
+        mobilePerPage
+    );
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 600px)');
+    const mediaQuery =
+      window.matchMedia(
+        '(max-width: 600px)'
+      );
 
     const updateMobileState = () => {
-      setIsMobile(mediaQuery.matches);
+      setIsMobile(
+        mediaQuery.matches
+      );
     };
 
     updateMobileState();
 
-    mediaQuery.addEventListener('change', updateMobileState);
+    mediaQuery.addEventListener(
+      'change',
+      updateMobileState
+    );
 
     return () => {
-      mediaQuery.removeEventListener('change', updateMobileState);
+      mediaQuery.removeEventListener(
+        'change',
+        updateMobileState
+      );
     };
   }, []);
 
   useEffect(() => {
-    if (mobilePage >= mobileTotalPages) {
-      setMobilePage(Math.max(0, mobileTotalPages - 1));
+    if (
+      desktopPage >=
+      desktopTotalPages
+    ) {
+      setDesktopPage(
+        Math.max(
+          0,
+          desktopTotalPages - 1
+        )
+      );
     }
-  }, [mobilePage, mobileTotalPages]);
+  }, [
+    desktopPage,
+    desktopTotalPages,
+  ]);
 
-  const visibleArticles = isMobile
-    ? articles.slice(
-        mobilePage * mobilePerPage,
-        mobilePage * mobilePerPage + mobilePerPage
-      )
-    : articles;
+  useEffect(() => {
+    if (
+      mobilePage >=
+      mobileTotalPages
+    ) {
+      setMobilePage(
+        Math.max(
+          0,
+          mobileTotalPages - 1
+        )
+      );
+    }
+  }, [
+    mobilePage,
+    mobileTotalPages,
+  ]);
 
-  const scroll = (dir) => {
-    const el = trackRef.current;
+  const desktopArticles =
+    articles.slice(
+      desktopPage *
+        desktopPerPage,
 
-    if (!el) return;
+      desktopPage *
+        desktopPerPage +
+        desktopPerPage
+    );
 
-    el.scrollBy({
-      left: dir * el.clientWidth,
-      behavior: 'smooth',
-    });
+  const mobileArticles =
+    articles.slice(
+      mobilePage *
+        mobilePerPage,
+
+      mobilePage *
+        mobilePerPage +
+        mobilePerPage
+    );
+
+  const visibleArticles =
+    isMobile
+      ? mobileArticles
+      : desktopArticles;
+
+  const previousDesktopPage = () => {
+    setDesktopDirection(-1);
+
+    setDesktopPage(
+      currentPage =>
+        currentPage === 0
+          ? desktopTotalPages - 1
+          : currentPage - 1
+    );
+  };
+
+  const nextDesktopPage = () => {
+    setDesktopDirection(1);
+
+    setDesktopPage(
+      currentPage =>
+        currentPage ===
+        desktopTotalPages - 1
+          ? 0
+          : currentPage + 1
+    );
+  };
+
+  const goToDesktopPage = index => {
+    setDesktopDirection(
+      index > desktopPage
+        ? 1
+        : -1
+    );
+
+    setDesktopPage(index);
   };
 
   const previousMobilePage = () => {
-    setMobilePage((currentPage) =>
-      currentPage === 0
-        ? mobileTotalPages - 1
-        : currentPage - 1
+    setMobilePage(
+      currentPage =>
+        currentPage === 0
+          ? mobileTotalPages - 1
+          : currentPage - 1
     );
   };
 
   const nextMobilePage = () => {
-    setMobilePage((currentPage) =>
-      currentPage === mobileTotalPages - 1
-        ? 0
-        : currentPage + 1
+    setMobilePage(
+      currentPage =>
+        currentPage ===
+        mobileTotalPages - 1
+          ? 0
+          : currentPage + 1
     );
   };
 
-  const getCategories = (art) => {
-    const fromPivot = Array.isArray(art.article_categories)
-      ? art.article_categories
-          .map((item) => item?.categories?.name)
-          .filter(Boolean)
-      : [];
+  const getCategories = art => {
+    const fromPivot =
+      Array.isArray(
+        art.article_categories
+      )
+        ? art.article_categories
+            .map(
+              item =>
+                item?.categories
+                  ?.name
+            )
+            .filter(Boolean)
+        : [];
 
-    const fromDirect = Array.isArray(art.categories)
-      ? art.categories
-          .map((cat) => cat?.name || cat)
-          .filter(Boolean)
-      : [];
+    const fromDirect =
+      Array.isArray(
+        art.categories
+      )
+        ? art.categories
+            .map(
+              category =>
+                category?.name ||
+                category
+            )
+            .filter(Boolean)
+        : [];
 
-    return [...new Set([...fromPivot, ...fromDirect])].slice(0, 2);
+    return [
+      ...new Set([
+        ...fromPivot,
+        ...fromDirect,
+      ]),
+    ].slice(0, 2);
+  };
+
+  const renderArticleCard = art => {
+    const categories =
+      getCategories(art);
+
+    const authorName =
+      art.collaborators?.name ||
+      'Agorá Revista';
+
+    return (
+      <Link
+        key={art.id}
+        to={`/articulos/${art.slug}`}
+        className={
+          styles.edicionCard
+        }
+      >
+        <div
+          className={
+            styles.edicionCardImg
+          }
+        >
+          {art.cover_image_url ? (
+            <img
+              src={
+                art.cover_image_url
+              }
+              alt={art.title}
+            />
+          ) : (
+            <div
+              className={
+                styles.imgPlaceholder
+              }
+            >
+              <span>Λ</span>
+            </div>
+          )}
+
+          <div
+            className={
+              styles.edicionCardOverlay
+            }
+          >
+            {categories.length >
+              0 && (
+              <div
+                className={
+                  styles.edicionCardCats
+                }
+              >
+                {categories.map(
+                  category => (
+                    <span
+                      key={category}
+                      className={
+                        styles.edicionCardCat
+                      }
+                    >
+                      {category}
+                    </span>
+                  )
+                )}
+              </div>
+            )}
+
+            <div
+              className={
+                styles.edicionCardText
+              }
+            >
+              <h3
+                className={
+                  styles.edicionCardTitle
+                }
+              >
+                {art.title}
+              </h3>
+
+              <p
+                className={
+                  styles.edicionCardAuthor
+                }
+              >
+                {authorName}
+              </p>
+            </div>
+          </div>
+        </div>
+      </Link>
+    );
   };
 
   return (
-    <div className={styles.edicionCarousel}>
-      {!isMobile && articles.length > 5 && (
+    <div
+      className={
+        styles.edicionCarousel
+      }
+    >
+      {!isMobile &&
+        desktopTotalPages > 1 && (
         <button
           type="button"
           className={`${styles.edicionArrow} ${styles.edicionArrowLeft}`}
-          onClick={() => scroll(-1)}
-          aria-label="Mostrar artículos anteriores"
+          onClick={
+            previousDesktopPage
+          }
+          aria-label="Mostrar cinco artículos anteriores"
         >
           <ChevronLeft size={20} />
         </button>
       )}
 
-      <div ref={trackRef} className={styles.edicionTrack}>
-        {visibleArticles.map((art) => {
-          const categories = getCategories(art);
-
-          return (
-            <Link
-              key={art.id}
-              to={`/articulos/${art.slug}`}
-              className={styles.edicionCard}
+      {isMobile ? (
+        <div
+          className={
+            styles.edicionTrack
+          }
+        >
+          {visibleArticles.map(
+            renderArticleCard
+          )}
+        </div>
+      ) : (
+        <div
+          className={
+            styles.edicionDesktopViewport
+          }
+        >
+          <AnimatePresence
+            mode="wait"
+            initial={false}
+          >
+            <motion.div
+              key={desktopPage}
+              className={
+                styles.edicionTrack
+              }
+              initial={{
+                opacity: 0,
+                x:
+                  desktopDirection *
+                  36,
+              }}
+              animate={{
+                opacity: 1,
+                x: 0,
+              }}
+              exit={{
+                opacity: 0,
+                x:
+                  desktopDirection *
+                  -36,
+              }}
+              transition={{
+                duration: 0.28,
+                ease: 'easeOut',
+              }}
             >
-              <div className={styles.edicionCardImg}>
-                {art.cover_image_url ? (
-                  <img
-                    src={art.cover_image_url}
-                    alt={art.title}
-                  />
-                ) : (
-                  <div className={styles.imgPlaceholder}>
-                    <span>Λ</span>
-                  </div>
-                )}
+              {visibleArticles.map(
+                renderArticleCard
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      )}
 
-                <div className={styles.edicionCardOverlay}>
-                  {categories.length > 0 && (
-                    <div className={styles.edicionCardCats}>
-                      {categories.map((cat) => (
-                        <span
-                          key={cat}
-                          className={styles.edicionCardCat}
-                        >
-                          {cat}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className={styles.edicionCardText}>
-                    <h3 className={styles.edicionCardTitle}>
-                      {art.title}
-                    </h3>
-
-                    {art.collaborators && (
-                      <p className={styles.edicionCardAuthor}>
-                        {art.collaborators.name}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-
-      {!isMobile && articles.length > 5 && (
+      {!isMobile &&
+        desktopTotalPages > 1 && (
         <button
           type="button"
           className={`${styles.edicionArrow} ${styles.edicionArrowRight}`}
-          onClick={() => scroll(1)}
-          aria-label="Mostrar siguientes artículos"
+          onClick={
+            nextDesktopPage
+          }
+          aria-label="Mostrar los siguientes cinco artículos"
         >
           <ChevronRight size={20} />
         </button>
       )}
 
-      {isMobile && mobileTotalPages > 1 && (
-        <div className={styles.edicionMobileControls}>
+      {!isMobile &&
+        desktopTotalPages > 1 && (
+        <div
+          className={
+            styles.edicionDesktopControls
+          }
+        >
+          <div
+            className={
+              styles.edicionDesktopDots
+            }
+          >
+            {Array.from({
+              length:
+                desktopTotalPages,
+            }).map(
+              (_, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  className={`${styles.edicionDesktopDot} ${
+                    index ===
+                    desktopPage
+                      ? styles.edicionDesktopDotActive
+                      : ''
+                  }`}
+                  onClick={() => {
+                    goToDesktopPage(
+                      index
+                    );
+                  }}
+                  aria-label={`Mostrar grupo ${index + 1} de artículos`}
+                />
+              )
+            )}
+          </div>
+        </div>
+      )}
+
+      {isMobile &&
+        mobileTotalPages > 1 && (
+        <div
+          className={
+            styles.edicionMobileControls
+          }
+        >
           <button
             type="button"
-            className={styles.edicionMobileArrow}
-            onClick={previousMobilePage}
+            className={
+              styles.edicionMobileArrow
+            }
+            onClick={
+              previousMobilePage
+            }
             aria-label="Página anterior"
           >
             <ChevronLeft size={20} />
           </button>
 
-          <div className={styles.edicionMobileDots}>
-            {Array.from({ length: mobileTotalPages }).map((_, index) => (
-              <button
-                key={index}
-                type="button"
-                className={`${styles.edicionMobileDot} ${
-                  index === mobilePage
-                    ? styles.edicionMobileDotActive
-                    : ''
-                }`}
-                onClick={() => setMobilePage(index)}
-                aria-label={`Ir a la página ${index + 1}`}
-              />
-            ))}
+          <div
+            className={
+              styles.edicionMobileDots
+            }
+          >
+            {Array.from({
+              length:
+                mobileTotalPages,
+            }).map(
+              (_, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  className={`${styles.edicionMobileDot} ${
+                    index ===
+                    mobilePage
+                      ? styles.edicionMobileDotActive
+                      : ''
+                  }`}
+                  onClick={() => {
+                    setMobilePage(
+                      index
+                    );
+                  }}
+                  aria-label={`Ir a la página ${index + 1}`}
+                />
+              )
+            )}
           </div>
 
           <button
             type="button"
-            className={styles.edicionMobileArrow}
-            onClick={nextMobilePage}
+            className={
+              styles.edicionMobileArrow
+            }
+            onClick={
+              nextMobilePage
+            }
             aria-label="Siguiente página"
           >
             <ChevronRight size={20} />

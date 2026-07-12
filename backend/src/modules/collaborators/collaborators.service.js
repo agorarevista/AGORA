@@ -153,6 +153,7 @@ const getBySlug = async slug => {
     .from('collaborators')
     .select(`
       *,
+
       articles (
         id,
         title,
@@ -161,30 +162,86 @@ const getBySlug = async slug => {
         excerpt,
         published_at,
         status,
+
         article_categories (
           categories (
             name,
             slug
           )
         )
+      ),
+
+      galleries (
+        id,
+        title,
+        slug,
+        subtitle,
+        excerpt,
+        cover_image_url,
+        published_at,
+        status,
+        views,
+
+        gallery_photos (
+          id
+        )
       )
     `)
     .eq('slug', slug)
     .eq('is_active', true)
-    .eq('articles.status', 'published')
+    .eq(
+      'articles.status',
+      'published'
+    )
+    .eq(
+      'galleries.status',
+      'published'
+    )
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
   if (!data) {
     throw {
       status: 404,
-      message: 'Colaborador no encontrado',
+      message:
+        'Colaborador no encontrado',
     };
   }
 
-  const [collaboratorWithCategory] =
-    await attachFixedCategories([data]);
+  const normalizedGalleries =
+    Array.isArray(
+      data.galleries
+    )
+      ? data.galleries.map(
+          gallery => ({
+            ...gallery,
+
+            photos_count:
+              Array.isArray(
+                gallery.gallery_photos
+              )
+                ? gallery
+                    .gallery_photos
+                    .length
+                : 0,
+          })
+        )
+      : [];
+
+  const [
+    collaboratorWithCategory,
+  ] =
+    await attachFixedCategories([
+      {
+        ...data,
+
+        galleries:
+          normalizedGalleries,
+      },
+    ]);
 
   return collaboratorWithCategory;
 };

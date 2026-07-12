@@ -1,47 +1,54 @@
 const router =
-  require('express').Router();
+  require('express')
+    .Router();
 
 const {
-  getAll,
-  getActive,
+  getAllPublic,
+  getAllAdmin,
+  getBySlug,
   getById,
   create,
   update,
-  open,
-  close,
-  remove,
-} = require('./convocatorias.controller');
+  publish,
+  archive,
+  removePermanently,
+} = require(
+  './galleries.controller'
+);
 
 const {
   authMiddleware,
   requireRole,
-} = require('../../middleware/auth');
-
-/* ══════════════════════════════════════════════════════
-   PÚBLICA
-══════════════════════════════════════════════════════ */
-
-router.get(
-  '/active',
-  getActive
+} = require(
+  '../../middleware/auth'
 );
 
 /* ══════════════════════════════════════════════════════
-   ADMINISTRACIÓN
+   RUTAS PÚBLICAS
 ══════════════════════════════════════════════════════ */
 
 router.get(
   '/',
+  getAllPublic
+);
+
+/* ══════════════════════════════════════════════════════
+   RUTAS ADMINISTRATIVAS
+   Deben ir antes de /:slug.
+══════════════════════════════════════════════════════ */
+
+router.get(
+  '/admin/all',
   authMiddleware,
   requireRole(
     'superadmin',
     'editor'
   ),
-  getAll
+  getAllAdmin
 );
 
 router.get(
-  '/:id',
+  '/by-id/:id',
   authMiddleware,
   requireRole(
     'superadmin',
@@ -71,30 +78,42 @@ router.put(
 );
 
 router.patch(
-  '/:id/open',
+  '/:id/publish',
   authMiddleware,
   requireRole(
     'superadmin',
     'editor'
   ),
-  open
+  publish
 );
 
 router.patch(
-  '/:id/close',
+  '/:id/archive',
   authMiddleware,
   requireRole(
     'superadmin',
     'editor'
   ),
-  close
+  archive
 );
 
 router.delete(
-  '/:id',
+  '/:id/permanent',
   authMiddleware,
-  requireRole('superadmin'),
-  remove
+  requireRole(
+    'superadmin'
+  ),
+  removePermanently
+);
+
+/* ══════════════════════════════════════════════════════
+   GALERÍA PÚBLICA INDIVIDUAL
+   SIEMPRE AL FINAL
+══════════════════════════════════════════════════════ */
+
+router.get(
+  '/:slug',
+  getBySlug
 );
 
 module.exports = router;

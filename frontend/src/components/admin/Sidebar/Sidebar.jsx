@@ -1,93 +1,424 @@
-import { NavLink, Link } from 'react-router-dom';
+import {
+  NavLink,
+  Link,
+} from 'react-router-dom';
+
+import {
+  BarChart3,
+  BookOpen,
+  FileText,
+  FolderTree,
+  Images,
+  LayoutDashboard,
+  LogOut,
+  Megaphone,
+  MessageSquare,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
+  Sparkles,
+  Users,
+  UsersRound,
+} from 'lucide-react';
+
 import useAuth from '../../../hooks/useAuth';
+
 import styles from './Sidebar.module.css';
 
-const MENU = [
+const NAVIGATION_GROUPS = [
   {
-    section: 'Principal',
+    id: 'general',
+    label: 'Principal',
+
     items: [
-      { to: '/admin/dashboard',     icon: '⌂', label: 'Dashboard' },
-      { to: '/admin/analytics',     icon: '◎', label: 'Analítica' },
-    ]
+      {
+        label: 'Dashboard',
+        to: '/admin/dashboard',
+        icon: LayoutDashboard,
+      },
+      {
+        label: 'Analítica',
+        to: '/admin/analytics',
+        icon: BarChart3,
+      },
+    ],
   },
+
   {
-    section: 'Contenido',
+    id: 'content',
+    label: 'Contenido',
+
     items: [
-      { to: '/admin/articulos',     icon: '✦', label: 'Artículos' },
-      { to: '/admin/ediciones',     icon: '◈', label: 'Ediciones' },
-      { to: '/admin/categorias',    icon: '◉', label: 'Categorías' },
-      { to: '/admin/colaboradores', icon: '◍', label: 'Colaboradores' },
-    ]
+      {
+        label: 'Artículos',
+        to: '/admin/articulos',
+        icon: FileText,
+      },
+      {
+        label: 'Galerías',
+        to: '/admin/galerias',
+        icon: Images,
+      },
+      {
+        label: 'Ediciones',
+        to: '/admin/ediciones',
+        icon: BookOpen,
+      },
+      {
+        label: 'Categorías',
+        to: '/admin/categorias',
+        icon: FolderTree,
+      },
+      {
+        label: 'Colaboradores',
+        to: '/admin/colaboradores',
+        icon: UsersRound,
+      },
+      {
+        label: 'Sponsors',
+        to: '/admin/sponsors',
+        icon: Sparkles,
+      },
+    ],
   },
+
   {
-    section: 'Comunidad',
+    id: 'community',
+    label: 'Comunidad',
+
     items: [
-      { to: '/admin/convocatorias', icon: '◆', label: 'Convocatorias' },
-      { to: '/admin/comentarios',   icon: '◇', label: 'Comentarios' },
-    ]
+      {
+        label: 'Convocatorias',
+        to: '/admin/convocatorias',
+        icon: Megaphone,
+      },
+      {
+        label: 'Comentarios',
+        to: '/admin/comentarios',
+        icon: MessageSquare,
+      },
+    ],
   },
+
   {
-    section: 'Sistema',
+    id: 'system',
+    label: 'Sistema',
+
     items: [
-      { to: '/admin/usuarios',      icon: '◎', label: 'Usuarios' },
-      { to: '/admin/configuracion', icon: '⚙', label: 'Configuración' },
-    ]
+      {
+        label: 'Usuarios',
+        to: '/admin/usuarios',
+        icon: Users,
+      },
+      {
+        label: 'Configuración',
+        to: '/admin/configuracion',
+        icon: Settings,
+      },
+    ],
   },
 ];
 
-export default function Sidebar() {
-  const { user, logout } = useAuth();
+export default function Sidebar({
+  collapsed = false,
+  onToggle = null,
+  mobileOpen = false,
+  onNavigate = null,
+}) {
+  const {
+    user,
+    logout,
+  } = useAuth();
+
+  const handleNavigation = () => {
+    if (
+      typeof onNavigate ===
+      'function'
+    ) {
+      onNavigate();
+    }
+  };
 
   return (
-    <aside className={styles.sidebar}>
-      {/* Logo */}
-      <Link to="/" className={styles.logo}>
-        <span className={styles.logoSymbol}>Λ</span>
-        <div className={styles.logoText}>
-          <span className={styles.logoName}>AGORÁ</span>
-          <span className={styles.logoSub}>Panel Editorial</span>
-        </div>
-      </Link>
-      <div className={styles.meander} />
+    <aside
+      className={`
+        ${styles.sidebar}
+        ${
+          collapsed
+            ? styles.sidebarCollapsed
+            : ''
+        }
+        ${
+          mobileOpen
+            ? styles.sidebarMobileOpen
+            : ''
+        }
+      `}
+      aria-label="Navegación administrativa"
+    >
+      <header
+        className={
+          styles.header
+        }
+      >
+        <Link
+          to="/"
+          className={
+            styles.logo
+          }
+          onClick={
+            handleNavigation
+          }
+        >
+          <span
+            className={
+              styles.logoSymbol
+            }
+          >
+            Λ
+          </span>
 
-      {/* Navegación */}
-      <nav className={styles.nav}>
-        {MENU.map(group => (
-          <div key={group.section} className={styles.section}>
-            <div className={styles.sectionTitle}>{group.section}</div>
-            {group.items.map(item => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `${styles.link} ${isActive ? styles.active : ''}`
+<div
+  className={`
+    ${styles.logoText}
+    ${
+      collapsed
+        ? styles.desktopCollapsedOnly
+        : ''
+    }
+  `}
+>
+  <span
+    className={
+      styles.logoName
+    }
+  >
+    AGORÁ
+  </span>
+
+  <span
+    className={
+      styles.logoSub
+    }
+  >
+    Panel editorial
+  </span>
+</div>
+        </Link>
+
+        {typeof onToggle ===
+          'function' && (
+          <button
+            type="button"
+            className={
+              styles.toggleButton
+            }
+            onClick={onToggle}
+            aria-label={
+              collapsed
+                ? 'Expandir menú'
+                : 'Contraer menú'
+            }
+            title={
+              collapsed
+                ? 'Expandir menú'
+                : 'Contraer menú'
+            }
+          >
+            {collapsed ? (
+              <PanelLeftOpen
+                size={19}
+              />
+            ) : (
+              <PanelLeftClose
+                size={19}
+              />
+            )}
+          </button>
+        )}
+      </header>
+
+      <div
+        className={
+          styles.meander
+        }
+      />
+
+      <nav
+        className={
+          styles.navigation
+        }
+      >
+        {NAVIGATION_GROUPS.map(
+          group => (
+            <section
+              key={group.id}
+              className={
+                styles.group
+              }
+            >
+<div
+  className={`
+    ${styles.groupLabel}
+    ${
+      collapsed
+        ? styles.desktopCollapsedOnly
+        : ''
+    }
+  `}
+>
+  {group.label}
+</div>
+
+              <div
+                className={
+                  styles.groupItems
                 }
               >
-                <span className={styles.linkIcon}>{item.icon}</span>
-                {item.label}
-              </NavLink>
-            ))}
-          </div>
-        ))}
+                {group.items.map(
+                  item => {
+                    const Icon =
+                      item.icon;
+
+                    return (
+                      <NavLink
+                        key={item.to}
+                        to={item.to}
+                        onClick={
+                          handleNavigation
+                        }
+                        title={
+                          collapsed
+                            ? item.label
+                            : undefined
+                        }
+                        className={({
+                          isActive,
+                        }) => {
+                          return `
+                            ${styles.navItem}
+                            ${
+                              isActive
+                                ? styles.navItemActive
+                                : ''
+                            }
+                          `;
+                        }}
+                      >
+                        <span
+                          className={
+                            styles.navIcon
+                          }
+                        >
+                          <Icon
+                            size={17}
+                          />
+                        </span>
+
+<span
+  className={`
+    ${styles.navLabel}
+    ${
+      collapsed
+        ? styles.desktopCollapsedOnly
+        : ''
+    }
+  `}
+>
+  {item.label}
+</span>
+                      </NavLink>
+                    );
+                  }
+                )}
+              </div>
+            </section>
+          )
+        )}
       </nav>
 
-      {/* Usuario */}
-      <div className={styles.bottom}>
+      <footer
+        className={
+          styles.footer
+        }
+      >
         {user && (
-          <div className={styles.user}>
-            <div className={styles.avatar}>
-              {user.full_name?.[0]?.toUpperCase() || 'A'}
+          <div
+            className={
+              styles.user
+            }
+          >
+            <div
+              className={
+                styles.avatar
+              }
+            >
+              {user.full_name?.[0]
+                ?.toUpperCase() ||
+                user.username?.[0]
+                  ?.toUpperCase() ||
+                'A'}
             </div>
-            <div>
-              <div className={styles.userName}>{user.full_name}</div>
-              <div className={styles.userRole}>{user.role}</div>
-            </div>
+
+<div
+  className={`
+    ${styles.userInfo}
+    ${
+      collapsed
+        ? styles.desktopCollapsedOnly
+        : ''
+    }
+  `}
+>
+  <div
+    className={
+      styles.userName
+    }
+  >
+    {user.full_name ||
+      user.username ||
+      'Administrador'}
+  </div>
+
+  <div
+    className={
+      styles.userRole
+    }
+  >
+    {user.role ||
+      'admin'}
+  </div>
+</div>
           </div>
         )}
-        <button className={styles.logoutBtn} onClick={logout}>
-          Cerrar sesión
+
+        <button
+          type="button"
+          className={
+            styles.logoutButton
+          }
+          onClick={logout}
+          title={
+            collapsed
+              ? 'Cerrar sesión'
+              : undefined
+          }
+        >
+          <LogOut
+            size={16}
+          />
+
+<span
+  className={
+    collapsed
+      ? styles.desktopCollapsedOnly
+      : ''
+  }
+>
+  Cerrar sesión
+</span>
         </button>
-      </div>
+      </footer>
     </aside>
   );
 }
