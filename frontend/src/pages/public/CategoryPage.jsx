@@ -515,7 +515,7 @@ return (
 
         {loading && page === 1 ? (
           <GridSkeleton />
-        ) : articles.length === 0 ? (
+        ) : contents.length === 0 ? (
           <EmptyState name={category?.name || slug} />
         ) : (
           <>

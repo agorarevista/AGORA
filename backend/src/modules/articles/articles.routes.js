@@ -20,6 +20,14 @@ router.get('/:slug', getBySlug);
 router.post('/', authMiddleware, requireRole('superadmin', 'editor'), create);
 router.put('/:id', authMiddleware, requireRole('superadmin', 'editor'), update);
 router.patch('/:id/publish', authMiddleware, requireRole('superadmin', 'editor'), publish);
-router.delete('/:id', authMiddleware, requireRole('superadmin'), remove);
+router.delete(
+  '/:id',
+  authMiddleware,
+  requireRole(
+    'superadmin',
+    'editor'
+  ),
+  remove
+);
 
 module.exports = router;

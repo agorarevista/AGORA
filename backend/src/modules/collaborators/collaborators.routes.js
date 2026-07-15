@@ -9,6 +9,14 @@ router.get('/:slug', getBySlug);
 // Protegidas
 router.post('/', authMiddleware, requireRole('superadmin', 'editor'), create);
 router.put('/:id', authMiddleware, requireRole('superadmin', 'editor'), update);
-router.delete('/:id', authMiddleware, requireRole('superadmin'), remove);
+router.delete(
+  '/:id',
+  authMiddleware,
+  requireRole(
+    'superadmin',
+    'editor'
+  ),
+  remove
+);
 
 module.exports = router;

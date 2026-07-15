@@ -30,7 +30,18 @@ import {
   Venus,
   AudioLines,
   LoaderCircle,
+  UploadCloud,
+  Download,
 } from 'lucide-react';
+
+import {
+  exportArticleHtml,
+  exportAllToSubstack,
+} from '../../api/articleTransfer.api';
+
+import ArticleTransferModal
+  from './articleTransfer/ArticleTransferModal';
+
 import styles from './ArticlesPage.module.css';
 
 const STATUS_LABELS = {
@@ -54,6 +65,16 @@ export default function ArticlesPage() {
   const [
     generatingAudio,
     setGeneratingAudio,
+  ] = useState(null);
+
+  const [
+    transferModalOpen,
+    setTransferModalOpen,
+  ] = useState(false);
+
+  const [
+    exporting,
+    setExporting,
   ] = useState(null);
 
   const LIMIT = 15;
@@ -296,7 +317,64 @@ const handleDeleteVoice = async (
   }
 };
 
-  const totalPages = Math.ceil(total / LIMIT);
+  const handleExportArticle =
+    async article => {
+      setExporting(
+        article.id
+      );
+
+      try {
+        await exportArticleHtml(
+          article
+        );
+
+        alert.success(
+          'Artículo exportado',
+          'El archivo HTML fue generado correctamente'
+        );
+      } catch (error) {
+        console.error(error);
+
+        alert.error(
+          'Error de exportación',
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          'No se pudo exportar el artículo'
+        );
+      } finally {
+        setExporting(null);
+      }
+    };
+
+  const handleExportAll =
+    async () => {
+      setExporting('all');
+
+      try {
+        await exportAllToSubstack();
+
+        alert.success(
+          'Exportación preparada',
+          'Se descargó el XML compatible con WordPress/Substack'
+        );
+      } catch (error) {
+        console.error(error);
+
+        alert.error(
+          'Error de exportación',
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          'No se pudieron exportar los artículos'
+        );
+      } finally {
+        setExporting(null);
+      }
+    };
+
+  const totalPages =
+    Math.ceil(
+      total / LIMIT
+    );
 
   return (
     <div className={styles.page}>
@@ -311,10 +389,68 @@ const handleDeleteVoice = async (
           <div className={styles.headerLabel}>Contenido</div>
           <h1 className={styles.headerTitle}>Artículos</h1>
         </div>
-        <Link to="/admin/articulos/nuevo" className={styles.newBtn}>
-          <Plus size={16} />
-          Nuevo artículo
-        </Link>
+        <div
+          className={
+            styles.headerActions
+          }
+        >
+          <button
+            type="button"
+            className={
+              styles.transferBtn
+            }
+            onClick={() => {
+              setTransferModalOpen(
+                true
+              );
+            }}
+          >
+            <UploadCloud
+              size={16}
+            />
+
+            Importar Substack
+          </button>
+
+          <button
+            type="button"
+            className={
+              styles.transferBtn
+            }
+            onClick={
+              handleExportAll
+            }
+            disabled={
+              Boolean(exporting)
+            }
+          >
+            {exporting ===
+            'all' ? (
+              <LoaderCircle
+                size={16}
+                className={
+                  styles.spinning
+                }
+              />
+            ) : (
+              <Download
+                size={16}
+              />
+            )}
+
+            Exportar para Substack
+          </button>
+
+          <Link
+            to="/admin/articulos/nuevo"
+            className={
+              styles.newBtn
+            }
+          >
+            <Plus size={16} />
+            Nuevo artículo
+          </Link>
+        </div>
       </motion.div>
 
       {/* ── Filtros ───────────────────────────────────────── */}
@@ -668,11 +804,50 @@ const handleDeleteVoice = async (
 
                         {/* Editar */}
                         <button
-                          onClick={() => navigate(`/admin/articulos/editar/${art.id}`)}
-                          className={styles.actionBtn}
+                          onClick={() =>
+                            navigate(
+                              `/admin/articulos/editar/${art.id}`
+                            )
+                          }
+                          className={
+                            styles.actionBtn
+                          }
                           title="Editar"
                         >
                           <Edit size={14} />
+                        </button>
+
+                        {/* Exportar HTML */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleExportArticle(
+                              art
+                            )
+                          }
+                          className={
+                            styles.actionBtn
+                          }
+                          title="Exportar HTML"
+                          disabled={
+                            Boolean(
+                              exporting
+                            )
+                          }
+                        >
+                          {exporting ===
+                          art.id ? (
+                            <LoaderCircle
+                              size={14}
+                              className={
+                                styles.spinning
+                              }
+                            />
+                          ) : (
+                            <Download
+                              size={14}
+                            />
+                          )}
                         </button>
 
                         {/* Publicar (solo borradores) */}
@@ -706,27 +881,73 @@ const handleDeleteVoice = async (
 
       {/* ── Paginación ────────────────────────────────────── */}
       {totalPages > 1 && (
-        <div className={styles.pagination}>
+        <div
+          className={
+            styles.pagination
+          }
+        >
           <button
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className={styles.pageBtn}
+            onClick={() =>
+              setPage(previous =>
+                Math.max(
+                  1,
+                  previous - 1
+                )
+              )
+            }
+            disabled={
+              page === 1
+            }
+            className={
+              styles.pageBtn
+            }
           >
             ← Anterior
           </button>
-          <span className={styles.pageInfo}>
-            Página {page} de {totalPages}
+
+          <span
+            className={
+              styles.pageInfo
+            }
+          >
+            Página {page} de{' '}
+            {totalPages}
           </span>
+
           <button
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className={styles.pageBtn}
+            onClick={() =>
+              setPage(previous =>
+                Math.min(
+                  totalPages,
+                  previous + 1
+                )
+              )
+            }
+            disabled={
+              page === totalPages
+            }
+            className={
+              styles.pageBtn
+            }
           >
             Siguiente →
           </button>
         </div>
       )}
 
+      <ArticleTransferModal
+        open={
+          transferModalOpen
+        }
+        onClose={() => {
+          setTransferModalOpen(
+            false
+          );
+        }}
+        onImported={
+          load
+        }
+      />
     </div>
   );
 }

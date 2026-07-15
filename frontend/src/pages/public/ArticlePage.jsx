@@ -80,7 +80,7 @@ const AGORA_SOCIAL_LINKS = {
 
 
 const AGORA_AUTHOR = {
-  name: 'Agorá Revista',
+  name: 'Redacción Agorá',
   slug: null,
   photo_url: agoraIcon,
   section_name: null,

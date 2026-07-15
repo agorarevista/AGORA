@@ -5,8 +5,12 @@ const router =
 const {
   getAllPublic,
   getAllAdmin,
+  search,
   getBySlug,
   getById,
+  getByCollaborator,
+  getByEdition,
+  getFeatured,
   create,
   update,
   publish,
@@ -30,6 +34,26 @@ const {
 router.get(
   '/',
   getAllPublic
+);
+
+router.get(
+  '/search',
+  search
+);
+
+router.get(
+  '/featured',
+  getFeatured
+);
+
+router.get(
+  '/collaborator/:slug',
+  getByCollaborator
+);
+
+router.get(
+  '/edition/:number',
+  getByEdition
 );
 
 /* ══════════════════════════════════════════════════════

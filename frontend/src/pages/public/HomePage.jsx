@@ -23,8 +23,69 @@ import bookLight from '../../assets/BOOK.png';
 import bookDark from '../../assets/BOOKW.png';
 import styles from './HomePage.module.css';
 
-const HOME_CACHE_KEY = 'home_payload';
-const HOME_CACHE_BUSTER_KEY = 'home_payload_version';
+const HOME_CACHE_KEY =
+  'home_payload';
+
+const HOME_CACHE_BUSTER_KEY =
+  'home_payload_version';
+
+const getContentPath =
+  item => {
+    if (
+      item?.content_type ===
+      'gallery'
+    ) {
+      return `/galerias/${item.slug}`;
+    }
+
+    return `/articulos/${item.slug}`;
+  };
+
+const getContentCategories =
+  item => {
+    if (
+      item?.content_type ===
+      'gallery'
+    ) {
+      return [
+        'Álbum fotográfico',
+      ];
+    }
+
+    const pivot =
+      Array.isArray(
+        item?.article_categories
+      )
+        ? item.article_categories
+            .map(
+              category =>
+                category
+                  ?.categories
+                  ?.name
+            )
+            .filter(Boolean)
+        : [];
+
+    const direct =
+      Array.isArray(
+        item?.categories
+      )
+        ? item.categories
+            .map(
+              category =>
+                category?.name ||
+                category
+            )
+            .filter(Boolean)
+        : [];
+
+    return [
+      ...new Set([
+        ...pivot,
+        ...direct,
+      ]),
+    ].slice(0, 2);
+  };
 /* ── Carousel hook ───────────────────────────────────── */
 function useCarousel(items, perPage = 3, autoMs = 0) {
   const [idx, setIdx] = useState(0);
@@ -230,9 +291,26 @@ const mostRead = useMemo(() =>
   [...latest].sort((a,b) => (b.views||0)-(a.views||0)).slice(0,8)
 , [latest]);
 
-const edicionArticles = useMemo(() =>
-  edition ? latest.filter(a => a.editions?.id === edition.id) : []
-, [latest, edition]);
+const editionContents =
+  useMemo(
+    () => {
+      if (!edition) {
+        return [];
+      }
+
+      return latest.filter(
+        content =>
+          content
+            ?.editions
+            ?.id ===
+          edition.id
+      );
+    },
+    [
+      latest,
+      edition,
+    ]
+  );
 
 if (loading && !featured.length && !latest.length && !edition && !collaborators.length) {
   return <PageSkeleton />;
@@ -246,9 +324,14 @@ return (
       {featured.length > 0 && (
         <div className={styles.heroGrid}>
           <div className={styles.heroSideCol}>
-            {featured.slice(0, 2).map(art => (
-              <HighlightCard key={art.id} art={art} />
-            ))}
+{featured
+  .slice(0, 2)
+  .map(art => (
+    <HighlightCard
+      key={`${art.content_type || 'article'}-${art.id}`}
+      art={art}
+    />
+  ))}
           </div>
 
           <div className={styles.heroCenterCol}>
@@ -256,9 +339,14 @@ return (
           </div>
 
           <div className={styles.heroSideCol}>
-            {featured.slice(2, 4).map(art => (
-              <HighlightCard key={art.id} art={art} />
-            ))}
+{featured
+  .slice(2, 4)
+  .map(art => (
+    <HighlightCard
+      key={`${art.content_type || 'article'}-${art.id}`}
+      art={art}
+    />
+  ))}
           </div>
         </div>
       )}
@@ -281,7 +369,7 @@ return (
 
 </div>
 {/* ── CARRUSEL EDICIÓN ACTUAL ──────────────────── */}
-      {edicionArticles.length > 0 && (
+{editionContents.length > 0 && (
         <section className={styles.edicionSection}>
           <div className={styles.featureSectionHeader}>
             <div>
@@ -290,7 +378,7 @@ return (
             </div>
           </div>
 
-          <EdicionCarousel articles={edicionArticles} />
+<EdicionCarousel articles={editionContents} />
         </section>
       )}
 
@@ -1324,40 +1412,12 @@ function EdicionCarousel({ articles }) {
     );
   };
 
-  const getCategories = art => {
-    const fromPivot =
-      Array.isArray(
-        art.article_categories
-      )
-        ? art.article_categories
-            .map(
-              item =>
-                item?.categories
-                  ?.name
-            )
-            .filter(Boolean)
-        : [];
-
-    const fromDirect =
-      Array.isArray(
-        art.categories
-      )
-        ? art.categories
-            .map(
-              category =>
-                category?.name ||
-                category
-            )
-            .filter(Boolean)
-        : [];
-
-    return [
-      ...new Set([
-        ...fromPivot,
-        ...fromDirect,
-      ]),
-    ].slice(0, 2);
-  };
+  const getCategories =
+    art => {
+      return getContentCategories(
+        art
+      );
+    };
 
   const renderArticleCard = art => {
     const categories =
@@ -1369,8 +1429,8 @@ function EdicionCarousel({ articles }) {
 
     return (
       <Link
-        key={art.id}
-        to={`/articulos/${art.slug}`}
+        key={`${art.content_type || 'article'}-${art.id}`}
+        to={getContentPath(art)}
         className={
           styles.edicionCard
         }
@@ -1646,22 +1706,73 @@ function EdicionCarousel({ articles }) {
   );
 }
 
-function HighlightCard({ art }) {
+function HighlightCard({
+  art,
+}) {
   return (
-    <Link to={`/articulos/${art.slug}`} className={styles.highlightCard}>
-      <div className={styles.highlightImg}>
+    <Link
+      to={getContentPath(art)}
+      className={
+        styles.highlightCard
+      }
+    >
+      <div
+        className={
+          styles.highlightImg
+        }
+      >
         {art.cover_image_url ? (
-          <img src={art.cover_image_url} alt={art.title} />
+          <img
+            src={
+              art.cover_image_url
+            }
+            alt={art.title}
+          />
         ) : (
-          <div className={styles.imgPlaceholder}><span>Λ</span></div>
+          <div
+            className={
+              styles.imgPlaceholder
+            }
+          >
+            <span>Λ</span>
+          </div>
         )}
 
-        <div className={styles.highlightOverlay}>
-          <div className={styles.highlightTitle}>{art.title}</div>
+        <div
+          className={
+            styles.highlightOverlay
+          }
+        >
+          {art.content_type ===
+            'gallery' && (
+            <span
+              className={
+                styles.highlightType
+              }
+            >
+              Álbum fotográfico
+            </span>
+          )}
+
+          <div
+            className={
+              styles.highlightTitle
+            }
+          >
+            {art.title}
+          </div>
 
           {art.collaborators && (
-            <div className={styles.highlightAuthor}>
-              {art.collaborators.name}
+            <div
+              className={
+                styles.highlightAuthor
+              }
+            >
+              {
+                art
+                  .collaborators
+                  .name
+              }
             </div>
           )}
         </div>

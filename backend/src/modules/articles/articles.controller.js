@@ -90,9 +90,20 @@ const publish = async (req, res, next) => {
 
 const remove = async (req, res, next) => {
   try {
-    await service.remove(req.params.id);
-    res.json({ message: 'Artículo archivado' });
-  } catch (err) { next(err); }
+    const article =
+      await service.remove(
+        req.params.id
+      );
+
+    res.json({
+      message:
+        'Artículo eliminado permanentemente',
+
+      article,
+    });
+  } catch (err) {
+    next(err);
+  }
 };
 
 const getById = async (req, res, next) => {

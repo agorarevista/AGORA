@@ -118,3 +118,71 @@ export const deleteGalleryPermanently =
           response.data
       );
   };
+
+  export const getGalleriesByCollaborator =
+  (
+    slug,
+    params = {}
+  ) => {
+    return api
+      .get(
+        `/galleries/collaborator/${slug}`,
+        {
+          params,
+        }
+      )
+      .then(
+        response =>
+          response.data
+      );
+  };
+
+export const getGalleriesByEdition =
+  (
+    number,
+    params = {}
+  ) => {
+    return api
+      .get(
+        `/galleries/edition/${number}`,
+        {
+          params,
+        }
+      )
+      .then(
+        response =>
+          response.data
+      );
+  };
+
+export const getFeaturedGalleries =
+  () => {
+    return api
+      .get(
+        '/galleries/featured'
+      )
+      .then(
+        response =>
+          response.data
+      );
+  };
+
+  export const searchGalleries = (
+  query,
+  params = {}
+) => {
+  return api
+    .get(
+      '/galleries/search',
+      {
+        params: {
+          q: query,
+          ...params,
+        },
+      }
+    )
+    .then(
+      response =>
+        response.data
+    );
+};

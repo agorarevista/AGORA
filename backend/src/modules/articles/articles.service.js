@@ -12,8 +12,124 @@ const CACHE_TTL = {
 };
 
 const invalidateHomeCache = () => {
-  setCache(CACHE_KEYS.HOME_PAYLOAD, null, 0);
+  setCache(
+    CACHE_KEYS.HOME_PAYLOAD,
+    null,
+    0
+  );
 };
+
+const normalizeArticleContent =
+  article => {
+    return {
+      ...article,
+
+      content_type:
+        'article',
+    };
+  };
+
+const normalizeGalleryContent =
+  gallery => {
+    return {
+      ...gallery,
+
+      content_type:
+        'gallery',
+
+      article_categories: [
+        {
+          categories: {
+            id:
+              'gallery',
+
+            name:
+              'Álbum fotográfico',
+
+            slug:
+              'galeria',
+
+            color:
+              '#A4518D',
+          },
+        },
+      ],
+    };
+  };
+
+const getContentDate =
+  item => {
+    const date =
+      item?.published_at ||
+      item?.created_at;
+
+    const timestamp =
+      new Date(
+        date || 0
+      ).getTime();
+
+    return Number.isFinite(
+      timestamp
+    )
+      ? timestamp
+      : 0;
+  };
+
+const sortContentsByDate =
+  contents => {
+    return [
+      ...(contents || []),
+    ].sort(
+      (a, b) =>
+        getContentDate(b) -
+        getContentDate(a)
+    );
+  };
+
+const sortFeaturedContents =
+  contents => {
+    return [
+      ...(contents || []),
+    ].sort(
+      (a, b) => {
+        const orderA =
+          Number.isFinite(
+            Number(
+              a?.featured_order
+            )
+          )
+            ? Number(
+                a.featured_order
+              )
+            : 9999;
+
+        const orderB =
+          Number.isFinite(
+            Number(
+              b?.featured_order
+            )
+          )
+            ? Number(
+                b.featured_order
+              )
+            : 9999;
+
+        if (
+          orderA !== orderB
+        ) {
+          return (
+            orderA -
+            orderB
+          );
+        }
+
+        return (
+          getContentDate(b) -
+          getContentDate(a)
+        );
+      }
+    );
+  };
 
 const validateArticleCategories =
   async categoryIds => {
@@ -294,16 +410,26 @@ const getHome = async () => {
   let cached = null;
 
   try {
-    cached = getCache(CACHE_KEYS.HOME_PAYLOAD);
-  } catch (e) {
-    console.warn('Cache error (get):', e);
+    cached =
+      getCache(
+        CACHE_KEYS.HOME_PAYLOAD
+      );
+  } catch (error) {
+    console.warn(
+      'Cache error (get):',
+      error
+    );
   }
 
-  if (cached) return cached;
+  if (cached) {
+    return cached;
+  }
 
   const [
-    featuredResult,
-    latestResult,
+    featuredArticlesResult,
+    latestArticlesResult,
+    featuredGalleriesResult,
+    latestGalleriesResult,
     editionResult,
     convocatoriaResult,
     collaboratorsResult,
@@ -311,76 +437,333 @@ const getHome = async () => {
     supabase
       .from('articles')
       .select(BASE_SELECT)
-      .eq('status', 'published')
-      .eq('is_featured', true)
-      .order('featured_order', { ascending: true })
-      .limit(6),
+      .eq(
+        'status',
+        'published'
+      )
+      .eq(
+        'is_featured',
+        true
+      )
+      .order(
+        'featured_order',
+        {
+          ascending:
+            true,
+
+          nullsFirst:
+            false,
+        }
+      )
+      .limit(12),
 
     supabase
       .from('articles')
       .select(BASE_SELECT)
-      .eq('status', 'published')
-      .order('published_at', { ascending: false })
-      .limit(24),
+      .eq(
+        'status',
+        'published'
+      )
+      .order(
+        'published_at',
+        {
+          ascending:
+            false,
+
+          nullsFirst:
+            false,
+        }
+      )
+      .limit(50),
+
+    supabase
+      .from('galleries')
+      .select(`
+        id,
+        title,
+        slug,
+        subtitle,
+        excerpt,
+        cover_image_url,
+        collaborator_id,
+        edition_id,
+        status,
+        views,
+        is_featured,
+        featured_order,
+        published_at,
+        created_at,
+
+        collaborators (
+          id,
+          name,
+          slug,
+          photo_url,
+          type,
+          section_name,
+          section_slug,
+          social_links
+        ),
+
+        editions (
+          id,
+          number,
+          name
+        ),
+
+        gallery_photos (
+          id
+        )
+      `)
+      .eq(
+        'status',
+        'published'
+      )
+      .eq(
+        'is_featured',
+        true
+      )
+      .order(
+        'featured_order',
+        {
+          ascending:
+            true,
+
+          nullsFirst:
+            false,
+        }
+      )
+      .limit(12),
+
+    supabase
+      .from('galleries')
+      .select(`
+        id,
+        title,
+        slug,
+        subtitle,
+        excerpt,
+        cover_image_url,
+        collaborator_id,
+        edition_id,
+        status,
+        views,
+        is_featured,
+        featured_order,
+        published_at,
+        created_at,
+
+        collaborators (
+          id,
+          name,
+          slug,
+          photo_url,
+          type,
+          section_name,
+          section_slug,
+          social_links
+        ),
+
+        editions (
+          id,
+          number,
+          name
+        ),
+
+        gallery_photos (
+          id
+        )
+      `)
+      .eq(
+        'status',
+        'published'
+      )
+      .order(
+        'published_at',
+        {
+          ascending:
+            false,
+
+          nullsFirst:
+            false,
+        }
+      )
+      .limit(50),
 
     supabase
       .from('editions')
       .select('*')
-      .eq('is_current', true)
+      .eq(
+        'is_current',
+        true
+      )
       .maybeSingle(),
 
     supabase
       .from('convocatorias')
       .select('*')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
+      .eq(
+        'is_active',
+        true
+      )
+      .order(
+        'created_at',
+        {
+          ascending:
+            false,
+        }
+      )
       .limit(1)
       .maybeSingle(),
 
     supabase
       .from('collaborators')
-      .select('id, name, slug, photo_url, bio, email, type, section_name, social_links, is_active')
-      .eq('is_active', true)
-      .order('name', { ascending: true })
+      .select(
+        'id, name, slug, photo_url, bio, email, type, section_name, social_links, is_active'
+      )
+      .eq(
+        'is_active',
+        true
+      )
+      .order(
+        'name',
+        {
+          ascending:
+            true,
+        }
+      )
       .limit(12),
   ]);
 
+  const featuredArticles =
+    featuredArticlesResult.status ===
+      'fulfilled' &&
+    !featuredArticlesResult
+      .value
+      .error
+      ? (
+          featuredArticlesResult
+            .value
+            .data ||
+          []
+        ).map(
+          normalizeArticleContent
+        )
+      : [];
+
+  const latestArticles =
+    latestArticlesResult.status ===
+      'fulfilled' &&
+    !latestArticlesResult
+      .value
+      .error
+      ? (
+          latestArticlesResult
+            .value
+            .data ||
+          []
+        ).map(
+          normalizeArticleContent
+        )
+      : [];
+
+  const featuredGalleries =
+    featuredGalleriesResult.status ===
+      'fulfilled' &&
+    !featuredGalleriesResult
+      .value
+      .error
+      ? (
+          featuredGalleriesResult
+            .value
+            .data ||
+          []
+        ).map(
+          normalizeGalleryContent
+        )
+      : [];
+
+  const latestGalleries =
+    latestGalleriesResult.status ===
+      'fulfilled' &&
+    !latestGalleriesResult
+      .value
+      .error
+      ? (
+          latestGalleriesResult
+            .value
+            .data ||
+          []
+        ).map(
+          normalizeGalleryContent
+        )
+      : [];
+
   const payload = {
     featured:
-      featuredResult.status === 'fulfilled' && !featuredResult.value.error
-        ? featuredResult.value.data || []
-        : [],
+      sortFeaturedContents([
+        ...featuredArticles,
+        ...featuredGalleries,
+      ]).slice(0, 12),
 
     latest:
-      latestResult.status === 'fulfilled' && !latestResult.value.error
-        ? latestResult.value.data || []
-        : [],
+      sortContentsByDate([
+        ...latestArticles,
+        ...latestGalleries,
+      ]).slice(0, 60),
 
     edition:
-      editionResult.status === 'fulfilled' && !editionResult.value.error
-        ? editionResult.value.data || null
+      editionResult.status ===
+        'fulfilled' &&
+      !editionResult
+        .value
+        .error
+        ? editionResult
+            .value
+            .data ||
+          null
         : null,
 
     convocatoria:
-      convocatoriaResult.status === 'fulfilled' && !convocatoriaResult.value.error
-        ? convocatoriaResult.value.data || null
+      convocatoriaResult.status ===
+        'fulfilled' &&
+      !convocatoriaResult
+        .value
+        .error
+        ? convocatoriaResult
+            .value
+            .data ||
+          null
         : null,
 
     collaborators:
-      collaboratorsResult.status === 'fulfilled' && !collaboratorsResult.value.error
-        ? collaboratorsResult.value.data || []
+      collaboratorsResult.status ===
+        'fulfilled' &&
+      !collaboratorsResult
+        .value
+        .error
+        ? collaboratorsResult
+            .value
+            .data ||
+          []
         : [],
   };
 
-try {
-  setCache(CACHE_KEYS.HOME_PAYLOAD, payload, CACHE_TTL.HOME_PAYLOAD);
-} catch (e) {
-  console.warn('Cache error (set):', e);
-}
+  try {
+    setCache(
+      CACHE_KEYS.HOME_PAYLOAD,
+      payload,
+      CACHE_TTL.HOME_PAYLOAD
+    );
+  } catch (error) {
+    console.warn(
+      'Cache error (set):',
+      error
+    );
+  }
 
-return payload;
+  return payload;
 };
-
 const search = async (query, { page = 1, limit = 12 } = {}) => {
   if (!query || query.trim().length < 2) {
     throw { status: 400, message: 'La búsqueda debe tener al menos 2 caracteres' };
@@ -602,14 +985,40 @@ const publish = async (id) => {
 };
 
 const remove = async (id) => {
-  const { error } = await supabase
+  const {
+    data: article,
+    error: findError,
+  } = await supabase
     .from('articles')
-    .update({ status: 'archived' })
+    .select('id, title')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (findError) {
+    throw findError;
+  }
+
+  if (!article) {
+    throw {
+      status: 404,
+      message: 'Artículo no encontrado',
+    };
+  }
+
+  const {
+    error: deleteError,
+  } = await supabase
+    .from('articles')
+    .delete()
     .eq('id', id);
 
-  if (error) throw error;
+  if (deleteError) {
+    throw deleteError;
+  }
 
-    invalidateHomeCache();
+  invalidateHomeCache();
+
+  return article;
 };
 module.exports = {
   getAll,

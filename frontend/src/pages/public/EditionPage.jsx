@@ -4,7 +4,12 @@ import {
   motion,
   AnimatePresence,
 } from 'framer-motion';
-import { getEdition as getEditionByNumber } from '../../api/editions.api';
+import {
+  getEdition as getEditionByNumber,
+} from '../../api/editions.api';
+import {
+  getGalleriesByEdition,
+} from '../../api/galleries.api';
 import { formatDate } from '../../utils/formatDate';
 import {
   BookOpen,
@@ -18,7 +23,10 @@ export default function EditionPage() {
   const { number } = useParams();
 
   const [edition, setEdition] = useState(null);
-  const [articles, setArticles] = useState([]);
+  const [
+    contents,
+    setContents,
+  ] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [viewer, setViewer] = useState(null);
@@ -36,12 +44,89 @@ useEffect(() => {
       if (!mounted) return;
 
       setEdition(editionData);
+      const editionArticles =
+        Array.isArray(
+          editionData
+            ?.articles
+        )
+          ? editionData
+              .articles
+              .map(
+                article => ({
+                  ...article,
 
-      const editionArticles = Array.isArray(editionData?.articles)
-        ? editionData.articles
-        : [];
+                  content_type:
+                    'article',
+                })
+              )
+          : [];
 
-      setArticles(editionArticles);
+      let editionGalleries =
+        [];
+
+      try {
+        const galleriesResult =
+          await getGalleriesByEdition(
+            number,
+            {
+              limit: 100,
+            }
+          );
+
+        editionGalleries =
+          Array.isArray(
+            galleriesResult
+              ?.data
+          )
+            ? galleriesResult
+                .data
+                .map(
+                  gallery => ({
+                    ...gallery,
+
+                    content_type:
+                      'gallery',
+                  })
+                )
+            : [];
+      } catch (
+        galleryError
+      ) {
+        console.error(
+          'ERROR cargando galerías de la edición:',
+          galleryError
+        );
+      }
+
+      const mergedContents = [
+        ...editionArticles,
+        ...editionGalleries,
+      ].sort(
+        (a, b) => {
+          const dateA =
+            new Date(
+              a.published_at ||
+              a.created_at ||
+              0
+            ).getTime();
+
+          const dateB =
+            new Date(
+              b.published_at ||
+              b.created_at ||
+              0
+            ).getTime();
+
+          return (
+            dateB -
+            dateA
+          );
+        }
+      );
+
+      setContents(
+        mergedContents
+      );
     } catch (err) {
       console.error(
         'ERROR cargando edición:',
@@ -52,7 +137,7 @@ useEffect(() => {
       if (mounted) {
         setError(true);
         setEdition(null);
-        setArticles([]);
+        setContents([]);
       }
     } finally {
       if (mounted) {
@@ -154,14 +239,17 @@ if (error || !edition) return <NotFound />;
                   Publicada el {formatDate(edition.published_at)}
                 </span>
               )}
-
-              {edition.published_at && articles.length > 0 && (
+              {edition.published_at && contents.length > 0 && (
                 <span className={styles.metaDot}>·</span>
               )}
 
-              {articles.length > 0 && (
+              {contents.length > 0 && (
                 <span>
-                  {articles.length} {articles.length === 1 ? 'artículo' : 'artículos'}
+                  {contents.length}{' '}
+                  {contents.length ===
+                  1
+                    ? 'publicación'
+                    : 'publicaciones'}
                 </span>
               )}
             </div>
@@ -173,7 +261,7 @@ if (error || !edition) return <NotFound />;
 
       {/* ── TODOS LOS ARTÍCULOS ───────────────────────── */}
       <main className={styles.body}>
-        {articles.length > 0 ? (
+        {contents.length > 0 ? (
           <section className={styles.articlesSection}>
             <div className={styles.sectionHeader}>
               <span className={styles.sectionEyebrow}>
@@ -181,24 +269,39 @@ if (error || !edition) return <NotFound />;
               </span>
 
               <h2 className={styles.sectionTitle}>
-                Todos los artículos
+                Todo el contenido
               </h2>
             </div>
 
             <div className={styles.articlesGrid}>
-              {articles.map((article, index) => (
+              {contents.map((content, index) => (
                 <motion.div
-                  key={article.id}
+                  key={`${content.content_type}-${content.id}`}
                   className={styles.articleCardWrapper}
-                  initial={{ opacity: 0, y: 18 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.15 }}
+                  initial={{
+                    opacity: 0,
+                    y: 18,
+                  }}
+                  whileInView={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  viewport={{
+                    once: true,
+                    amount: 0.15,
+                  }}
                   transition={{
                     duration: 0.35,
-                    delay: Math.min(index % 5, 4) * 0.05,
+                    delay:
+                      Math.min(
+                        index % 5,
+                        4
+                      ) * 0.05,
                   }}
                 >
-                  <EditionArticleCard article={article} />
+                  <EditionContentCard
+                    content={content}
+                  />
                 </motion.div>
               ))}
             </div>
@@ -207,7 +310,7 @@ if (error || !edition) return <NotFound />;
           <div className={styles.empty}>
             <BookOpen size={38} />
             <p>
-              Esta edición no tiene artículos publicados todavía.
+              Esta edición no tiene contenido publicado todavía.
             </p>
           </div>
         )}
@@ -226,50 +329,110 @@ if (error || !edition) return <NotFound />;
   );
 }
 
-function EditionArticleCard({ article }) {
-  const categories = getArticleCategories(article);
+function EditionContentCard({
+  content,
+}) {
+  const categories =
+    content.content_type ===
+    'gallery'
+      ? [
+          'Álbum fotográfico',
+        ]
+      : getArticleCategories(
+          content
+        );
+
   const authorName =
-    article.collaborators?.name ||
-    article.author_name ||
-    'Agorá Revista';
+    content.collaborators
+      ?.name ||
+    content.author_name ||
+    'Redacción Agorá';
+
+  const contentPath =
+    content.content_type ===
+    'gallery'
+      ? `/galerias/${content.slug}`
+      : `/articulos/${content.slug}`;
 
   return (
     <Link
-      to={`/articulos/${article.slug}`}
-      className={styles.articleCard}
+      to={contentPath}
+      className={
+        styles.articleCard
+      }
     >
-      <div className={styles.articleCardImage}>
-        {article.cover_image_url ? (
+      <div
+        className={
+          styles.articleCardImage
+        }
+      >
+        {content.cover_image_url ? (
           <img
-            src={article.cover_image_url}
-            alt={article.title}
+            src={
+              content
+                .cover_image_url
+            }
+            alt={
+              content.title
+            }
           />
         ) : (
-          <div className={styles.imgPlaceholder}>
+          <div
+            className={
+              styles.imgPlaceholder
+            }
+          >
             <span>Λ</span>
           </div>
         )}
 
-        <div className={styles.articleCardOverlay}>
-          {categories.length > 0 && (
-            <div className={styles.articleCategories}>
-              {categories.map(category => (
-                <span
-                  key={category}
-                  className={styles.articleCategory}
-                >
-                  {category}
-                </span>
-              ))}
+        <div
+          className={
+            styles.articleCardOverlay
+          }
+        >
+          {categories.length >
+            0 && (
+            <div
+              className={
+                styles.articleCategories
+              }
+            >
+              {categories.map(
+                category => (
+                  <span
+                    key={
+                      category
+                    }
+                    className={
+                      styles.articleCategory
+                    }
+                  >
+                    {category}
+                  </span>
+                )
+              )}
             </div>
           )}
 
-          <div className={styles.articleCardText}>
-            <h3 className={styles.articleCardTitle}>
-              {article.title}
+          <div
+            className={
+              styles.articleCardText
+            }
+          >
+            <h3
+              className={
+                styles.articleCardTitle
+              }
+            >
+              {content.title}
             </h3>
 
-            <p className={styles.articleCardAuthor}>
+            <p
+              className={
+                styles.articleCardAuthor
+              }
+            >
               {authorName}
             </p>
           </div>

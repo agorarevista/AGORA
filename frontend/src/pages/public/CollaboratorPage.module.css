@@ -573,7 +573,24 @@
 .cardText {
   text-align: center;
 }
-
+.contentTypeBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 9px;
+  padding: 5px 9px;
+  color: white;
+  background: #A4518D;
+  font-family: var(--font-sans);
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  box-shadow:
+    0 8px 18px
+    rgba(0, 0, 0, 0.24);
+}
 .cardTitle {
   margin: 0;
 

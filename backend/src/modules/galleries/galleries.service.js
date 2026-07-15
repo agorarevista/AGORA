@@ -293,24 +293,55 @@ const sortGalleryPhotos =
     };
   };
 
+const normalizeGalleryContent =
+  gallery => {
+    if (!gallery) {
+      return gallery;
+    }
+
+    const photos =
+      Array.isArray(
+        gallery.gallery_photos
+      )
+        ? gallery.gallery_photos
+        : [];
+
+    return {
+      ...gallery,
+
+      content_type:
+        'gallery',
+
+      photos_count:
+        photos.length,
+
+      article_categories: [
+        {
+          categories: {
+            id:
+              'gallery',
+
+            name:
+              'Álbum fotográfico',
+
+            slug:
+              'galeria',
+
+            color:
+              '#A4518D',
+          },
+        },
+      ],
+    };
+  };
+
 const attachPhotosCount =
   galleries => {
     return (
       galleries || []
-    ).map(gallery => {
-      const photos =
-        Array.isArray(
-          gallery.gallery_photos
-        )
-          ? gallery.gallery_photos
-          : [];
-
-      return {
-        ...gallery,
-        photos_count:
-          photos.length,
-      };
-    });
+    ).map(
+      normalizeGalleryContent
+    );
   };
 
 const validateCollaborator =
@@ -1005,6 +1036,458 @@ const archive = async id => {
   return data;
 };
 
+const getByCollaborator =
+  async (
+    collaboratorSlug,
+    {
+      page = 1,
+      limit = 50,
+    } = {}
+  ) => {
+    const normalizedPage =
+      normalizePositiveInteger(
+        page,
+        1
+      );
+
+    const normalizedLimit =
+      normalizePositiveInteger(
+        limit,
+        50,
+        100
+      );
+
+    const {
+      data: collaborator,
+      error: collaboratorError,
+    } = await supabase
+      .from('collaborators')
+      .select(
+        'id, name, slug'
+      )
+      .eq(
+        'slug',
+        collaboratorSlug
+      )
+      .maybeSingle();
+
+    if (collaboratorError) {
+      throw collaboratorError;
+    }
+
+    if (!collaborator) {
+      throw createHttpError(
+        404,
+        'Colaborador no encontrado'
+      );
+    }
+
+    const from =
+      (
+        normalizedPage -
+        1
+      ) *
+      normalizedLimit;
+
+    const to =
+      from +
+      normalizedLimit -
+      1;
+
+    const {
+      data,
+      error,
+      count,
+    } = await supabase
+      .from('galleries')
+      .select(
+        GALLERY_BASE_SELECT,
+        {
+          count:
+            'exact',
+        }
+      )
+      .eq(
+        'collaborator_id',
+        collaborator.id
+      )
+      .eq(
+        'status',
+        'published'
+      )
+      .order(
+        'published_at',
+        {
+          ascending:
+            false,
+
+          nullsFirst:
+            false,
+        }
+      )
+      .range(
+        from,
+        to
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    return {
+      collaborator,
+
+      data:
+        attachPhotosCount(
+          data
+        ),
+
+      total:
+        count || 0,
+
+      page:
+        normalizedPage,
+
+      limit:
+        normalizedLimit,
+    };
+  };
+
+const getByEdition =
+  async (
+    editionNumber,
+    {
+      page = 1,
+      limit = 50,
+    } = {}
+  ) => {
+    const normalizedPage =
+      normalizePositiveInteger(
+        page,
+        1
+      );
+
+    const normalizedLimit =
+      normalizePositiveInteger(
+        limit,
+        50,
+        100
+      );
+
+    const {
+      data: edition,
+      error: editionError,
+    } = await supabase
+      .from('editions')
+      .select(
+        'id, number, name'
+      )
+      .eq(
+        'number',
+        editionNumber
+      )
+      .maybeSingle();
+
+    if (editionError) {
+      throw editionError;
+    }
+
+    if (!edition) {
+      throw createHttpError(
+        404,
+        'Edición no encontrada'
+      );
+    }
+
+    const from =
+      (
+        normalizedPage -
+        1
+      ) *
+      normalizedLimit;
+
+    const to =
+      from +
+      normalizedLimit -
+      1;
+
+    const {
+      data,
+      error,
+      count,
+    } = await supabase
+      .from('galleries')
+      .select(
+        GALLERY_BASE_SELECT,
+        {
+          count:
+            'exact',
+        }
+      )
+      .eq(
+        'edition_id',
+        edition.id
+      )
+      .eq(
+        'status',
+        'published'
+      )
+      .order(
+        'published_at',
+        {
+          ascending:
+            false,
+
+          nullsFirst:
+            false,
+        }
+      )
+      .range(
+        from,
+        to
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    return {
+      edition,
+
+      data:
+        attachPhotosCount(
+          data
+        ),
+
+      total:
+        count || 0,
+
+      page:
+        normalizedPage,
+
+      limit:
+        normalizedLimit,
+    };
+  };
+
+const getFeatured =
+  async () => {
+    const {
+      data,
+      error,
+    } = await supabase
+      .from('galleries')
+      .select(
+        GALLERY_BASE_SELECT
+      )
+      .eq(
+        'status',
+        'published'
+      )
+      .eq(
+        'is_featured',
+        true
+      )
+      .order(
+        'featured_order',
+        {
+          ascending:
+            true,
+
+          nullsFirst:
+            false,
+        }
+      )
+      .order(
+        'published_at',
+        {
+          ascending:
+            false,
+
+          nullsFirst:
+            false,
+        }
+      )
+      .limit(12);
+
+    if (error) {
+      throw error;
+    }
+
+    return attachPhotosCount(
+      data
+    );
+  };
+
+const search =
+  async (
+    searchTerm,
+    {
+      page = 1,
+      limit = 20,
+    } = {}
+  ) => {
+    const cleanSearch =
+      String(
+        searchTerm || ''
+      ).trim();
+
+    const normalizedPage =
+      normalizePositiveInteger(
+        page,
+        1
+      );
+
+    const normalizedLimit =
+      normalizePositiveInteger(
+        limit,
+        20,
+        100
+      );
+
+    if (!cleanSearch) {
+      return {
+        data: [],
+        total: 0,
+        page:
+          normalizedPage,
+        limit:
+          normalizedLimit,
+      };
+    }
+
+    const from =
+      (
+        normalizedPage -
+        1
+      ) *
+      normalizedLimit;
+
+    const to =
+      from +
+      normalizedLimit -
+      1;
+
+    /*
+     * Primero buscamos colaboradores
+     * cuyo nombre coincida.
+     *
+     * Así, al escribir "Kandona",
+     * también recuperamos todas sus
+     * galerías aunque el título del
+     * álbum no contenga "Kandona".
+     */
+    const {
+      data:
+        matchingCollaborators,
+      error:
+        collaboratorsError,
+    } = await supabase
+      .from('collaborators')
+      .select('id')
+      .ilike(
+        'name',
+        `%${cleanSearch}%`
+      )
+      .eq(
+        'is_active',
+        true
+      )
+      .limit(100);
+
+    if (collaboratorsError) {
+      throw collaboratorsError;
+    }
+
+    const collaboratorIds =
+      (
+        matchingCollaborators ||
+        []
+      )
+        .map(
+          collaborator =>
+            collaborator.id
+        )
+        .filter(Boolean);
+
+    const textFilters = [
+      `title.ilike.%${cleanSearch}%`,
+      `subtitle.ilike.%${cleanSearch}%`,
+      `excerpt.ilike.%${cleanSearch}%`,
+    ];
+
+    if (
+      collaboratorIds.length >
+      0
+    ) {
+      textFilters.push(
+        `collaborator_id.in.(${collaboratorIds.join(',')})`
+      );
+    }
+
+    const {
+      data,
+      error,
+      count,
+    } = await supabase
+      .from('galleries')
+      .select(
+        GALLERY_BASE_SELECT,
+        {
+          count:
+            'exact',
+        }
+      )
+      .eq(
+        'status',
+        'published'
+      )
+      .or(
+        textFilters.join(',')
+      )
+      .order(
+        'published_at',
+        {
+          ascending:
+            false,
+
+          nullsFirst:
+            false,
+        }
+      )
+      .order(
+        'created_at',
+        {
+          ascending:
+            false,
+        }
+      )
+      .range(
+        from,
+        to
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    return {
+      data:
+        attachPhotosCount(
+          data
+        ),
+
+      total:
+        count || 0,
+
+      page:
+        normalizedPage,
+
+      limit:
+        normalizedLimit,
+    };
+  };
+
 const removePermanently =
   async id => {
     const gallery =
@@ -1036,6 +1519,10 @@ module.exports = {
   getAll,
   getBySlug,
   getById,
+  getByCollaborator,
+  getByEdition,
+  getFeatured,
+  search,
   create,
   update,
   publish,

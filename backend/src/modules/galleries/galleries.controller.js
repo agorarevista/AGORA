@@ -1,6 +1,10 @@
 const service =
   require('./galleries.service');
 
+/* ══════════════════════════════════════════════════════
+   LISTADO PÚBLICO
+══════════════════════════════════════════════════════ */
+
 const getAllPublic = async (
   req,
   res,
@@ -18,8 +22,7 @@ const getAllPublic = async (
         page,
         limit,
         search,
-        status:
-          'published',
+        status: 'published',
       });
 
     return res.json(result);
@@ -27,6 +30,10 @@ const getAllPublic = async (
     return next(error);
   }
 };
+
+/* ══════════════════════════════════════════════════════
+   LISTADO ADMINISTRATIVO
+══════════════════════════════════════════════════════ */
 
 const getAllAdmin = async (
   req,
@@ -56,6 +63,120 @@ const getAllAdmin = async (
   }
 };
 
+/* ══════════════════════════════════════════════════════
+   BÚSQUEDA PÚBLICA
+══════════════════════════════════════════════════════ */
+
+const search = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const {
+      q,
+      page,
+      limit,
+    } = req.query;
+
+    const result =
+      await service.search(
+        q,
+        {
+          page,
+          limit,
+        }
+      );
+
+    return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/* ══════════════════════════════════════════════════════
+   DESTACADAS
+══════════════════════════════════════════════════════ */
+
+const getFeatured = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const result =
+      await service.getFeatured();
+
+    return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/* ══════════════════════════════════════════════════════
+   GALERÍAS POR COLABORADOR
+══════════════════════════════════════════════════════ */
+
+const getByCollaborator = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const {
+      page,
+      limit,
+    } = req.query;
+
+    const result =
+      await service.getByCollaborator(
+        req.params.slug,
+        {
+          page,
+          limit,
+        }
+      );
+
+    return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/* ══════════════════════════════════════════════════════
+   GALERÍAS POR EDICIÓN
+══════════════════════════════════════════════════════ */
+
+const getByEdition = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const {
+      page,
+      limit,
+    } = req.query;
+
+    const result =
+      await service.getByEdition(
+        req.params.number,
+        {
+          page,
+          limit,
+        }
+      );
+
+    return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/* ══════════════════════════════════════════════════════
+   GALERÍA POR SLUG
+══════════════════════════════════════════════════════ */
+
 const getBySlug = async (
   req,
   res,
@@ -73,6 +194,10 @@ const getBySlug = async (
   }
 };
 
+/* ══════════════════════════════════════════════════════
+   GALERÍA POR ID
+══════════════════════════════════════════════════════ */
+
 const getById = async (
   req,
   res,
@@ -89,6 +214,10 @@ const getById = async (
     return next(error);
   }
 };
+
+/* ══════════════════════════════════════════════════════
+   CREAR
+══════════════════════════════════════════════════════ */
 
 const create = async (
   req,
@@ -109,6 +238,10 @@ const create = async (
   }
 };
 
+/* ══════════════════════════════════════════════════════
+   ACTUALIZAR
+══════════════════════════════════════════════════════ */
+
 const update = async (
   req,
   res,
@@ -127,6 +260,10 @@ const update = async (
   }
 };
 
+/* ══════════════════════════════════════════════════════
+   PUBLICAR
+══════════════════════════════════════════════════════ */
+
 const publish = async (
   req,
   res,
@@ -143,6 +280,10 @@ const publish = async (
     return next(error);
   }
 };
+
+/* ══════════════════════════════════════════════════════
+   ARCHIVAR
+══════════════════════════════════════════════════════ */
 
 const archive = async (
   req,
@@ -166,28 +307,34 @@ const archive = async (
   }
 };
 
-const removePermanently =
-  async (
-    req,
-    res,
-    next
-  ) => {
-    try {
-      const result =
-        await service
-          .removePermanently(
-            req.params.id
-          );
+/* ══════════════════════════════════════════════════════
+   ELIMINAR PERMANENTEMENTE
+══════════════════════════════════════════════════════ */
 
-      return res.json(result);
-    } catch (error) {
-      return next(error);
-    }
-  };
+const removePermanently = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const result =
+      await service.removePermanently(
+        req.params.id
+      );
+
+    return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
+};
 
 module.exports = {
   getAllPublic,
   getAllAdmin,
+  search,
+  getFeatured,
+  getByCollaborator,
+  getByEdition,
   getBySlug,
   getById,
   create,

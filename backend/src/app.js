@@ -113,6 +113,11 @@ app.use(
   require('./modules/articleAudio/articleAudio.routes')
 );
 
+app.use(
+  '/api/article-transfer',
+  require('./modules/articleTransfer/articleTransfer.routes')
+);
+
 /* ══════════════════════════════════════════════════════
    HEALTH CHECK
 ══════════════════════════════════════════════════════ */

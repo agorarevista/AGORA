@@ -2732,7 +2732,7 @@ const handlePublish = async () => {
             }
           >
             <strong>
-              Agorá Revista
+              Redacción Agorá
             </strong>
 
             <span>

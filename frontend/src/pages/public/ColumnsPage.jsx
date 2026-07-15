@@ -242,7 +242,7 @@ export default function ColumnsPage() {
           }}
         >
           <span className={styles.heroEyebrow}>
-            Agorá Revista
+            Redacción Agorá
           </span>
 
           <h1 className={styles.heroTitle}>

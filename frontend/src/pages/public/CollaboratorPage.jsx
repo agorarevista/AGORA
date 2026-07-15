@@ -2,15 +2,50 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getCollaborator as getCollaboratorBySlug } from '../../api/collaborators.api';
-import { getByCollaborator as getArticlesByCollaborator } from '../../api/articles.api';
+
+import {
+  getByCollaborator as getArticlesByCollaborator,
+} from '../../api/articles.api';
+
+import {
+  getGalleriesByCollaborator,
+} from '../../api/galleries.api';
+
 import { ArrowLeft, Globe, Mail } from 'lucide-react';
+
 import {
   FaInstagram,
   FaFacebookF,
   FaYoutube,
   FaTiktok
 } from 'react-icons/fa6';
+
 import styles from './CollaboratorPage.module.css';
+
+const getContentPath =
+  content => {
+    return content
+      ?.content_type ===
+      'gallery'
+      ? `/galerias/${content.slug}`
+      : `/articulos/${content.slug}`;
+  };
+
+const getContentDate =
+  content => {
+    const timestamp =
+      new Date(
+        content?.published_at ||
+        content?.created_at ||
+        0
+      ).getTime();
+
+    return Number.isFinite(
+      timestamp
+    )
+      ? timestamp
+      : 0;
+  };
 
 function XIcon(props) {
   return (
@@ -65,7 +100,10 @@ function getSocialEntries(collab) {
 export default function CollaboratorPage() {
   const { slug } = useParams();
   const [collab, setCollab]     = useState(null);
-  const [articles, setArticles] = useState([]);
+  const [
+    contents,
+    setContents,
+  ] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(false);
 
@@ -81,11 +119,81 @@ export default function CollaboratorPage() {
 
         setCollab(c);
 
-        const collaboratorSlug = c?.slug || slug;
-        const arts = await getArticlesByCollaborator(collaboratorSlug, { limit: 20 });
+        const collaboratorSlug =
+          c?.slug ||
+          slug;
 
-        if (!mounted) return;
-        setArticles(arts.data || []);
+        const [
+          articlesResult,
+          galleriesResult,
+        ] = await Promise.allSettled([
+          getArticlesByCollaborator(
+            collaboratorSlug,
+            {
+              limit: 50,
+            }
+          ),
+
+          getGalleriesByCollaborator(
+            collaboratorSlug,
+            {
+              limit: 50,
+            }
+          ),
+        ]);
+
+        if (!mounted) {
+          return;
+        }
+
+        const articleContents =
+          articlesResult.status ===
+            'fulfilled'
+            ? (
+                articlesResult
+                  .value
+                  ?.data ||
+                []
+              ).map(
+                article => ({
+                  ...article,
+
+                  content_type:
+                    'article',
+                })
+              )
+            : [];
+
+        const galleryContents =
+          galleriesResult.status ===
+            'fulfilled'
+            ? (
+                galleriesResult
+                  .value
+                  ?.data ||
+                []
+              ).map(
+                gallery => ({
+                  ...gallery,
+
+                  content_type:
+                    'gallery',
+                })
+              )
+            : [];
+
+        const mergedContents = [
+          ...articleContents,
+          ...galleryContents,
+        ].sort(
+          (a, b) =>
+            getContentDate(b) -
+            getContentDate(a)
+        );
+
+        setContents(
+          mergedContents
+        );
       })
       .catch(() => {
         if (mounted) setError(true);
@@ -139,9 +247,24 @@ export default function CollaboratorPage() {
 
               <aside className={styles.profileSide}>
                 <div className={styles.articleCount}>
-                  <span className={styles.articleCountNum}>{articles.length}</span>
-                  <span className={styles.articleCountLabel}>
-                    artículo{articles.length !== 1 ? 's' : ''}
+                  <span
+                    className={
+                      styles.articleCountNum
+                    }
+                  >
+                    {contents.length}
+                  </span>
+
+                  <span
+                    className={
+                      styles.articleCountLabel
+                    }
+                  >
+                    publicación
+                    {contents.length !==
+                    1
+                      ? 'es'
+                      : ''}
                   </span>
                 </div>
 
@@ -171,44 +294,104 @@ export default function CollaboratorPage() {
       <div className={styles.meander} />
 
       <div className={styles.body}>
-        <div className={styles.bodyHeader}>
-          <h2 className={styles.bodyTitle}>
-            Artículos de {collab.name}
-            <span className={styles.bodyCount}>{articles.length}</span>
+      <div
+        className={
+          styles.body
+        }
+      >
+        <div
+          className={
+            styles.bodyHeader
+          }
+        >
+          <h2
+            className={
+              styles.bodyTitle
+            }
+          >
+            Publicaciones de{' '}
+            {collab.name}
+
+            <span
+              className={
+                styles.bodyCount
+              }
+            >
+              {contents.length}
+            </span>
           </h2>
 
-          {articles.length > 0 && (
-            <Link to="/buscar" className={styles.bodyMore}>
+          {contents.length > 0 && (
+            <Link
+              to="/buscar"
+              className={
+                styles.bodyMore
+              }
+            >
               Ver todos →
             </Link>
           )}
         </div>
 
-        {articles.length === 0 ? (
-          <div className={styles.empty}>
+        {contents.length === 0 ? (
+          <div
+            className={
+              styles.empty
+            }
+          >
             <span>Λ</span>
-            <p>Aún no hay artículos publicados.</p>
+
+            <p>
+              Aún no hay publicaciones.
+            </p>
           </div>
         ) : (
-<div className={styles.grid}>
-  {articles.map((article, index) => (
-    <motion.div
-      key={article.id}
-      className={styles.cardWrapper}
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        delay: Math.min(index % 5, 4) * 0.06,
-      }}
-    >
-      <CollaboratorArticleCard
-        article={article}
-        authorName={collab.name}
-      />
-    </motion.div>
-  ))}
-</div>
+          <div
+            className={
+              styles.grid
+            }
+          >
+            {contents.map(
+              (
+                content,
+                index
+              ) => (
+                <motion.div
+                  key={`${content.content_type}-${content.id}`}
+                  className={
+                    styles.cardWrapper
+                  }
+                  initial={{
+                    opacity: 0,
+                    y: 16,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    delay:
+                      Math.min(
+                        index % 5,
+                        4
+                      ) *
+                      0.06,
+                  }}
+                >
+                  <CollaboratorContentCard
+                    content={
+                      content
+                    }
+                    authorName={
+                      collab.name
+                    }
+                  />
+                </motion.div>
+              )
+            )}
+          </div>
         )}
+      </div>
       </div>
     </div>
   );
@@ -258,60 +441,128 @@ function isRecentArticle(dateValue) {
   );
 }
 
-function CollaboratorArticleCard({
-  article,
+function CollaboratorContentCard({
+  content,
   authorName,
 }) {
   const publishedDate =
-    formatArticleDate(article.published_at);
+    formatArticleDate(
+      content.published_at
+    );
 
   const isNew =
-    isRecentArticle(article.published_at);
+    isRecentArticle(
+      content.published_at
+    );
+
+  const isGallery =
+    content.content_type ===
+    'gallery';
 
   return (
     <Link
-      to={`/articulos/${article.slug}`}
-      className={styles.card}
+      to={
+        getContentPath(
+          content
+        )
+      }
+      className={
+        styles.card
+      }
     >
-      <div className={styles.cardImg}>
-        {article.cover_image_url ? (
+      <div
+        className={
+          styles.cardImg
+        }
+      >
+        {content.cover_image_url ? (
           <img
-            src={article.cover_image_url}
-            alt={article.title}
+            src={
+              content
+                .cover_image_url
+            }
+            alt={
+              content.title
+            }
           />
         ) : (
-          <div className={styles.cardImgPlaceholder}>
+          <div
+            className={
+              styles.cardImgPlaceholder
+            }
+          >
             <span>Λ</span>
           </div>
         )}
 
         {isNew && (
-          <span className={styles.newBadge}>
-            <span className={styles.newBadgeText}>
+          <span
+            className={
+              styles.newBadge
+            }
+          >
+            <span
+              className={
+                styles.newBadgeText
+              }
+            >
               New
             </span>
 
             <span
-              className={styles.newBadgeSymbol}
+              className={
+                styles.newBadgeSymbol
+              }
               aria-hidden="true"
             />
           </span>
         )}
 
-        <div className={styles.cardOverlay}>
-          <div className={styles.cardText}>
-            <h3 className={styles.cardTitle}>
-              {article.title}
+        <div
+          className={
+            styles.cardOverlay
+          }
+        >
+          <div
+            className={
+              styles.cardText
+            }
+          >
+            {isGallery && (
+              <span
+                className={
+                  styles.contentTypeBadge
+                }
+              >
+                Álbum fotográfico
+              </span>
+            )}
+
+            <h3
+              className={
+                styles.cardTitle
+              }
+            >
+              {content.title}
             </h3>
 
-            <p className={styles.cardAuthor}>
+            <p
+              className={
+                styles.cardAuthor
+              }
+            >
               {authorName}
             </p>
 
             {publishedDate && (
               <time
-                className={styles.cardDate}
-                dateTime={article.published_at}
+                className={
+                  styles.cardDate
+                }
+                dateTime={
+                  content
+                    .published_at
+                }
               >
                 {publishedDate}
               </time>
@@ -322,7 +573,6 @@ function CollaboratorArticleCard({
     </Link>
   );
 }
-
 function CollabSkeleton() {
   return (
     <div
