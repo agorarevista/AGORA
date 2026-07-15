@@ -7,6 +7,7 @@ const compression = require('compression');
 const cookieParser = require('cookie-parser');
 
 const corsMiddleware = require('./config/cors');
+const supabase = require('./config/supabase');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -119,7 +120,54 @@ app.use(
 );
 
 /* ══════════════════════════════════════════════════════
+   KEEP ALIVE
+   CONSULTA REAL A SUPABASE
+══════════════════════════════════════════════════════ */
+
+app.get(
+  '/api/keep-alive',
+  async (req, res, next) => {
+    try {
+      const { data, error } =
+        await supabase
+          .from('articles')
+          .select('id')
+          .limit(1);
+
+      if (error) {
+        throw error;
+      }
+
+      res.set(
+        'Cache-Control',
+        'no-store'
+      );
+
+      return res.status(200).json({
+        status: 'ok',
+        database: 'connected',
+        queryExecuted: true,
+        recordsFound:
+          Array.isArray(data)
+            ? data.length
+            : 0,
+        timestamp:
+          new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error(
+        'Supabase keep-alive error:',
+        error
+      );
+
+      return next(error);
+    }
+  }
+);
+
+/* ══════════════════════════════════════════════════════
    HEALTH CHECK
+   SOLO COMPRUEBA EL SERVIDOR
 ══════════════════════════════════════════════════════ */
 
 app.get(
