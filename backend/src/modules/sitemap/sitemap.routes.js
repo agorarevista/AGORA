@@ -1,0 +1,20 @@
+const express = require('express');
+
+const {
+  getSitemap,
+  getRobots,
+} = require('./sitemap.controller');
+
+const router = express.Router();
+
+router.get(
+  '/sitemap.xml',
+  getSitemap
+);
+
+router.get(
+  '/robots.txt',
+  getRobots
+);
+
+module.exports = router;
