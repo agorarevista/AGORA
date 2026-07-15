@@ -348,11 +348,11 @@ function EditionContentCard({
     content.author_name ||
     'Redacción Agorá';
 
-  const contentPath =
-    content.content_type ===
-    'gallery'
-      ? `/galerias/${content.slug}`
-      : `/articulos/${content.slug}`;
+const contentPath =
+  content.content_type ===
+  'gallery'
+    ? `/galeria/${content.slug}`
+    : `/articulos/${content.slug}`;
 
   return (
     <Link

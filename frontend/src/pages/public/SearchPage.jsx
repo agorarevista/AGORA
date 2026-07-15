@@ -56,7 +56,7 @@ const getContentPath =
     return content
       ?.content_type ===
       'gallery'
-      ? `/galerias/${content.slug}`
+      ? `/galeria/${content.slug}`
       : `/articulos/${content.slug}`;
   };
 

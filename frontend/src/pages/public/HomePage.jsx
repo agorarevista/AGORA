@@ -35,12 +35,11 @@ const getContentPath =
       item?.content_type ===
       'gallery'
     ) {
-      return `/galerias/${item.slug}`;
+      return `/galeria/${item.slug}`;
     }
 
     return `/articulos/${item.slug}`;
   };
-
 const getContentCategories =
   item => {
     if (
