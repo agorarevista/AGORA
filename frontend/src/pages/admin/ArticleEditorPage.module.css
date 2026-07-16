@@ -1327,15 +1327,18 @@
   border: 0;
   border-radius: var(--radius-md);
   object-fit: fill;
-}
 
-.mediaFrame iframe {
+  /*
+   * Dentro del editor el contenido multimedia
+   * no recibe clics directamente.
+   *
+   * El clic llega a .mediaFrame para poder:
+   * - seleccionar;
+   * - mover;
+   * - redimensionar;
+   * - mostrar la barra flotante.
+   */
   pointer-events: none;
-}
-
-.mediaNode:not(.mediaNodeSelected)
-.mediaFrame iframe {
-  pointer-events: auto;
 }
 
 /* ── Preview ─────────────────────────────────────────── */
