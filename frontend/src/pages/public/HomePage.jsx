@@ -85,6 +85,45 @@ const getContentCategories =
       ]),
     ].slice(0, 2);
   };
+
+const isRecentContent = dateValue => {
+  if (!dateValue) {
+    return false;
+  }
+
+  const publishedDate =
+    new Date(dateValue);
+
+  if (
+    Number.isNaN(
+      publishedDate.getTime()
+    )
+  ) {
+    return false;
+  }
+
+  const now =
+    new Date();
+
+  const elapsedMilliseconds =
+    now.getTime() -
+    publishedDate.getTime();
+
+  const elapsedDays =
+    elapsedMilliseconds /
+    (
+      1000 *
+      60 *
+      60 *
+      24
+    );
+
+  return (
+    elapsedDays >= 0 &&
+    elapsedDays <= 10
+  );
+};
+
 /* ── Carousel hook ───────────────────────────────────── */
 function useCarousel(items, perPage = 3, autoMs = 0) {
   const [idx, setIdx] = useState(0);
@@ -349,37 +388,63 @@ return (
           </div>
         </div>
       )}
-{/* ── TRÍPTICO EDITORIAL: COLABORADORES + SUBSTACK + RANKING ── */}
-<div className={styles.editorialTriptychGrid}>
 
-  <div className={`${styles.block} ${styles.triptychCollabsBlock}`}>
-    <BlockHeader title="Colaboradores" href="/colaboradores" />
-    <CollaboratorsCarousel collaborators={collaborators} />
-  </div>
-
-  <div className={`${styles.block} ${styles.triptychSubstackBlock}`}>
-    <SubstackPanel />
-  </div>
-
-  <div className={`${styles.block} ${styles.triptychRankingBlock}`}>
-    <BlockHeader title="Los más leídos" href="/buscar" />
-    <MostRead articles={mostRead.slice(0, 5)} variant="triptych" />
-  </div>
-
-</div>
-{/* ── CARRUSEL EDICIÓN ACTUAL ──────────────────── */}
-{editionContents.length > 0 && (
+      {/* ── CARRUSEL EDICIÓN ACTUAL ──────────────────── */}
+      {editionContents.length > 0 && (
         <section className={styles.edicionSection}>
           <div className={styles.featureSectionHeader}>
             <div>
-              <span className={styles.featureEyebrow}>Explora Agorá</span>
-              <h2 className={styles.featureTitle}>Todo Nuestro Contenido</h2>
+              <span className={styles.featureEyebrow}>
+                Explora Agorá
+              </span>
+
+              <h2 className={styles.featureTitle}>
+                Un recorrido por esta edición
+              </h2>
             </div>
           </div>
 
-<EdicionCarousel articles={editionContents} />
+          <EdicionCarousel
+            articles={editionContents}
+          />
         </section>
       )}
+
+      {/* ── TRÍPTICO EDITORIAL: COLABORADORES + SUBSTACK + RANKING ── */}
+      <div className={styles.editorialTriptychGrid}>
+        <div
+          className={`${styles.block} ${styles.triptychCollabsBlock}`}
+        >
+          <BlockHeader
+            title="Colaboradores"
+            href="/colaboradores"
+          />
+
+          <CollaboratorsCarousel
+            collaborators={collaborators}
+          />
+        </div>
+
+        <div
+          className={`${styles.block} ${styles.triptychSubstackBlock}`}
+        >
+          <SubstackPanel />
+        </div>
+
+        <div
+          className={`${styles.block} ${styles.triptychRankingBlock}`}
+        >
+          <BlockHeader
+            title="Los más leídos"
+            href="/buscar"
+          />
+
+          <MostRead
+            articles={mostRead.slice(0, 5)}
+            variant="triptych"
+          />
+        </div>
+      </div>
 
       {/* ── NOTICIAS Y SPONSORS ──────────────────────── */}
       {sponsors.length > 0 && (
@@ -1258,7 +1323,7 @@ function EdicionCarousel({ articles }) {
     setMobilePage,
   ] = useState(0);
 
-  const desktopPerPage = 5;
+  const desktopPerPage = 10;
   const mobilePerPage = 4;
 
   const desktopTotalPages =
@@ -1426,6 +1491,12 @@ function EdicionCarousel({ articles }) {
       art.collaborators?.name ||
       'Agorá Revista';
 
+    const isNew =
+      isRecentContent(
+        art.published_at ||
+        art.created_at
+      );
+
     return (
       <Link
         key={`${art.content_type || 'article'}-${art.id}`}
@@ -1454,6 +1525,29 @@ function EdicionCarousel({ articles }) {
             >
               <span>Λ</span>
             </div>
+          )}
+
+          {isNew && (
+            <span
+              className={
+                styles.newBadge
+              }
+            >
+              <span
+                className={
+                  styles.newBadgeText
+                }
+              >
+                New
+              </span>
+
+              <span
+                className={
+                  styles.newBadgeSymbol
+                }
+                aria-hidden="true"
+              />
+            </span>
           )}
 
           <div
@@ -1524,7 +1618,7 @@ function EdicionCarousel({ articles }) {
           onClick={
             previousDesktopPage
           }
-          aria-label="Mostrar cinco artículos anteriores"
+          aria-label="Mostrar diez contenidos anteriores"
         >
           <ChevronLeft size={20} />
         </button>
@@ -1592,7 +1686,7 @@ function EdicionCarousel({ articles }) {
           onClick={
             nextDesktopPage
           }
-          aria-label="Mostrar los siguientes cinco artículos"
+          aria-label="Mostrar los siguientes diez contenidos"
         >
           <ChevronRight size={20} />
         </button>
@@ -1708,6 +1802,12 @@ function EdicionCarousel({ articles }) {
 function HighlightCard({
   art,
 }) {
+  const isNew =
+    isRecentContent(
+      art.published_at ||
+      art.created_at
+    );
+
   return (
     <Link
       to={getContentPath(art)}
@@ -1735,6 +1835,29 @@ function HighlightCard({
           >
             <span>Λ</span>
           </div>
+        )}
+
+        {isNew && (
+          <span
+            className={
+              styles.newBadge
+            }
+          >
+            <span
+              className={
+                styles.newBadgeText
+              }
+            >
+              New
+            </span>
+
+            <span
+              className={
+                styles.newBadgeSymbol
+              }
+              aria-hidden="true"
+            />
+          </span>
         )}
 
         <div
@@ -1779,7 +1902,6 @@ function HighlightCard({
     </Link>
   );
 }
-
 function PageSkeleton() {
   return (
     <div className={styles.skeleton}>

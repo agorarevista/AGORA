@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Search, X, Clock, User } from 'lucide-react';
 import { searchArticles } from '../../../api/articles.api';
 import { searchCollaborators } from '../../../api/collaborators.api';
+import { getGalleries } from '../../../api/galleries.api';
 import { formatDate } from '../../../utils/formatDate';
 import styles from './SearchOverlay.module.css';
 
@@ -22,6 +23,7 @@ const saveHistory = (query) => {
 export default function SearchOverlay({ open, onClose }) {
   const [query, setQuery]         = useState('');
   const [articles, setArticles]   = useState([]);
+  const [galleries, setGalleries] = useState([]);
   const [collabs, setCollabs]     = useState([]);
   const [loading, setLoading]     = useState(false);
   const [history, setHistory]     = useState([]);
@@ -33,33 +35,184 @@ export default function SearchOverlay({ open, onClose }) {
       setHistory(getHistory());
       setQuery('');
       setArticles([]);
+      setGalleries([]);
       setCollabs([]);
-      setTimeout(() => inputRef.current?.focus(), 100);
+
+      setTimeout(
+        () => inputRef.current?.focus(),
+        100
+      );
     }
   }, [open]);
 
   useEffect(() => {
-    clearTimeout(timerRef.current);
-    if (query.trim().length < 2) { setArticles([]); setCollabs([]); return; }
+    clearTimeout(
+      timerRef.current
+    );
+
+    const normalizedQuery =
+      query
+        .trim()
+        .toLocaleLowerCase(
+          'es-MX'
+        );
+
+    if (
+      normalizedQuery.length < 2
+    ) {
+      setArticles([]);
+      setGalleries([]);
+      setCollabs([]);
+      setLoading(false);
+      return undefined;
+    }
 
     setLoading(true);
-    timerRef.current = setTimeout(async () => {
-      try {
-        const [artRes, collabRes] = await Promise.all([
-          searchArticles(query, { limit: 6 }).catch(() => ({ data: [] })),
-          searchCollaborators(query).catch(() => []),
-        ]);
-        setArticles(artRes.data || []);
-        setCollabs(Array.isArray(collabRes) ? collabRes.slice(0, 3) : []);
-      } catch {
-        setArticles([]);
-        setCollabs([]);
-      } finally {
-        setLoading(false);
-      }
-    }, 350);
 
-    return () => clearTimeout(timerRef.current);
+    timerRef.current =
+      setTimeout(
+        async () => {
+          try {
+            const [
+              artRes,
+              galleryRes,
+              collabRes,
+            ] = await Promise.all([
+              searchArticles(
+                query,
+                {
+                  limit: 8,
+                }
+              ).catch(
+                () => ({
+                  data: [],
+                })
+              ),
+
+              getGalleries({
+                page: 1,
+                limit: 100,
+              }).catch(
+                () => ({
+                  data: [],
+                })
+              ),
+
+              searchCollaborators(
+                query
+              ).catch(
+                () => []
+              ),
+            ]);
+
+            const articleResults =
+              Array.isArray(
+                artRes?.data
+              )
+                ? artRes.data
+                : [];
+
+            const galleryList =
+              Array.isArray(
+                galleryRes?.data
+              )
+                ? galleryRes.data
+                : Array.isArray(
+                      galleryRes
+                    )
+                  ? galleryRes
+                  : [];
+
+            const galleryResults =
+              galleryList
+                .filter(
+                  gallery => {
+                    const title =
+                      String(
+                        gallery?.title ||
+                        ''
+                      )
+                        .toLocaleLowerCase(
+                          'es-MX'
+                        );
+
+                    const subtitle =
+                      String(
+                        gallery?.subtitle ||
+                        ''
+                      )
+                        .toLocaleLowerCase(
+                          'es-MX'
+                        );
+
+                    const collaboratorName =
+                      String(
+                        gallery
+                          ?.collaborators
+                          ?.name ||
+                        gallery
+                          ?.collaborator
+                          ?.name ||
+                        ''
+                      )
+                        .toLocaleLowerCase(
+                          'es-MX'
+                        );
+
+                    return (
+                      title.includes(
+                        normalizedQuery
+                      ) ||
+                      subtitle.includes(
+                        normalizedQuery
+                      ) ||
+                      collaboratorName.includes(
+                        normalizedQuery
+                      )
+                    );
+                  }
+                )
+                .slice(0, 8);
+
+            setArticles(
+              articleResults
+            );
+
+            setGalleries(
+              galleryResults
+            );
+
+            setCollabs(
+              Array.isArray(
+                collabRes
+              )
+                ? collabRes.slice(
+                    0,
+                    3
+                  )
+                : []
+            );
+          } catch (error) {
+            console.error(
+              'Error buscando contenido:',
+              error
+            );
+
+            setArticles([]);
+            setGalleries([]);
+            setCollabs([]);
+          } finally {
+            setLoading(false);
+          }
+        },
+        350
+      );
+
+    return () => {
+      clearTimeout(
+        timerRef.current
+      );
+    };
   }, [query]);
 
   const handleSelect = (q) => {
@@ -76,10 +229,22 @@ export default function SearchOverlay({ open, onClose }) {
     setHistory(next);
   };
 
-  const showHistory = query.trim().length < 2 && history.length > 0;
-  const showResults = query.trim().length >= 2;
-  const hasResults  = articles.length > 0 || collabs.length > 0;
-  const showEmpty   = showResults && !loading && !hasResults;
+  const showHistory =
+    query.trim().length < 2 &&
+    history.length > 0;
+
+  const showResults =
+    query.trim().length >= 2;
+
+  const hasResults =
+    articles.length > 0 ||
+    galleries.length > 0 ||
+    collabs.length > 0;
+
+  const showEmpty =
+    showResults &&
+    !loading &&
+    !hasResults;
 
   return (
     <>
@@ -192,12 +357,139 @@ export default function SearchOverlay({ open, onClose }) {
               ))}
             </div>
           )}
+          {/* Álbumes fotográficos */}
+          {showResults &&
+            galleries.length > 0 && (
+            <div className={styles.section}>
+              <div
+                className={
+                  styles.sectionTitle
+                }
+              >
+                Álbumes fotográficos
+              </div>
+
+              {galleries.map(
+                gallery => {
+                  const authorName =
+                    gallery
+                      ?.collaborators
+                      ?.name ||
+                    gallery
+                      ?.collaborator
+                      ?.name ||
+                    'Agorá Revista';
+
+                  return (
+                    <Link
+                      key={`gallery-${gallery.id}`}
+                      to={`/galeria/${gallery.slug}`}
+                      className={
+                        styles.resultItem
+                      }
+                      onClick={() =>
+                        handleSelect(
+                          query
+                        )
+                      }
+                    >
+                      <div
+                        className={
+                          styles.resultImg
+                        }
+                      >
+                        {gallery.cover_image_url ? (
+                          <img
+                            src={
+                              gallery
+                                .cover_image_url
+                            }
+                            alt={
+                              gallery.title
+                            }
+                          />
+                        ) : (
+                          <span
+                            className={
+                              styles.resultImgPlaceholder
+                            }
+                          >
+                            Λ
+                          </span>
+                        )}
+                      </div>
+
+                      <div
+                        className={
+                          styles.resultContent
+                        }
+                      >
+                        <span
+                          className={
+                            styles.resultCategory
+                          }
+                        >
+                          Álbum fotográfico
+                        </span>
+
+                        <div
+                          className={
+                            styles.resultTitle
+                          }
+                        >
+                          {gallery.title}
+                        </div>
+
+                        {gallery.subtitle && (
+                          <div
+                            className={
+                              styles.resultSubtitle
+                            }
+                          >
+                            {
+                              gallery.subtitle
+                            }
+                          </div>
+                        )}
+
+                        <div
+                          className={
+                            styles.resultMeta
+                          }
+                        >
+                          <span>
+                            {authorName}
+                          </span>
+
+                          <span
+                            className={
+                              styles.dot
+                            }
+                          >
+                            ·
+                          </span>
+
+                          <span>
+                            {formatDate(
+                              gallery.published_at ||
+                              gallery.created_at
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                }
+              )}
+            </div>
+          )}
+
 
           {/* Artículos */}
           {showResults && articles.length > 0 && (
             <div className={styles.section}>
               <div className={styles.sectionTitle}>
-                Artículos
+                Artículos y contenido
               </div>
               {articles.map(art => (
                 <Link

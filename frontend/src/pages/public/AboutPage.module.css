@@ -123,10 +123,27 @@
 }
 
 .symbolCard span {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 28px;
+  color: white;
   font-family: var(--font-display);
   font-size: 210px;
   line-height: 1;
-  color: white;
+}
+
+.symbolCard span::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translateX(-50%);
 }
 
 /* ── ABIERTA ────────────────────────────────────────── */
@@ -277,7 +294,13 @@
   }
 
   .symbolCard span {
+    padding-top: 22px;
     font-size: 150px;
+  }
+
+  .symbolCard span::before {
+    width: 13px;
+    height: 13px;
   }
 
   .openVisual {

@@ -49,8 +49,8 @@ const FOOTER_GROUPS = [
     key: 'ediciones',
     title: 'Ediciones',
     links: [
-      { name: 'La Revista', to: '/ediciones' },
-      { name: 'Ediciones Especiales', to: '/ediciones-especiales' },
+      { name: 'La revista', to: '/ediciones' },
+      { name: 'Ediciones especiales', to: '/ediciones-especiales' },
     ],
   },
   {
@@ -74,7 +74,7 @@ const FOOTER_GROUPS = [
       { name: 'Artestigo', to: '/categoria/artestigo' },
       { name: 'Entretanto', to: '/categoria/entretanto' },
       { name: 'Liceo', to: '/categoria/liceo' },
-      { name: 'Lo Que Habito', to: '/categoria/lo-que-habito' },
+      { name: 'Lo que habito', to: '/categoria/lo-que-habito' },
       { name: 'Menguante', to: '/categoria/menguante' },
       { name: 'Palabrante', to: '/categoria/palabrante' },
       { name: 'Palimpsesto', to: '/categoria/palimpsesto' },

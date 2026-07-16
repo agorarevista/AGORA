@@ -332,7 +332,13 @@ export default function CollaborationsPage() {
   }
 
   const maximum =
-    collaboration.max_submissions;
+    Number(
+      collaboration.max_submissions
+    );
+
+  const hasCapacityLimit =
+    Number.isFinite(maximum) &&
+    maximum > 0;
 
   const occupied =
     Number(
@@ -402,9 +408,11 @@ export default function CollaborationsPage() {
           }
         >
           <div
-            className={
-              styles.detailsGrid
-            }
+            className={`${styles.detailsGrid} ${
+              !hasCapacityLimit
+                ? styles.detailsGridWithoutCapacity
+                : ''
+            }`}
           >
             <InfoCard
               icon={
@@ -428,22 +436,16 @@ export default function CollaborationsPage() {
               )}
             />
 
-            <InfoCard
-              icon={
-                <Users size={18} />
-              }
-              label="Cupos"
-              value={
-                maximum
-                  ? `${available} disponibles de ${maximum}`
-                  : 'Sin límite definido'
-              }
-              secondary={
-                maximum
-                  ? `${occupied} ocupados`
-                  : null
-              }
-            />
+            {hasCapacityLimit && (
+              <InfoCard
+                icon={
+                  <Users size={18} />
+                }
+                label="Cupos"
+                value={`${available} disponibles de ${maximum}`}
+                secondary={`${occupied} ocupados`}
+              />
+            )}
           </div>
 
           {remainingTime && (
@@ -686,19 +688,19 @@ export default function CollaborationsPage() {
               </span>
             </div>
 
-            <div>
-              <Users size={15} />
+            {hasCapacityLimit && (
+              <div>
+                <Users size={15} />
 
-              <span>
-                Cupos:
-                <strong>
-                  {' '}
-                  {maximum
-                    ? available
-                    : 'Sin límite'}
-                </strong>
-              </span>
-            </div>
+                <span>
+                  Cupos:
+                  <strong>
+                    {' '}
+                    {available}
+                  </strong>
+                </span>
+              </div>
+            )}
 
             <div>
               <Mail size={15} />

@@ -20,9 +20,26 @@
 }
 
 .loading span {
-  color: var(--color-accent);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 9px;
+  color: var(--color-gold);
   font-family: var(--font-display);
   font-size: 48px;
+}
+
+.loading span::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translateX(-50%);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -63,9 +80,28 @@
 
 .heroDecoration strong,
 .closedOrnament strong {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  padding-top: 7px;
   font-family: var(--font-display);
   font-size: 22px;
   font-weight: 400;
+}
+
+.heroDecoration strong::before,
+.closedOrnament strong::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translateX(-50%);
 }
 
 .eyebrow {
@@ -121,6 +157,14 @@
     repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 28px;
+}
+
+.detailsGridWithoutCapacity {
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  width: min(100%, 660px);
+  margin-right: auto;
+  margin-left: auto;
 }
 
 .infoCard {

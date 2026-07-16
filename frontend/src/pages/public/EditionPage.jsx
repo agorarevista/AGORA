@@ -329,6 +329,43 @@ if (error || !edition) return <NotFound />;
   );
 }
 
+function isRecentContent(dateValue) {
+  if (!dateValue) {
+    return false;
+  }
+
+  const publishedDate =
+    new Date(dateValue);
+
+  if (
+    Number.isNaN(
+      publishedDate.getTime()
+    )
+  ) {
+    return false;
+  }
+
+  const now = new Date();
+
+  const elapsedMilliseconds =
+    now.getTime() -
+    publishedDate.getTime();
+
+  const elapsedDays =
+    elapsedMilliseconds /
+    (
+      1000 *
+      60 *
+      60 *
+      24
+    );
+
+  return (
+    elapsedDays >= 0 &&
+    elapsedDays <= 10
+  );
+}
+
 function EditionContentCard({
   content,
 }) {
@@ -348,11 +385,17 @@ function EditionContentCard({
     content.author_name ||
     'Redacción Agorá';
 
-const contentPath =
-  content.content_type ===
-  'gallery'
-    ? `/galeria/${content.slug}`
-    : `/articulos/${content.slug}`;
+  const isNew =
+    isRecentContent(
+      content.published_at ||
+      content.created_at
+    );
+
+  const contentPath =
+    content.content_type ===
+    'gallery'
+      ? `/galeria/${content.slug}`
+      : `/articulos/${content.slug}`;
 
   return (
     <Link
@@ -384,6 +427,29 @@ const contentPath =
           >
             <span>Λ</span>
           </div>
+        )}
+
+        {isNew && (
+          <span
+            className={
+              styles.newBadge
+            }
+          >
+            <span
+              className={
+                styles.newBadgeText
+              }
+            >
+              New
+            </span>
+
+            <span
+              className={
+                styles.newBadgeSymbol
+              }
+              aria-hidden="true"
+            />
+          </span>
         )}
 
         <div

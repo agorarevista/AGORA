@@ -436,17 +436,30 @@
 ══════════════════════════════════════════════════════ */
 
 .articlesGrid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   align-items: stretch;
+  justify-content: center;
   gap: 24px;
   width: 100%;
 }
 
 .articleCardWrapper {
   display: flex;
-  width: 100%;
+  width:
+    calc(
+      (100% - 96px) / 5
+    );
+  max-width:
+    calc(
+      (100% - 96px) / 5
+    );
   min-width: 0;
+  flex:
+    0 0
+    calc(
+      (100% - 96px) / 5
+    );
 }
 
 .articleCard {
@@ -540,23 +553,203 @@
   font-weight: 700;
   color: var(--color-gray-300);
 }
+/* ══════════════════════════════════════════════════════
+   ETIQUETA NEW — CONTENIDO CON 10 DÍAS O MENOS
+══════════════════════════════════════════════════════ */
 
+.newBadge {
+  position: absolute;
+  top: 14px;
+  right: 0;
+  z-index: 4;
+
+  min-width: 92px;
+  height: 34px;
+  padding:
+    0 30px
+    0 18px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+
+  background:
+    linear-gradient(
+      90deg,
+      #b85aa1 0%,
+      var(--color-accent) 58%,
+      #71305e 100%
+    );
+
+  border-top:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--color-gold) 72%,
+      transparent
+    );
+
+  border-bottom:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--color-gold) 72%,
+      transparent
+    );
+
+  box-shadow:
+    0 8px 20px
+    rgba(0, 0, 0, 0.28);
+
+  overflow: visible;
+  transform: translateX(1px);
+
+  transition:
+    transform 0.22s ease,
+    filter 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.newBadge::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: -18px;
+
+  width: 20px;
+  height: 34px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #b85aa1,
+      var(--color-accent)
+    );
+
+  border-top:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--color-gold) 72%,
+      transparent
+    );
+
+  border-bottom:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--color-gold) 72%,
+      transparent
+    );
+
+  clip-path:
+    polygon(
+      100% 0,
+      100% 100%,
+      0 50%
+    );
+}
+
+.newBadge::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  bottom: 3px;
+  left: 8px;
+  height: 2px;
+
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--color-gold) 0 5px,
+      transparent 5px 8px,
+      var(--color-gold) 8px 10px,
+      transparent 10px 14px
+    );
+
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.newBadgeText {
+  position: relative;
+  z-index: 2;
+  margin-top: -2px;
+
+  font-family: var(--font-sans);
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.newBadgeSymbol {
+  position: absolute;
+  top: 50%;
+  right: 9px;
+
+  color: var(--color-gold);
+  font-family: var(--font-display);
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 700;
+
+  transform:
+    translateY(-58%);
+}
+
+.newBadgeSymbol::before {
+  content: "Λ";
+}
+
+.newBadgeSymbol::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translateX(-50%);
+}
+
+.articleCard:hover .newBadge {
+  transform:
+    translateX(1px)
+    translateY(-2px);
+
+  filter:
+    saturate(1.08)
+    brightness(1.05);
+
+  box-shadow:
+    0 12px 26px
+    rgba(0, 0, 0, 0.34);
+}
 .articleCardOverlay {
   position: absolute;
   inset: 0;
   z-index: 2;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   justify-content: flex-end;
   padding: 24px 20px;
+  color: white;
+  text-align: left;
 }
 
 .articleCategories {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   flex-wrap: wrap;
   gap: 6px;
+  width: 100%;
   margin-bottom: 10px;
 }
 
@@ -580,7 +773,8 @@
 }
 
 .articleCardText {
-  text-align: center;
+  width: 100%;
+  text-align: left;
 }
 
 .articleCardTitle {
@@ -590,8 +784,10 @@
   font-size: clamp(21px, 1.45vw, 27px);
   line-height: 1.03;
   font-weight: 900;
-  text-align: center;
-  text-shadow: 0 7px 22px rgba(0, 0, 0, 0.8);
+  text-align: left;
+  text-shadow:
+    0 7px 22px
+    rgba(0, 0, 0, 0.8);
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
@@ -608,13 +804,16 @@
   font-size: 13px;
   line-height: 1.2;
   font-weight: 900;
-  text-align: center;
-  text-shadow: 0 5px 18px rgba(0, 0, 0, 0.76);
+  text-align: left;
+  text-shadow:
+    0 5px 18px
+    rgba(0, 0, 0, 0.76);
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  transition: color 0.22s ease;
+  transition:
+    color 0.22s ease;
 }
 
 .articleCard:hover .articleCardTitle,
@@ -791,8 +990,22 @@
   }
 
   .articlesGrid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 18px;
+  }
+
+  .articleCardWrapper {
+    width:
+      calc(
+        (100% - 72px) / 5
+      );
+    max-width:
+      calc(
+        (100% - 72px) / 5
+      );
+    flex-basis:
+      calc(
+        (100% - 72px) / 5
+      );
   }
 
   .articleCardImage {
@@ -813,12 +1026,24 @@
 }
 
 @media (max-width: 1050px) {
-  .articlesGrid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .articleCardWrapper {
+    width:
+      calc(
+        (100% - 54px) / 4
+      );
+    max-width:
+      calc(
+        (100% - 54px) / 4
+      );
+    flex-basis:
+      calc(
+        (100% - 54px) / 4
+      );
   }
 
   .skeletonGrid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns:
+      repeat(4, 1fr);
   }
 
   .hero {
@@ -831,8 +1056,19 @@
 }
 
 @media (max-width: 820px) {
-  .articlesGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .articleCardWrapper {
+    width:
+      calc(
+        (100% - 36px) / 3
+      );
+    max-width:
+      calc(
+        (100% - 36px) / 3
+      );
+    flex-basis:
+      calc(
+        (100% - 36px) / 3
+      );
   }
 
   .articleCardImage {
@@ -879,8 +1115,22 @@
   }
 
   .articlesGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
+  }
+
+  .articleCardWrapper {
+    width:
+      calc(
+        (100% - 14px) / 2
+      );
+    max-width:
+      calc(
+        (100% - 14px) / 2
+      );
+    flex-basis:
+      calc(
+        (100% - 14px) / 2
+      );
   }
 
   .articleCardImage {
@@ -931,6 +1181,32 @@
   display: none;
   transform: none;
 }
+
+  .newBadge {
+    top: 11px;
+    min-width: 82px;
+    height: 30px;
+    padding:
+      0 27px
+      0 15px;
+  }
+
+  .newBadge::before {
+    top: -1px;
+    left: -16px;
+    width: 18px;
+    height: 30px;
+  }
+
+  .newBadgeText {
+    font-size: 8px;
+    letter-spacing: 1.7px;
+  }
+
+  .newBadgeSymbol {
+    right: 8px;
+    font-size: 10px;
+  }
 }
 
 @media (max-width: 420px) {
@@ -953,8 +1229,10 @@
     letter-spacing: 1.1px;
   }
 
-  .articlesGrid {
-    grid-template-columns: 1fr;
+  .articleCardWrapper {
+    width: min(100%, 340px);
+    max-width: 340px;
+    flex-basis: min(100%, 340px);
   }
 
   .articleCard {
