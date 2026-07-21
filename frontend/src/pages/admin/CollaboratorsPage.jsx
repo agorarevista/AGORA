@@ -429,20 +429,51 @@ const handleSave = async () => {
   }
 };
 
-const handleDelete = async (c) => {
-  const ok = await confirm({
-    type: 'error',
-    title: `¿Eliminar a "${c.name}"?`,
-    message: 'El colaborador será removido del sistema.',
-    confirmLabel: 'Sí, eliminar',
-  });
-  if (!ok) return;
-    try {
-      await deleteCollaborator(c.id);
-      alert.success('Eliminado', `"${c.name}" fue eliminado`);
-      load();
-    } catch { alert.error('Error', 'No se pudo eliminar'); }
-  };
+const handleDelete = async collaborator => {
+  const confirmed =
+    await confirm({
+      type: 'error',
+
+      title:
+        `¿Eliminar permanentemente a "${collaborator.name}"?`,
+
+      message:
+        'Esta acción eliminará definitivamente al colaborador. No se podrá recuperar.',
+
+      confirmLabel:
+        'Sí, eliminar permanentemente',
+    });
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await deleteCollaborator(
+      collaborator.id
+    );
+
+    alert.success(
+      'Eliminado permanentemente',
+      `"${collaborator.name}" fue eliminado del sistema`
+    );
+
+    await load();
+  } catch (error) {
+    console.error(
+      'ERROR eliminando colaborador:',
+      error?.response?.data ||
+      error
+    );
+
+    alert.error(
+      'No se pudo eliminar',
+      error?.response?.data?.error ||
+      error?.response?.data?.message ||
+      'Ocurrió un error al eliminar el colaborador'
+    );
+  }
+};
 
   const fixed      = collaborators.filter(c => c.type === 'fixed');
   const occasional = collaborators.filter(c => c.type === 'occasional');

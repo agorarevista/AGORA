@@ -464,29 +464,83 @@ const update = async (id, body) => {
 
 const remove = async id => {
   /*
-   * Liberar primero la columna asociada.
+   * Confirmar que el colaborador exista antes de eliminarlo.
    */
-  const { error: categoryError } = await supabase
+  const {
+    data: collaborator,
+    error: collaboratorError,
+  } = await supabase
+    .from('collaborators')
+    .select(`
+      id,
+      name,
+      type
+    `)
+    .eq('id', id)
+    .maybeSingle();
+
+  if (collaboratorError) {
+    throw collaboratorError;
+  }
+
+  if (!collaborator) {
+    throw {
+      status: 404,
+      message:
+        'Colaborador no encontrado',
+    };
+  }
+
+  /*
+   * Liberar primero cualquier columna fija
+   * asociada con este colaborador.
+   */
+  const {
+    error: categoryError,
+  } = await supabase
     .from('categories')
     .update({
       content_type: 'general',
       fixed_collaborator_id: null,
     })
-    .eq('fixed_collaborator_id', id);
+    .eq(
+      'fixed_collaborator_id',
+      id
+    );
 
-  if (categoryError) throw categoryError;
+  if (categoryError) {
+    throw categoryError;
+  }
 
-  const { error } = await supabase
+  /*
+   * Eliminar definitivamente el registro.
+   */
+  const {
+    data: deletedCollaborator,
+    error: deleteError,
+  } = await supabase
     .from('collaborators')
-    .update({
-      is_active: false,
-      section_name: null,
-      section_slug: null,
-      section_description: null,
-    })
-    .eq('id', id);
+    .delete()
+    .eq('id', id)
+    .select(`
+      id,
+      name
+    `)
+    .maybeSingle();
 
-  if (error) throw error;
+  if (deleteError) {
+    throw deleteError;
+  }
+
+  if (!deletedCollaborator) {
+    throw {
+      status: 404,
+      message:
+        'No fue posible eliminar el colaborador',
+    };
+  }
+
+  return deletedCollaborator;
 };
 
 module.exports = {

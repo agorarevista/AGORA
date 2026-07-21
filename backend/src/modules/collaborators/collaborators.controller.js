@@ -31,9 +31,21 @@ const update = async (req, res, next) => {
 
 const remove = async (req, res, next) => {
   try {
-    await service.remove(req.params.id);
-    res.json({ message: 'Colaborador eliminado' });
-  } catch (err) { next(err); }
+    const deletedCollaborator =
+      await service.remove(
+        req.params.id
+      );
+
+    return res.json({
+      message:
+        'Colaborador eliminado permanentemente',
+
+      collaborator:
+        deletedCollaborator,
+    });
+  } catch (err) {
+    return next(err);
+  }
 };
 
 module.exports = { getAll, getBySlug, create, update, remove };
