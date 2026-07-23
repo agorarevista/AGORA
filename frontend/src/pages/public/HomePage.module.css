@@ -1854,7 +1854,11 @@
 
 .heroSideCol {
   display: grid;
-  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-rows:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
   gap: 22px;
   width: 100%;
   max-width: 100%;
@@ -1864,6 +1868,78 @@
   align-self: stretch;
   overflow: hidden;
 }
+
+.highlightEmpty {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+
+  border:
+    1px dashed
+    var(--nav-border);
+
+  color:
+    var(--nav-text-muted);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--nav-bg) 96%,
+      var(--color-accent) 4%
+    );
+
+  text-align: center;
+}
+
+.highlightEmpty span {
+  position: relative;
+
+  color:
+    var(--color-gray-300);
+
+  font-family:
+    var(--font-display);
+
+  font-size: 42px;
+  line-height: 1;
+}
+
+.highlightEmpty span::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 50%;
+
+  width: 5px;
+  height: 5px;
+
+  border-radius: 50%;
+  background:
+    currentColor;
+
+  transform:
+    translateX(-50%);
+}
+
+.highlightEmpty p {
+  margin: 0;
+
+  font-family:
+    var(--font-sans);
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
 .highlightCard {
   position: relative;
   display: block;
@@ -2233,7 +2309,8 @@
     display: contents;
   }
 
-  .highlightCard {
+  .highlightCard,
+  .highlightEmpty {
     width: 100%;
     height: auto;
     min-height: 0;

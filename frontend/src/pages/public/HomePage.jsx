@@ -142,16 +142,38 @@ function useCarousel(items, perPage = 3, autoMs = 0) {
 }
 
 export default function HomePage() {
-const [featured, setFeatured]           = useState([]);
-  const [latest, setLatest]               = useState([]);
-  const [edition, setEdition]             = useState(null);
-  const [convocatoria, setConvocatoria]   = useState(null);
-  const [convocatorias, setConvocatorias] = useState([]);
-  const [collaborators, setCollaborators] = useState([]);
-  const [sponsors, setSponsors]           = useState([]);
-  const [loading, setLoading]             = useState(true);
-  const [viewer, setViewer]               = useState(null);
-  const [isDark, setIsDark]               = useState(false);
+  const [featured, setFeatured] =
+    useState([]);
+
+  const [latest, setLatest] =
+    useState([]);
+
+  const [mostRead, setMostRead] =
+    useState([]);
+
+  const [edition, setEdition] =
+    useState(null);
+
+  const [convocatoria, setConvocatoria] =
+    useState(null);
+
+  const [convocatorias, setConvocatorias] =
+    useState([]);
+
+  const [collaborators, setCollaborators] =
+    useState([]);
+
+  const [sponsors, setSponsors] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [viewer, setViewer] =
+    useState(null);
+
+  const [isDark, setIsDark] =
+    useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -178,14 +200,55 @@ const [featured, setFeatured]           = useState([]);
       attributeFilter: ['class', 'data-theme'],
     });
 
-    const applyPayload = (payload) => {
-      if (!mounted || !payload) return;
+    const applyPayload = payload => {
+      if (
+        !mounted ||
+        !payload
+      ) {
+        return;
+      }
 
-      setFeatured(Array.isArray(payload.featured) ? payload.featured : []);
-      setLatest(Array.isArray(payload.latest) ? payload.latest : []);
-      setEdition(payload.edition || null);
-      setConvocatoria(payload.convocatoria || null);
-      setCollaborators(Array.isArray(payload.collaborators) ? payload.collaborators : []);
+      setFeatured(
+        Array.isArray(
+          payload.featured
+        )
+          ? payload.featured
+          : []
+      );
+
+      setLatest(
+        Array.isArray(
+          payload.latest
+        )
+          ? payload.latest
+          : []
+      );
+
+      setMostRead(
+        Array.isArray(
+          payload.mostRead
+        )
+          ? payload.mostRead
+          : []
+      );
+
+      setEdition(
+        payload.edition ||
+        null
+      );
+
+      setConvocatoria(
+        payload.convocatoria ||
+        null
+      );
+
+      setCollaborators(
+        Array.isArray(
+          payload.collaborators
+        )
+          ? payload.collaborators
+          : []
+      );
     };
 
     const loadSponsors = async () => {
@@ -244,16 +307,53 @@ const [featured, setFeatured]           = useState([]);
 
         if (!mounted) return;
 
-const safePayload = {
-          featured: Array.isArray(data?.featured) ? data.featured : [],
-          latest: Array.isArray(data?.latest) ? data.latest : [],
-          edition: data?.edition || null,
-          convocatoria: data?.convocatoria || null,
-          collaborators: Array.isArray(data?.collaborators) ? data.collaborators : [],
+        const safePayload = {
+          featured:
+            Array.isArray(
+              data?.featured
+            )
+              ? data.featured
+              : [],
+
+          latest:
+            Array.isArray(
+              data?.latest
+            )
+              ? data.latest
+              : [],
+
+          mostRead:
+            Array.isArray(
+              data?.mostRead
+            )
+              ? data.mostRead
+              : [],
+
+          edition:
+            data?.edition ||
+            null,
+
+          convocatoria:
+            data?.convocatoria ||
+            null,
+
+          collaborators:
+            Array.isArray(
+              data?.collaborators
+            )
+              ? data.collaborators
+              : [],
         };
 
-        applyPayload(safePayload);
-        cacheSet(HOME_CACHE_KEY, safePayload, 10 * 1000);
+        applyPayload(
+          safePayload
+        );
+
+        cacheSet(
+          HOME_CACHE_KEY,
+          safePayload,
+          10 * 1000
+        );
 
 // Fetch convocatorias activas por separado
         try {
@@ -270,14 +370,51 @@ const safePayload = {
                const cachedHome = cacheGet(HOME_CACHE_KEY);
 
         if (cachedHome) {
-          setFeatured(Array.isArray(cachedHome.featured) ? cachedHome.featured : []);
-          setLatest(Array.isArray(cachedHome.latest) ? cachedHome.latest : []);
-          setEdition(cachedHome.edition || null);
-          setConvocatoria(cachedHome.convocatoria || null);
-          setCollaborators(Array.isArray(cachedHome.collaborators) ? cachedHome.collaborators : []);
+          setFeatured(
+            Array.isArray(
+              cachedHome.featured
+            )
+              ? cachedHome.featured
+              : []
+          );
+
+          setLatest(
+            Array.isArray(
+              cachedHome.latest
+            )
+              ? cachedHome.latest
+              : []
+          );
+
+          setMostRead(
+            Array.isArray(
+              cachedHome.mostRead
+            )
+              ? cachedHome.mostRead
+              : []
+          );
+
+          setEdition(
+            cachedHome.edition ||
+            null
+          );
+
+          setConvocatoria(
+            cachedHome.convocatoria ||
+            null
+          );
+
+          setCollaborators(
+            Array.isArray(
+              cachedHome.collaborators
+            )
+              ? cachedHome.collaborators
+              : []
+          );
         } else {
           setFeatured([]);
           setLatest([]);
+          setMostRead([]);
           setEdition(null);
           setConvocatoria(null);
           setCollaborators([]);
@@ -325,10 +462,6 @@ const safePayload = {
     return items;
   }, [latest, convocatoria]);
 
-const mostRead = useMemo(() =>
-  [...latest].sort((a,b) => (b.views||0)-(a.views||0)).slice(0,8)
-, [latest]);
-
 const editionContents =
   useMemo(
     () => {
@@ -337,11 +470,21 @@ const editionContents =
       }
 
       return latest.filter(
-        content =>
-          content
-            ?.editions
-            ?.id ===
-          edition.id
+        content => {
+          const contentEditionId =
+            content?.edition_id ||
+            content?.editions?.id ||
+            null;
+
+          return (
+            String(
+              contentEditionId
+            ) ===
+            String(
+              edition.id
+            )
+          );
+        }
       );
     },
     [
@@ -358,33 +501,148 @@ return (
   <div className={styles.page}>
     <div className={styles.shell}>
 
-{/* ── PORTADA CENTRAL + HIGHLIGHTS ──────────────── */}
-      {featured.length > 0 && (
-        <div className={styles.heroGrid}>
-          <div className={styles.heroSideCol}>
-{featured
-  .slice(0, 2)
-  .map(art => (
-    <HighlightCard
-      key={`${art.content_type || 'article'}-${art.id}`}
-      art={art}
-    />
-  ))}
+      {/* ── PORTADA CENTRAL + HIGHLIGHTS ──────────────── */}
+      {edition && (
+        <div
+          className={
+            styles.heroGrid
+          }
+        >
+          <div
+            className={
+              styles.heroSideCol
+            }
+          >
+            {featured
+              .slice(0, 2)
+              .map(
+                art => (
+                  <HighlightCard
+                    key={`${art.content_type || 'article'}-${art.id}`}
+                    art={art}
+                  />
+                )
+              )}
+
+            {featured.length ===
+              0 && (
+              <>
+                <div
+                  className={
+                    styles.highlightEmpty
+                  }
+                >
+                  <span>Λ</span>
+
+                  <p>
+                    Highlight disponible
+                  </p>
+                </div>
+
+                <div
+                  className={
+                    styles.highlightEmpty
+                  }
+                >
+                  <span>Λ</span>
+
+                  <p>
+                    Highlight disponible
+                  </p>
+                </div>
+              </>
+            )}
+
+            {featured.length ===
+              1 && (
+              <div
+                className={
+                  styles.highlightEmpty
+                }
+              >
+                <span>Λ</span>
+
+                <p>
+                  Highlight disponible
+                </p>
+              </div>
+            )}
           </div>
 
-          <div className={styles.heroCenterCol}>
-            <EditionCover edition={edition} setViewer={setViewer} />
+          <div
+            className={
+              styles.heroCenterCol
+            }
+          >
+            <EditionCover
+              edition={
+                edition
+              }
+              setViewer={
+                setViewer
+              }
+            />
           </div>
 
-          <div className={styles.heroSideCol}>
-{featured
-  .slice(2, 4)
-  .map(art => (
-    <HighlightCard
-      key={`${art.content_type || 'article'}-${art.id}`}
-      art={art}
-    />
-  ))}
+          <div
+            className={
+              styles.heroSideCol
+            }
+          >
+            {featured
+              .slice(2, 4)
+              .map(
+                art => (
+                  <HighlightCard
+                    key={`${art.content_type || 'article'}-${art.id}`}
+                    art={art}
+                  />
+                )
+              )}
+
+            {featured.length <=
+              2 && (
+              <>
+                <div
+                  className={
+                    styles.highlightEmpty
+                  }
+                >
+                  <span>Λ</span>
+
+                  <p>
+                    Highlight disponible
+                  </p>
+                </div>
+
+                <div
+                  className={
+                    styles.highlightEmpty
+                  }
+                >
+                  <span>Λ</span>
+
+                  <p>
+                    Highlight disponible
+                  </p>
+                </div>
+              </>
+            )}
+
+            {featured.length ===
+              3 && (
+              <div
+                className={
+                  styles.highlightEmpty
+                }
+              >
+                <span>Λ</span>
+
+                <p>
+                  Highlight disponible
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -799,95 +1057,276 @@ function CollaboratorsCarousel({ collaborators }) {
 /* ════════════════════════════════════════════════════════
    MÁS LEÍDOS
 ════════════════════════════════════════════════════════ */
-function MostRead({ articles, variant = 'default' }) {
-  if (!articles.length) return <EmptySlot />;
+function MostRead({
+  articles,
+  variant = 'default',
+}) {
+  if (!articles.length) {
+    return <EmptySlot />;
+  }
 
-  const roman = ['I', 'II', 'III', 'IV', 'V'];
+  const roman = [
+    'I',
+    'II',
+    'III',
+    'IV',
+    'V',
+  ];
 
-  if (variant === 'triptych') {
+  if (
+    variant ===
+    'triptych'
+  ) {
     return (
-      <div className={styles.triptychRankingList}>
-        {articles.map((art, i) => {
-          const authorName = art.collaborators?.name || 'Agorá Revista';
-          const sectionName =
-            art.article_categories?.[0]?.categories?.name ||
-            art.categories?.[0]?.name ||
-            '';
+      <div
+        className={
+          styles.triptychRankingList
+        }
+      >
+        {articles.map(
+          (
+            art,
+            index
+          ) => {
+            const authorName =
+              art
+                .collaborators
+                ?.name ||
+              'Agorá Revista';
 
-          return (
-            <Link
-              key={art.id}
-              to={`/articulos/${art.slug}`}
-              className={styles.triptychRankingItem}
-            >
-              <div className={styles.triptychRankingNum}>{roman[i]}</div>
+            const sectionName =
+              art.content_type ===
+              'gallery'
+                ? 'Álbum fotográfico'
+                : art
+                    .article_categories
+                    ?.[0]
+                    ?.categories
+                    ?.name ||
+                  art
+                    .categories
+                    ?.[0]
+                    ?.name ||
+                  '';
 
-              <div className={styles.triptychRankingContent}>
-                <div className={styles.triptychRankingText}>
-                  <h3 className={styles.triptychRankingTitle}>{art.title}</h3>
+            return (
+              <Link
+                key={`${art.content_type || 'article'}-${art.id}`}
+                to={
+                  getContentPath(
+                    art
+                  )
+                }
+                className={
+                  styles.triptychRankingItem
+                }
+              >
+                <div
+                  className={
+                    styles.triptychRankingNum
+                  }
+                >
+                  {
+                    roman[
+                      index
+                    ]
+                  }
+                </div>
 
-                  <div className={styles.triptychRankingMeta}>
-                    <span>{authorName}</span>
-                    {sectionName && (
-                      <>
-                        <span className={styles.dot}>·</span>
-                        <span>{sectionName}</span>
-                      </>
+                <div
+                  className={
+                    styles.triptychRankingContent
+                  }
+                >
+                  <div
+                    className={
+                      styles.triptychRankingText
+                    }
+                  >
+                    <h3
+                      className={
+                        styles.triptychRankingTitle
+                      }
+                    >
+                      {art.title}
+                    </h3>
+
+                    <div
+                      className={
+                        styles.triptychRankingMeta
+                      }
+                    >
+                      <span>
+                        {
+                          authorName
+                        }
+                      </span>
+
+                      {sectionName && (
+                        <>
+                          <span
+                            className={
+                              styles.dot
+                            }
+                          >
+                            ·
+                          </span>
+
+                          <span>
+                            {
+                              sectionName
+                            }
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div
+                    className={
+                      styles.triptychRankingImg
+                    }
+                  >
+                    {art.cover_image_url ? (
+                      <img
+                        src={
+                          art.cover_image_url
+                        }
+                        alt={
+                          art.title
+                        }
+                      />
+                    ) : (
+                      <div
+                        className={
+                          styles.imgPlaceholder
+                        }
+                      >
+                        <span>
+                          Λ
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>
-
-                <div className={styles.triptychRankingImg}>
-                  {art.cover_image_url ? (
-                    <img src={art.cover_image_url} alt={art.title} />
-                  ) : (
-                    <div className={styles.imgPlaceholder}><span>Λ</span></div>
-                  )}
-                </div>
-              </div>
-            </Link>
-          );
-        })}
+              </Link>
+            );
+          }
+        )}
       </div>
     );
   }
 
-  const getLikes = (art) =>
-    art.likes_count ?? art.likes ?? art.like_count ?? 0;
+  const getLikes =
+    art =>
+      art.likes_count ??
+      art.likes ??
+      art.like_count ??
+      0;
 
-  const getShares = (art) =>
-    art.share_count ?? art.shares ?? art.shared_count ?? 0;
+  const getShares =
+    art =>
+      art.share_count ??
+      art.shares ??
+      art.shared_count ??
+      0;
 
   return (
-    <div className={styles.mostReadList}>
-      {articles.map((art, i) => (
-        <Link key={art.id} to={`/articulos/${art.slug}`} className={styles.mostReadItem}>
-          <span className={styles.mostReadNum}>{i + 1}</span>
+    <div
+      className={
+        styles.mostReadList
+      }
+    >
+      {articles.map(
+        (
+          art,
+          index
+        ) => (
+          <Link
+            key={`${art.content_type || 'article'}-${art.id}`}
+            to={
+              getContentPath(
+                art
+              )
+            }
+            className={
+              styles.mostReadItem
+            }
+          >
+            <span
+              className={
+                styles.mostReadNum
+              }
+            >
+              {index + 1}
+            </span>
 
-          <div className={styles.mostReadBody}>
-            <div className={styles.mostReadTitle}>{art.title}</div>
+            <div
+              className={
+                styles.mostReadBody
+              }
+            >
+              <div
+                className={
+                  styles.mostReadTitle
+                }
+              >
+                {art.title}
+              </div>
 
-            <div className={styles.mostReadStats}>
-              {getLikes(art) > 0 && (
-                <span className={styles.stat}>
-                  <Heart size={11} />
-                  {getLikes(art)}
-                </span>
-              )}
+              <div
+                className={
+                  styles.mostReadStats
+                }
+              >
+                {getLikes(
+                  art
+                ) > 0 && (
+                  <span
+                    className={
+                      styles.stat
+                    }
+                  >
+                    <Heart
+                      size={11}
+                    />
 
-              {getShares(art) > 0 && (
-                <span className={styles.stat}>
-                  <Share2 size={11} />
-                  {getShares(art)}
-                </span>
-              )}
+                    {
+                      getLikes(
+                        art
+                      )
+                    }
+                  </span>
+                )}
+
+                {getShares(
+                  art
+                ) > 0 && (
+                  <span
+                    className={
+                      styles.stat
+                    }
+                  >
+                    <Share2
+                      size={11}
+                    />
+
+                    {
+                      getShares(
+                        art
+                      )
+                    }
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-        </Link>
-      ))}
+          </Link>
+        )
+      )}
     </div>
   );
 }
+
 function AboutAgora({ isDark }) {
   return (
     <div className={styles.aboutAgoraRich}>

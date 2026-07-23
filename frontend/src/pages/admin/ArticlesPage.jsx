@@ -1,4 +1,8 @@
-import { useEffect, useState } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -6,6 +10,10 @@ import {
   publishArticle,
   deleteArticle,
 } from '../../api/articles.api';
+
+import {
+  getEditions,
+} from '../../api/editions.api';
 
 import {
   generateArticleVoice,
@@ -26,6 +34,8 @@ import {
   FileText,
   Filter,
   ChevronDown,
+  ChevronRight,
+  FolderOpen,
   Mars,
   Venus,
   AudioLines,
@@ -55,12 +65,50 @@ export default function ArticlesPage() {
   const alert    = useAlert();
   const confirm  = useConfirm();
 
-  const [articles, setArticles]   = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [search, setSearch]       = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [
+    articles,
+    setArticles,
+  ] = useState([]);
+
+  const [
+    editions,
+    setEditions,
+  ] = useState([]);
+
+  const [
+    openFolders,
+    setOpenFolders,
+  ] = useState({});
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+const [
+  statusFilter,
+  setStatusFilter,
+] = useState('all');
+
+const [
+  editionFilter,
+  setEditionFilter,
+] = useState('all');
+
+const [
+  search,
+  setSearch,
+] = useState('');
+
+const [
+  page,
+  setPage,
+] = useState(1);
+
+  const [
+    total,
+    setTotal,
+  ] = useState(0);
 
   const [
     generatingAudio,
@@ -77,30 +125,411 @@ export default function ArticlesPage() {
     setExporting,
   ] = useState(null);
 
-  const LIMIT = 15;
+  const LIMIT = 100;
 
-  const load = async () => {
-    setLoading(true);
-    try {
-const params = { page, limit: LIMIT, status: statusFilter };
+  const load =
+    async () => {
+      setLoading(true);
 
-      const res = await getArticles(params);
-      setArticles(res.data || []);
-      setTotal(res.total || 0);
-    } catch {
-      alert.error('Error', 'No se pudieron cargar los artículos');
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        const params = {
+          page,
 
-  useEffect(() => { load(); }, [page, statusFilter]);
+          limit:
+            LIMIT,
 
-  // Filtro local por búsqueda
-  const filtered = articles.filter(a =>
-    a.title?.toLowerCase().includes(search.toLowerCase()) ||
-    a.collaborators?.name?.toLowerCase().includes(search.toLowerCase())
+          status:
+            statusFilter,
+
+          edition_id:
+            editionFilter,
+        };
+
+        const [
+          articlesResponse,
+          editionsResponse,
+        ] =
+          await Promise.all([
+            getArticles(
+              params
+            ),
+
+            getEditions(),
+          ]);
+
+        const articleList =
+          Array.isArray(
+            articlesResponse
+              ?.data
+          )
+            ? articlesResponse.data
+            : Array.isArray(
+                articlesResponse
+              )
+              ? articlesResponse
+              : [];
+
+        const editionList =
+          Array.isArray(
+            editionsResponse
+          )
+            ? editionsResponse
+            : Array.isArray(
+                editionsResponse
+                  ?.data
+              )
+              ? editionsResponse.data
+              : [];
+
+        setArticles(
+          articleList
+        );
+
+        setEditions(
+          editionList
+        );
+
+        setTotal(
+          Number(
+            articlesResponse
+              ?.total ||
+            articleList.length ||
+            0
+          )
+        );
+      } catch (error) {
+        console.error(
+          'ERROR cargando artículos y ediciones:',
+          error
+        );
+
+        alert.error(
+          'Error',
+          error?.response
+            ?.data
+            ?.error ||
+          error?.response
+            ?.data
+            ?.message ||
+          'No se pudieron cargar los artículos'
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  useEffect(() => {
+    load();
+  }, [
+    page,
+    statusFilter,
+    editionFilter,
+  ]);
+
+  const filtered =
+    useMemo(
+      () => {
+        const normalizedSearch =
+          search
+            .trim()
+            .toLocaleLowerCase(
+              'es-MX'
+            );
+
+        if (
+          !normalizedSearch
+        ) {
+          return articles;
+        }
+
+        return articles.filter(
+          article => {
+            const title =
+              String(
+                article.title ||
+                ''
+              )
+                .toLocaleLowerCase(
+                  'es-MX'
+                );
+
+            const author =
+              String(
+                article
+                  .collaborators
+                  ?.name ||
+                ''
+              )
+                .toLocaleLowerCase(
+                  'es-MX'
+                );
+
+            const editionName =
+              String(
+                article
+                  .editions
+                  ?.name ||
+                ''
+              )
+                .toLocaleLowerCase(
+                  'es-MX'
+                );
+
+            const editionNumber =
+              String(
+                article
+                  .editions
+                  ?.number ||
+                ''
+              );
+
+            return (
+              title.includes(
+                normalizedSearch
+              ) ||
+              author.includes(
+                normalizedSearch
+              ) ||
+              editionName.includes(
+                normalizedSearch
+              ) ||
+              editionNumber.includes(
+                normalizedSearch
+              )
+            );
+          }
+        );
+      },
+      [
+        articles,
+        search,
+      ]
+    );
+
+  const articleFolders =
+    useMemo(
+      () => {
+        const hasSearch =
+          Boolean(
+            search.trim()
+          );
+
+        const visibleEditions =
+          editionFilter === 'all'
+            ? [...editions]
+            : editionFilter ===
+                'without-edition'
+              ? []
+              : editions.filter(
+                  edition =>
+                    String(
+                      edition.id
+                    ) ===
+                    String(
+                      editionFilter
+                    )
+                );
+
+        const editionGroups =
+          visibleEditions
+            .sort(
+              (
+                firstEdition,
+                secondEdition
+              ) => {
+                const firstCurrent =
+                  Boolean(
+                    firstEdition
+                      .is_current
+                  );
+
+                const secondCurrent =
+                  Boolean(
+                    secondEdition
+                      .is_current
+                  );
+
+                if (
+                  firstCurrent !==
+                  secondCurrent
+                ) {
+                  return firstCurrent
+                    ? -1
+                    : 1;
+                }
+
+                return (
+                  Number(
+                    secondEdition
+                      .number ||
+                    0
+                  ) -
+                  Number(
+                    firstEdition
+                      .number ||
+                    0
+                  )
+                );
+              }
+            )
+            .map(
+              edition => {
+                const folderArticles =
+                  filtered.filter(
+                    article => {
+                      const articleEditionId =
+                        article
+                          .edition_id ||
+                        article
+                          .editions
+                          ?.id ||
+                        null;
+
+                      return (
+                        String(
+                          articleEditionId
+                        ) ===
+                        String(
+                          edition.id
+                        )
+                      );
+                    }
+                  );
+
+                return {
+                  key:
+                    String(
+                      edition.id
+                    ),
+
+                  edition,
+
+                  articles:
+                    folderArticles,
+                };
+              }
+            )
+            .filter(
+              folder =>
+                !hasSearch ||
+                folder
+                  .articles
+                  .length >
+                  0
+            );
+
+        const articlesWithoutEdition =
+          filtered.filter(
+            article =>
+              !article
+                .edition_id &&
+              !article
+                .editions
+                ?.id
+          );
+
+        const withoutEditionFolder = {
+          key:
+            'without-edition',
+
+          edition:
+            null,
+
+          articles:
+            articlesWithoutEdition,
+        };
+
+        const shouldShowWithoutEdition =
+          editionFilter === 'all' ||
+          editionFilter ===
+            'without-edition';
+
+        if (
+          !shouldShowWithoutEdition
+        ) {
+          return editionGroups;
+        }
+
+        if (
+          hasSearch &&
+          articlesWithoutEdition
+            .length ===
+            0
+        ) {
+          return editionGroups;
+        }
+
+        return [
+          ...editionGroups,
+          withoutEditionFolder,
+        ];
+      },
+      [
+        editions,
+        filtered,
+        search,
+        editionFilter,
+      ]
+    );
+
+  useEffect(
+    () => {
+      setOpenFolders(
+        current => {
+          const next = {
+            ...current,
+          };
+
+          articleFolders.forEach(
+            (
+              folder,
+              index
+            ) => {
+              if (
+                Object.prototype
+                  .hasOwnProperty
+                  .call(
+                    next,
+                    folder.key
+                  )
+              ) {
+                return;
+              }
+
+              next[
+                folder.key
+              ] =
+                Boolean(
+                  folder
+                    .edition
+                    ?.is_current
+                ) ||
+                index === 0;
+            }
+          );
+
+          return next;
+        }
+      );
+    },
+    [
+      articleFolders,
+    ]
   );
+
+  const toggleFolder =
+    folderKey => {
+      setOpenFolders(
+        current => ({
+          ...current,
+
+          [folderKey]:
+            !current[
+              folderKey
+            ],
+        })
+      );
+    };
 
 const handlePublish = async (id) => {
   const ok = await confirm({
@@ -376,6 +805,536 @@ const handleDeleteVoice = async (
       total / LIMIT
     );
 
+  const renderArticleRow =
+    art => {
+      const status =
+        STATUS_LABELS[
+          art.status
+        ] ||
+        STATUS_LABELS.draft;
+
+      const categories =
+        art
+          .article_categories
+          ?.map(
+            articleCategory =>
+              articleCategory
+                .categories
+                ?.name
+          )
+          .filter(
+            Boolean
+          ) ||
+        [];
+
+      return (
+        <tr
+          key={
+            art.id
+          }
+        >
+          <td
+            className={
+              styles.tdArticle
+            }
+          >
+            <div
+              className={
+                styles.articleInfo
+              }
+            >
+              {art.cover_image_url ? (
+                <img
+                  src={
+                    art.cover_image_url
+                  }
+                  alt=""
+                  className={
+                    styles.articleThumb
+                  }
+                />
+              ) : (
+                <div
+                  className={
+                    styles.articleThumbEmpty
+                  }
+                >
+                  <FileText
+                    size={14}
+                  />
+                </div>
+              )}
+
+              <div>
+                <div
+                  className={
+                    styles.articleTitle
+                  }
+                >
+                  {art.title}
+                </div>
+
+                {art.subtitle && (
+                  <div
+                    className={
+                      styles.articleSubtitle
+                    }
+                  >
+                    {
+                      art.subtitle
+                    }
+                  </div>
+                )}
+              </div>
+            </div>
+          </td>
+
+          <td
+            className={
+              styles.tdMuted
+            }
+          >
+            {art
+              .collaborators
+              ?.name ||
+              '—'}
+          </td>
+
+          <td>
+            <div
+              className={
+                styles.catTags
+              }
+            >
+              {categories
+                .slice(
+                  0,
+                  2
+                )
+                .map(
+                  category => (
+                    <span
+                      key={
+                        category
+                      }
+                      className={
+                        styles.catTag
+                      }
+                    >
+                      {category}
+                    </span>
+                  )
+                )}
+
+              {categories.length >
+                2 && (
+                <span
+                  className={
+                    styles.catTagMore
+                  }
+                >
+                  +
+                  {
+                    categories.length -
+                    2
+                  }
+                </span>
+              )}
+            </div>
+          </td>
+
+          <td>
+            <span
+              className={
+                styles.statusBadge
+              }
+              style={{
+                background:
+                  status.bg,
+
+                color:
+                  status.color,
+              }}
+            >
+              {status.label}
+            </span>
+          </td>
+
+          <td>
+            <div
+              className={
+                styles.audioActions
+              }
+            >
+              <button
+                type="button"
+                className={`
+                  ${styles.audioVoiceBtn}
+                  ${
+                    art.audio_male_url
+                      ? styles.audioVoiceReady
+                      : ''
+                  }
+                `}
+                onClick={() => {
+                  handleGenerateVoice(
+                    art,
+                    'male'
+                  );
+                }}
+                disabled={
+                  Boolean(
+                    generatingAudio
+                  )
+                }
+                title={
+                  art.audio_male_url
+                    ? 'Regenerar voz de Jorge'
+                    : 'Generar voz de Jorge'
+                }
+              >
+                {generatingAudio ===
+                `${art.id}:male` ? (
+                  <LoaderCircle
+                    size={14}
+                    className={
+                      styles.spinning
+                    }
+                  />
+                ) : (
+                  <Mars
+                    size={14}
+                  />
+                )}
+              </button>
+
+              <button
+                type="button"
+                className={`
+                  ${styles.audioVoiceBtn}
+                  ${
+                    art.audio_female_url
+                      ? styles.audioVoiceReady
+                      : ''
+                  }
+                `}
+                onClick={() => {
+                  handleGenerateVoice(
+                    art,
+                    'female'
+                  );
+                }}
+                disabled={
+                  Boolean(
+                    generatingAudio
+                  )
+                }
+                title={
+                  art.audio_female_url
+                    ? 'Regenerar voz de Dalia'
+                    : 'Generar voz de Dalia'
+                }
+              >
+                {generatingAudio ===
+                `${art.id}:female` ? (
+                  <LoaderCircle
+                    size={14}
+                    className={
+                      styles.spinning
+                    }
+                  />
+                ) : (
+                  <Venus
+                    size={14}
+                  />
+                )}
+              </button>
+
+              <button
+                type="button"
+                className={
+                  styles.audioBothBtn
+                }
+                onClick={() => {
+                  handleGenerateBoth(
+                    art
+                  );
+                }}
+                disabled={
+                  Boolean(
+                    generatingAudio
+                  )
+                }
+                title="Generar ambas voces"
+              >
+                {generatingAudio ===
+                `${art.id}:both` ? (
+                  <LoaderCircle
+                    size={14}
+                    className={
+                      styles.spinning
+                    }
+                  />
+                ) : (
+                  <AudioLines
+                    size={14}
+                  />
+                )}
+              </button>
+
+              {art.audio_male_url && (
+                <button
+                  type="button"
+                  className={
+                    styles.audioDeleteBtn
+                  }
+                  onClick={() => {
+                    handleDeleteVoice(
+                      art,
+                      'male'
+                    );
+                  }}
+                  disabled={
+                    Boolean(
+                      generatingAudio
+                    )
+                  }
+                  title="Eliminar voz de Jorge"
+                >
+                  {generatingAudio ===
+                  `${art.id}:delete-male` ? (
+                    <LoaderCircle
+                      size={11}
+                      className={
+                        styles.spinning
+                      }
+                    />
+                  ) : (
+                    <>
+                      <span>
+                        M
+                      </span>
+
+                      <Trash2
+                        size={11}
+                      />
+                    </>
+                  )}
+                </button>
+              )}
+
+              {art.audio_female_url && (
+                <button
+                  type="button"
+                  className={
+                    styles.audioDeleteBtn
+                  }
+                  onClick={() => {
+                    handleDeleteVoice(
+                      art,
+                      'female'
+                    );
+                  }}
+                  disabled={
+                    Boolean(
+                      generatingAudio
+                    )
+                  }
+                  title="Eliminar voz de Dalia"
+                >
+                  {generatingAudio ===
+                  `${art.id}:delete-female` ? (
+                    <LoaderCircle
+                      size={11}
+                      className={
+                        styles.spinning
+                      }
+                    />
+                  ) : (
+                    <>
+                      <span>
+                        F
+                      </span>
+
+                      <Trash2
+                        size={11}
+                      />
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+
+            {art.audio_status ===
+              'outdated' && (
+              <div
+                className={
+                  styles.audioOutdated
+                }
+              >
+                Texto modificado
+              </div>
+            )}
+
+            {art.audio_status ===
+              'error' && (
+              <div
+                className={
+                  styles.audioError
+                }
+              >
+                Error de audio
+              </div>
+            )}
+          </td>
+
+          <td
+            className={
+              styles.tdMuted
+            }
+          >
+            {art.published_at
+              ? formatDate(
+                  art.published_at
+                )
+              : formatDate(
+                  art.created_at
+                )}
+          </td>
+
+          <td
+            className={
+              styles.tdViews
+            }
+          >
+            <div
+              className={
+                styles.viewsInline
+              }
+            >
+              <Eye
+                size={12}
+              />
+
+              <span>
+                {
+                  art.views ||
+                  0
+                }
+              </span>
+            </div>
+          </td>
+
+          <td>
+            <div
+              className={
+                styles.actions
+              }
+            >
+              {art.status ===
+                'published' && (
+                <a
+                  href={`/articulos/${art.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={
+                    styles.actionBtn
+                  }
+                  title="Ver en sitio"
+                >
+                  <Eye
+                    size={14}
+                  />
+                </a>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  navigate(
+                    `/admin/articulos/editar/${art.id}`
+                  );
+                }}
+                className={
+                  styles.actionBtn
+                }
+                title="Editar"
+              >
+                <Edit
+                  size={14}
+                />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  handleExportArticle(
+                    art
+                  );
+                }}
+                className={
+                  styles.actionBtn
+                }
+                title="Exportar HTML"
+                disabled={
+                  Boolean(
+                    exporting
+                  )
+                }
+              >
+                {exporting ===
+                art.id ? (
+                  <LoaderCircle
+                    size={14}
+                    className={
+                      styles.spinning
+                    }
+                  />
+                ) : (
+                  <Download
+                    size={14}
+                  />
+                )}
+              </button>
+
+              {art.status ===
+                'draft' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handlePublish(
+                      art.id
+                    );
+                  }}
+                  className={`${styles.actionBtn} ${styles.actionPublish}`}
+                  title="Publicar"
+                >
+                  <Send
+                    size={14}
+                  />
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  handleDelete(
+                    art.id
+                  );
+                }}
+                className={`${styles.actionBtn} ${styles.actionDelete}`}
+                title="Eliminar"
+              >
+                <Trash2
+                  size={14}
+                />
+              </button>
+            </div>
+          </td>
+        </tr>
+      );
+    };
+
   return (
     <div className={styles.page}>
 
@@ -472,410 +1431,383 @@ const handleDeleteVoice = async (
           />
         </div>
 
-        {/* Filtro de estado */}
-        <div className={styles.filterWrap}>
-          <Filter size={14} />
-          <select
-            value={statusFilter}
-            onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-            className={styles.filterSelect}
-          >
-            <option value="all">Todos los estados</option>
-            <option value="draft">Borradores</option>
-            <option value="published">Publicados</option>
-            <option value="archived">Archivados</option>
-          </select>
-          <ChevronDown size={13} />
-        </div>
+{/* Filtro de edición */}
+<div className={styles.filterWrap}>
+  <FolderOpen size={14} />
+
+  <select
+    value={editionFilter}
+    onChange={event => {
+      setEditionFilter(
+        event.target.value
+      );
+
+      setPage(1);
+    }}
+    className={
+      styles.filterSelect
+    }
+  >
+    <option value="all">
+      Todas las ediciones
+    </option>
+
+    {editions
+      .slice()
+      .sort(
+        (
+          firstEdition,
+          secondEdition
+        ) =>
+          Number(
+            secondEdition.number ||
+            0
+          ) -
+          Number(
+            firstEdition.number ||
+            0
+          )
+      )
+      .map(edition => (
+        <option
+          key={edition.id}
+          value={edition.id}
+        >
+          Edición № {edition.number}
+          {edition.name
+            ? ` — ${edition.name}`
+            : ''}
+        </option>
+      ))}
+
+    <option value="without-edition">
+      Sin edición
+    </option>
+  </select>
+
+  <ChevronDown size={13} />
+</div>
+
+{/* Filtro de estado */}
+<div className={styles.filterWrap}>
+  <Filter size={14} />
+
+  <select
+    value={statusFilter}
+    onChange={event => {
+      setStatusFilter(
+        event.target.value
+      );
+
+      setPage(1);
+    }}
+    className={
+      styles.filterSelect
+    }
+  >
+    <option value="all">
+      Todos los estados
+    </option>
+
+    <option value="draft">
+      Borradores
+    </option>
+
+    <option value="published">
+      Publicados
+    </option>
+
+    <option value="archived">
+      Archivados
+    </option>
+  </select>
+
+  <ChevronDown size={13} />
+</div>
 
         <div className={styles.totalCount}>
           {total} artículo{total !== 1 ? 's' : ''}
         </div>
       </motion.div>
 
-      {/* ── Tabla ─────────────────────────────────────────── */}
+      {/* ── Carpetas por edición ──────────────────────────── */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
-        className={styles.tableWrap}
+        initial={{
+          opacity: 0,
+        }}
+        animate={{
+          opacity: 1,
+        }}
+        transition={{
+          delay: 0.1,
+        }}
+        className={
+          styles.foldersList
+        }
       >
         {loading ? (
-          <TableSkeleton />
-        ) : filtered.length === 0 ? (
-          <EmptyState search={search} />
+          <div
+            className={
+              styles.tableWrap
+            }
+          >
+            <TableSkeleton />
+          </div>
+        ) : search.trim() &&
+          filtered.length ===
+            0 ? (
+          <div
+            className={
+              styles.tableWrap
+            }
+          >
+            <EmptyState
+              search={
+                search
+              }
+            />
+          </div>
+        ) : editions.length ===
+            0 &&
+          articles.length ===
+            0 ? (
+          <div
+            className={
+              styles.tableWrap
+            }
+          >
+            <EmptyState
+              search=""
+            />
+          </div>
         ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Artículo</th>
-                <th>Autor</th>
-                <th>Secciones</th>
-                <th>Estado</th>
-                <th>Audio</th>
-                <th>Fecha</th>
-                <th>Vistas</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(art => {
-                const s = STATUS_LABELS[art.status] || STATUS_LABELS.draft;
-                const cats = art.article_categories?.map(ac => ac.categories?.name).filter(Boolean) || [];
-
-                return (
-                  <tr key={art.id}>
-                    {/* Artículo */}
-                    <td className={styles.tdArticle}>
-                      <div className={styles.articleInfo}>
-                        {art.cover_image_url ? (
-                          <img src={art.cover_image_url} alt="" className={styles.articleThumb} />
-                        ) : (
-                          <div className={styles.articleThumbEmpty}>
-                            <FileText size={14} />
-                          </div>
-                        )}
-                        <div>
-                          <div className={styles.articleTitle}>{art.title}</div>
-                          {art.subtitle && (
-                            <div className={styles.articleSubtitle}>{art.subtitle}</div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Autor */}
-                    <td className={styles.tdMuted}>
-                      {art.collaborators?.name || '—'}
-                    </td>
-
-                    {/* Secciones */}
-                    <td>
-                      <div className={styles.catTags}>
-                        {cats.slice(0, 2).map(c => (
-                          <span key={c} className={styles.catTag}>{c}</span>
-                        ))}
-                        {cats.length > 2 && (
-                          <span className={styles.catTagMore}>+{cats.length - 2}</span>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Estado */}
-                    <td>
-                      <span
-                        className={styles.statusBadge}
-                        style={{
-                          background: s.bg,
-                          color: s.color,
-                        }}
-                      >
-                        {s.label}
-                      </span>
-                    </td>
-
-                    {/* Audio */}
-                    <td>
-                      <div className={styles.audioActions}>
-                        {/* Jorge */}
-                        <button
-                          type="button"
-                          className={`
-                            ${styles.audioVoiceBtn}
-                            ${
-                              art.audio_male_url
-                                ? styles.audioVoiceReady
-                                : ''
-                            }
-                          `}
-                          onClick={() =>
-                            handleGenerateVoice(
-                              art,
-                              'male'
-                            )
-                          }
-                          disabled={Boolean(
-                            generatingAudio
-                          )}
-                          title={
-                            art.audio_male_url
-                              ? 'Regenerar voz de Jorge'
-                              : 'Generar voz de Jorge'
-                          }
-                        >
-                          {
-                            generatingAudio ===
-                            `${art.id}:male`
-                              ? (
-                                <LoaderCircle
-                                  size={14}
-                                  className={styles.spinning}
-                                />
-                              )
-                              : (
-                                <Mars size={14} />
-                              )
-                          }
-                        </button>
-
-                        {/* Dalia */}
-                        <button
-                          type="button"
-                          className={`
-                            ${styles.audioVoiceBtn}
-                            ${
-                              art.audio_female_url
-                                ? styles.audioVoiceReady
-                                : ''
-                            }
-                          `}
-                          onClick={() =>
-                            handleGenerateVoice(
-                              art,
-                              'female'
-                            )
-                          }
-                          disabled={Boolean(
-                            generatingAudio
-                          )}
-                          title={
-                            art.audio_female_url
-                              ? 'Regenerar voz de Dalia'
-                              : 'Generar voz de Dalia'
-                          }
-                        >
-                          {
-                            generatingAudio ===
-                            `${art.id}:female`
-                              ? (
-                                <LoaderCircle
-                                  size={14}
-                                  className={styles.spinning}
-                                />
-                              )
-                              : (
-                                <Venus size={14} />
-                              )
-                          }
-                        </button>
-
-                        {/* Ambas voces */}
-                        <button
-                          type="button"
-                          className={styles.audioBothBtn}
-                          onClick={() =>
-                            handleGenerateBoth(art)
-                          }
-                          disabled={Boolean(
-                            generatingAudio
-                          )}
-                          title="Generar ambas voces"
-                        >
-                          {
-                            generatingAudio ===
-                            `${art.id}:both`
-                              ? (
-                                <LoaderCircle
-                                  size={14}
-                                  className={styles.spinning}
-                                />
-                              )
-                              : (
-                                <AudioLines size={14} />
-                              )
-                          }
-                        </button>
-
-                        {/* Eliminar Jorge */}
-                        {art.audio_male_url && (
-                          <button
-                            type="button"
-                            className={styles.audioDeleteBtn}
-                            onClick={() =>
-                              handleDeleteVoice(
-                                art,
-                                'male'
-                              )
-                            }
-                            disabled={Boolean(
-                              generatingAudio
-                            )}
-                            title="Eliminar voz de Jorge"
-                          >
-                            {
-                              generatingAudio ===
-                              `${art.id}:delete-male`
-                                ? (
-                                  <LoaderCircle
-                                    size={11}
-                                    className={styles.spinning}
-                                  />
-                                )
-                                : (
-                                  <>
-                                    <span>M</span>
-                                    <Trash2 size={11} />
-                                  </>
-                                )
-                            }
-                          </button>
-                        )}
-
-                        {/* Eliminar Dalia */}
-                        {art.audio_female_url && (
-                          <button
-                            type="button"
-                            className={styles.audioDeleteBtn}
-                            onClick={() =>
-                              handleDeleteVoice(
-                                art,
-                                'female'
-                              )
-                            }
-                            disabled={Boolean(
-                              generatingAudio
-                            )}
-                            title="Eliminar voz de Dalia"
-                          >
-                            {
-                              generatingAudio ===
-                              `${art.id}:delete-female`
-                                ? (
-                                  <LoaderCircle
-                                    size={11}
-                                    className={styles.spinning}
-                                  />
-                                )
-                                : (
-                                  <>
-                                    <span>F</span>
-                                    <Trash2 size={11} />
-                                  </>
-                                )
-                            }
-                          </button>
-                        )}
-                      </div>
-
-                      {art.audio_status === 'outdated' && (
-                        <div className={styles.audioOutdated}>
-                          Texto modificado
-                        </div>
-                      )}
-
-                      {art.audio_status === 'error' && (
-                        <div className={styles.audioError}>
-                          Error de audio
-                        </div>
-                      )}
-                    </td>
-
-                    {/* Fecha */}
-                    <td className={styles.tdMuted}>
-                      {art.published_at
-                        ? formatDate(art.published_at)
-                        : formatDate(art.created_at)
-                      }
-                    </td>
-
-                    {/* Vistas */}
-                    <td className={styles.tdViews}>
-                      <div className={styles.viewsInline}>
-                        <Eye size={12} />
-                        <span>{art.views || 0}</span>
-                      </div>
-                    </td>
-
-                    {/* Acciones */}
-                    <td>
-                      <div className={styles.actions}>
-                        {/* Ver en sitio */}
-                        {art.status === 'published' && (
-                          <a
-                            href={`/articulos/${art.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.actionBtn}
-                            title="Ver en sitio"
-                          >
-                            <Eye size={14} />
-                          </a>
-                        )}
-
-                        {/* Editar */}
-                        <button
-                          onClick={() =>
-                            navigate(
-                              `/admin/articulos/editar/${art.id}`
-                            )
-                          }
-                          className={
-                            styles.actionBtn
-                          }
-                          title="Editar"
-                        >
-                          <Edit size={14} />
-                        </button>
-
-                        {/* Exportar HTML */}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleExportArticle(
-                              art
-                            )
-                          }
-                          className={
-                            styles.actionBtn
-                          }
-                          title="Exportar HTML"
-                          disabled={
-                            Boolean(
-                              exporting
-                            )
-                          }
-                        >
-                          {exporting ===
-                          art.id ? (
-                            <LoaderCircle
-                              size={14}
-                              className={
-                                styles.spinning
-                              }
-                            />
-                          ) : (
-                            <Download
-                              size={14}
-                            />
-                          )}
-                        </button>
-
-                        {/* Publicar (solo borradores) */}
-                        {art.status === 'draft' && (
-                          <button
-                            onClick={() => handlePublish(art.id)}
-                            className={`${styles.actionBtn} ${styles.actionPublish}`}
-                            title="Publicar"
-                          >
-                            <Send size={14} />
-                          </button>
-                        )}
-
-                      {/* Eliminar */}
-                      <button
-                        onClick={() => handleDelete(art.id)}
-                        className={`${styles.actionBtn} ${styles.actionDelete}`}
-                        title="Eliminar"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                      </div>
-                    </td>
-                  </tr>
+          articleFolders.map(
+            folder => {
+              const isOpen =
+                Boolean(
+                  openFolders[
+                    folder.key
+                  ]
                 );
-              })}
-            </tbody>
-          </table>
+
+              const folderTitle =
+                folder.edition
+                  ? `Edición ${folder.edition.number}`
+                  : 'Sin edición';
+
+              return (
+                <section
+                  key={
+                    folder.key
+                  }
+                  className={
+                    styles.editionFolder
+                  }
+                >
+                  <button
+                    type="button"
+                    className={
+                      styles.folderHeader
+                    }
+                    onClick={() => {
+                      toggleFolder(
+                        folder.key
+                      );
+                    }}
+                    aria-expanded={
+                      isOpen
+                    }
+                  >
+                    <span
+                      className={
+                        styles.folderChevron
+                      }
+                    >
+                      {isOpen ? (
+                        <ChevronDown
+                          size={18}
+                        />
+                      ) : (
+                        <ChevronRight
+                          size={18}
+                        />
+                      )}
+                    </span>
+
+                    <span
+                      className={
+                        styles.folderIcon
+                      }
+                    >
+                      <FolderOpen
+                        size={21}
+                      />
+                    </span>
+
+                    <span
+                      className={
+                        styles.folderInformation
+                      }
+                    >
+                      <span
+                        className={
+                          styles.folderTitleRow
+                        }
+                      >
+                        <strong>
+                          {folderTitle}
+                        </strong>
+
+                        {folder
+                          .edition
+                          ?.is_current && (
+                          <span
+                            className={
+                              styles.currentEditionBadge
+                            }
+                          >
+                            Edición actual
+                          </span>
+                        )}
+                      </span>
+
+                      {folder
+                        .edition
+                        ?.name && (
+                        <small>
+                          {
+                            folder
+                              .edition
+                              .name
+                          }
+                        </small>
+                      )}
+                    </span>
+
+                    <span
+                      className={
+                        styles.folderCount
+                      }
+                    >
+                      {
+                        folder
+                          .articles
+                          .length
+                      }{' '}
+                      {folder
+                        .articles
+                        .length ===
+                      1
+                        ? 'artículo'
+                        : 'artículos'}
+                    </span>
+                  </button>
+
+                  {isOpen && (
+                    <div
+                      className={
+                        styles.folderContent
+                      }
+                    >
+                      {folder
+                        .articles
+                        .length >
+                      0 ? (
+                        <div
+                          className={
+                            styles.folderTableScroll
+                          }
+                        >
+                          <table
+                            className={
+                              styles.table
+                            }
+                          >
+                            <thead>
+                              <tr>
+                                <th>
+                                  Artículo
+                                </th>
+
+                                <th>
+                                  Autor
+                                </th>
+
+                                <th>
+                                  Secciones
+                                </th>
+
+                                <th>
+                                  Estado
+                                </th>
+
+                                <th>
+                                  Audio
+                                </th>
+
+                                <th>
+                                  Fecha
+                                </th>
+
+                                <th>
+                                  Vistas
+                                </th>
+
+                                <th>
+                                  Acciones
+                                </th>
+                              </tr>
+                            </thead>
+
+                            <tbody>
+                              {folder
+                                .articles
+                                .map(
+                                  renderArticleRow
+                                )}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div
+                          className={
+                            styles.folderEmpty
+                          }
+                        >
+                          <FileText
+                            size={27}
+                          />
+
+                          <div>
+                            <strong>
+                              Sin artículos
+                            </strong>
+
+                            <span>
+                              No hay artículos relacionados con esta edición.
+                            </span>
+                          </div>
+
+                          <Link
+                            to="/admin/articulos/nuevo"
+                            className={
+                              styles.folderEmptyButton
+                            }
+                          >
+                            <Plus
+                              size={14}
+                            />
+
+                            Nuevo artículo
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </section>
+              );
+            }
+          )
         )}
       </motion.div>
 

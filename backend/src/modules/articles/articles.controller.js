@@ -2,11 +2,26 @@ const service = require('./articles.service');
 
 const getAll = async (req, res, next) => {
   try {
-    const { page, limit, status } = req.query;
-    res.json(await service.getAll({ page, limit, status }));
-  } catch (err) { next(err); }
-};
+    const {
+      page,
+      limit,
+      status,
+      edition_id,
+    } = req.query;
 
+    res.json(
+      await service.getAll({
+        page,
+        limit,
+        status,
+        editionId:
+          edition_id,
+      })
+    );
+  } catch (err) {
+    next(err);
+  }
+};
 const getBySlug = async (req, res, next) => {
   try {
     res.json(await service.getBySlug(req.params.slug));

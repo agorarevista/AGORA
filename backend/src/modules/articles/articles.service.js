@@ -131,6 +131,131 @@ const sortFeaturedContents =
     );
   };
 
+const validateEditionHighlight =
+  async ({
+    editionId,
+    isFeatured,
+    featuredOrder,
+    articleId = null,
+  }) => {
+    if (!isFeatured) {
+      return;
+    }
+
+    if (!editionId) {
+      throw {
+        status: 400,
+        message:
+          'Selecciona una edición antes de marcar el artículo como highlight.',
+      };
+    }
+
+    const order =
+      Number(
+        featuredOrder
+      );
+
+    if (
+      !Number.isInteger(order) ||
+      order < 1 ||
+      order > 4
+    ) {
+      throw {
+        status: 400,
+        message:
+          'El orden del highlight debe estar entre 1 y 4.',
+      };
+    }
+
+    let articlesQuery =
+      supabase
+        .from('articles')
+        .select(
+          'id, featured_order'
+        )
+        .eq(
+          'edition_id',
+          editionId
+        )
+        .eq(
+          'is_featured',
+          true
+        );
+
+    if (articleId) {
+      articlesQuery =
+        articlesQuery.neq(
+          'id',
+          articleId
+        );
+    }
+
+    const [
+      articlesResult,
+      galleriesResult,
+    ] = await Promise.all([
+      articlesQuery,
+
+      supabase
+        .from('galleries')
+        .select(
+          'id, featured_order'
+        )
+        .eq(
+          'edition_id',
+          editionId
+        )
+        .eq(
+          'is_featured',
+          true
+        ),
+    ]);
+
+    if (
+      articlesResult.error
+    ) {
+      throw articlesResult.error;
+    }
+
+    if (
+      galleriesResult.error
+    ) {
+      throw galleriesResult.error;
+    }
+
+    const currentHighlights = [
+      ...(articlesResult.data || []),
+      ...(galleriesResult.data || []),
+    ];
+
+    if (
+      currentHighlights.length >=
+      4
+    ) {
+      throw {
+        status: 400,
+        message:
+          'Esta edición ya tiene cuatro highlights. Desmarca uno antes de agregar otro.',
+      };
+    }
+
+    const duplicatedOrder =
+      currentHighlights.some(
+        item =>
+          Number(
+            item.featured_order
+          ) === order
+      );
+
+    if (duplicatedOrder) {
+      throw {
+        status: 400,
+        message:
+          `La posición ${order} ya está ocupada por otro highlight de esta edición.`,
+      };
+    }
+  };
+
 const validateArticleCategories =
   async categoryIds => {
     const normalizedIds =
@@ -207,7 +332,12 @@ const BASE_SELECT = `
   audio_error,
   audio_updated_at,
   collaborators ( id, name, slug, photo_url, type, section_name, section_slug, social_links ),
-  editions ( id, number, name ),
+  editions (
+    id,
+    number,
+    name,
+    is_current
+  ),
   article_categories ( categories ( id, name, slug, color ) ),
   article_tags ( tag, tag_type )
 `;
@@ -241,29 +371,125 @@ const EDITOR_SELECT = `
   audio_error,
   audio_updated_at,
   collaborators ( id, name, slug, photo_url, type, section_name, section_slug, social_links ),
-  editions ( id, number, name ),
+  editions (
+    id,
+    number,
+    name,
+    is_current
+  ),
   article_categories ( categories ( id, name, slug, color ) ),
   article_tags ( id, tag, tag_type )
 `;
 
-const getAll = async ({ page = 1, limit = 12, status = 'published' } = {}) => {
-  const from = (page - 1) * limit;
-  const to = from + limit - 1;
+const getAll = async ({
+  page = 1,
+  limit = 12,
+  status = 'published',
+  editionId = 'all',
+} = {}) => {
+  const normalizedPage =
+    Math.max(
+      Number.parseInt(
+        page,
+        10
+      ) || 1,
+      1
+    );
+
+  const normalizedLimit =
+    Math.min(
+      Math.max(
+        Number.parseInt(
+          limit,
+          10
+        ) || 12,
+        1
+      ),
+      100
+    );
+
+  const from =
+    (
+      normalizedPage -
+      1
+    ) *
+    normalizedLimit;
+
+  const to =
+    from +
+    normalizedLimit -
+    1;
 
   let query = supabase
     .from('articles')
-    .select(BASE_SELECT, { count: 'exact' });
+    .select(
+      BASE_SELECT,
+      {
+        count: 'exact',
+      }
+    );
 
-  if (status && status !== 'all') {
-    query = query.eq('status', status);
+  if (
+    status &&
+    status !== 'all'
+  ) {
+    query = query.eq(
+      'status',
+      status
+    );
   }
 
-  const { data, error, count } = await query
-    .order('published_at', { ascending: false, nullsFirst: false })
-    .range(from, to);
+  if (
+    editionId ===
+    'without-edition'
+  ) {
+    query = query.is(
+      'edition_id',
+      null
+    );
+  } else if (
+    editionId &&
+    editionId !== 'all'
+  ) {
+    query = query.eq(
+      'edition_id',
+      editionId
+    );
+  }
 
-  if (error) throw error;
-  return { data, total: count, page: Number(page), limit: Number(limit) };
+  const {
+    data,
+    error,
+    count,
+  } = await query
+    .order(
+      'published_at',
+      {
+        ascending: false,
+        nullsFirst: false,
+      }
+    )
+    .order(
+      'created_at',
+      {
+        ascending: false,
+      }
+    )
+    .range(
+      from,
+      to
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    data: data || [],
+    total: count || 0,
+    page: normalizedPage,
+    limit: normalizedLimit,
+  };
 };
 
 const getBySlug = async (slug) => {
@@ -425,179 +651,191 @@ const getHome = async () => {
     return cached;
   }
 
+  const {
+    data: currentEdition,
+    error: editionError,
+  } = await supabase
+    .from('editions')
+    .select('*')
+    .eq(
+      'is_current',
+      true
+    )
+    .maybeSingle();
+
+  if (editionError) {
+    throw editionError;
+  }
+
+  const currentEditionId =
+    currentEdition?.id ||
+    null;
+
+  const articleQuery =
+    supabase
+      .from('articles')
+      .select(
+        BASE_SELECT
+      )
+      .eq(
+        'status',
+        'published'
+      );
+
+  const gallerySelect = `
+    id,
+    title,
+    slug,
+    subtitle,
+    excerpt,
+    cover_image_url,
+    collaborator_id,
+    edition_id,
+    status,
+    views,
+    is_featured,
+    featured_order,
+    published_at,
+    created_at,
+
+    collaborators (
+      id,
+      name,
+      slug,
+      photo_url,
+      type,
+      section_name,
+      section_slug,
+      social_links
+    ),
+
+    editions (
+      id,
+      number,
+      name,
+      is_current
+    ),
+
+    gallery_photos (
+      id
+    )
+  `;
+
   const [
     featuredArticlesResult,
     latestArticlesResult,
     featuredGalleriesResult,
     latestGalleriesResult,
-    editionResult,
     convocatoriaResult,
     collaboratorsResult,
   ] = await Promise.allSettled([
-    supabase
-      .from('articles')
-      .select(BASE_SELECT)
-      .eq(
-        'status',
-        'published'
-      )
-      .eq(
-        'is_featured',
-        true
-      )
-      .order(
-        'featured_order',
-        {
-          ascending:
-            true,
+    currentEditionId
+      ? supabase
+          .from('articles')
+          .select(
+            BASE_SELECT
+          )
+          .eq(
+            'status',
+            'published'
+          )
+          .eq(
+            'edition_id',
+            currentEditionId
+          )
+          .eq(
+            'is_featured',
+            true
+          )
+          .order(
+            'featured_order',
+            {
+              ascending: true,
+              nullsFirst: false,
+            }
+          )
+          .limit(4)
+      : Promise.resolve({
+          data: [],
+          error: null,
+        }),
 
-          nullsFirst:
-            false,
-        }
-      )
-      .limit(12),
+    currentEditionId
+      ? articleQuery
+          .eq(
+            'edition_id',
+            currentEditionId
+          )
+          .order(
+            'published_at',
+            {
+              ascending: false,
+              nullsFirst: false,
+            }
+          )
+          .limit(100)
+      : Promise.resolve({
+          data: [],
+          error: null,
+        }),
 
-    supabase
-      .from('articles')
-      .select(BASE_SELECT)
-      .eq(
-        'status',
-        'published'
-      )
-      .order(
-        'published_at',
-        {
-          ascending:
-            false,
+    currentEditionId
+      ? supabase
+          .from('galleries')
+          .select(
+            gallerySelect
+          )
+          .eq(
+            'status',
+            'published'
+          )
+          .eq(
+            'edition_id',
+            currentEditionId
+          )
+          .eq(
+            'is_featured',
+            true
+          )
+          .order(
+            'featured_order',
+            {
+              ascending: true,
+              nullsFirst: false,
+            }
+          )
+          .limit(4)
+      : Promise.resolve({
+          data: [],
+          error: null,
+        }),
 
-          nullsFirst:
-            false,
-        }
-      )
-      .limit(50),
-
-    supabase
-      .from('galleries')
-      .select(`
-        id,
-        title,
-        slug,
-        subtitle,
-        excerpt,
-        cover_image_url,
-        collaborator_id,
-        edition_id,
-        status,
-        views,
-        is_featured,
-        featured_order,
-        published_at,
-        created_at,
-
-        collaborators (
-          id,
-          name,
-          slug,
-          photo_url,
-          type,
-          section_name,
-          section_slug,
-          social_links
-        ),
-
-        editions (
-          id,
-          number,
-          name
-        ),
-
-        gallery_photos (
-          id
-        )
-      `)
-      .eq(
-        'status',
-        'published'
-      )
-      .eq(
-        'is_featured',
-        true
-      )
-      .order(
-        'featured_order',
-        {
-          ascending:
-            true,
-
-          nullsFirst:
-            false,
-        }
-      )
-      .limit(12),
-
-    supabase
-      .from('galleries')
-      .select(`
-        id,
-        title,
-        slug,
-        subtitle,
-        excerpt,
-        cover_image_url,
-        collaborator_id,
-        edition_id,
-        status,
-        views,
-        is_featured,
-        featured_order,
-        published_at,
-        created_at,
-
-        collaborators (
-          id,
-          name,
-          slug,
-          photo_url,
-          type,
-          section_name,
-          section_slug,
-          social_links
-        ),
-
-        editions (
-          id,
-          number,
-          name
-        ),
-
-        gallery_photos (
-          id
-        )
-      `)
-      .eq(
-        'status',
-        'published'
-      )
-      .order(
-        'published_at',
-        {
-          ascending:
-            false,
-
-          nullsFirst:
-            false,
-        }
-      )
-      .limit(50),
-
-    supabase
-      .from('editions')
-      .select('*')
-      .eq(
-        'is_current',
-        true
-      )
-      .maybeSingle(),
+    currentEditionId
+      ? supabase
+          .from('galleries')
+          .select(
+            gallerySelect
+          )
+          .eq(
+            'status',
+            'published'
+          )
+          .eq(
+            'edition_id',
+            currentEditionId
+          )
+          .order(
+            'published_at',
+            {
+              ascending: false,
+              nullsFirst: false,
+            }
+          )
+          .limit(100)
+      : Promise.resolve({
+          data: [],
+          error: null,
+        }),
 
     supabase
       .from('convocatorias')
@@ -609,8 +847,7 @@ const getHome = async () => {
       .order(
         'created_at',
         {
-          ascending:
-            false,
+          ascending: false,
         }
       )
       .limit(1)
@@ -628,8 +865,7 @@ const getHome = async () => {
       .order(
         'name',
         {
-          ascending:
-            true,
+          ascending: true,
         }
       )
       .limit(12),
@@ -699,30 +935,48 @@ const getHome = async () => {
         )
       : [];
 
+  const editionContents =
+    sortContentsByDate([
+      ...latestArticles,
+      ...latestGalleries,
+    ]);
+
+  const featured =
+    sortFeaturedContents([
+      ...featuredArticles,
+      ...featuredGalleries,
+    ]).slice(0, 4);
+
+  const mostRead =
+    [...editionContents]
+      .sort(
+        (
+          firstContent,
+          secondContent
+        ) =>
+          Number(
+            secondContent
+              .views ||
+            0
+          ) -
+          Number(
+            firstContent
+              .views ||
+            0
+          )
+      )
+      .slice(0, 5);
+
   const payload = {
-    featured:
-      sortFeaturedContents([
-        ...featuredArticles,
-        ...featuredGalleries,
-      ]).slice(0, 12),
+    featured,
 
     latest:
-      sortContentsByDate([
-        ...latestArticles,
-        ...latestGalleries,
-      ]).slice(0, 60),
+      editionContents,
+
+    mostRead,
 
     edition:
-      editionResult.status ===
-        'fulfilled' &&
-      !editionResult
-        .value
-        .error
-        ? editionResult
-            .value
-            .data ||
-          null
-        : null,
+      currentEdition,
 
     convocatoria:
       convocatoriaResult.status ===
@@ -819,6 +1073,20 @@ const create = async (body) => {
     category_ids
   );
 
+  await validateEditionHighlight({
+    editionId:
+      edition_id ||
+      null,
+
+    isFeatured:
+      Boolean(
+        is_featured
+      ),
+
+    featuredOrder:
+      featured_order,
+  });
+
   const slug =
     slugify(title) +
     '-' +
@@ -881,12 +1149,48 @@ const update = async (
   id,
   body
 ) => {
+  
   const {
     category_ids,
     tags,
     content_html,
     ...rest
   } = body;
+
+  await validateEditionHighlight({
+    editionId:
+      rest.edition_id ||
+      currentArticle
+        ?.edition_id ||
+      null,
+
+    isFeatured:
+      Object.prototype
+        .hasOwnProperty.call(
+          rest,
+          'is_featured'
+        )
+        ? Boolean(
+            rest.is_featured
+          )
+        : Boolean(
+            currentArticle
+              ?.is_featured
+          ),
+
+    featuredOrder:
+      Object.prototype
+        .hasOwnProperty.call(
+          rest,
+          'featured_order'
+        )
+        ? rest.featured_order
+        : currentArticle
+            ?.featured_order,
+
+    articleId:
+      id,
+  });
 
   if (
     category_ids !==

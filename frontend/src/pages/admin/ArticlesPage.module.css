@@ -1,4 +1,8 @@
-.page { max-width: 1100px; }
+.page {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+}
 
 /* ── Header ──────────────────────────────────────────── */
 .header {
@@ -161,6 +165,331 @@
   font-size: 12px;
   color: var(--color-gray-400);
   white-space: nowrap;
+}
+
+/* ── Carpetas por edición ────────────────────────────── */
+.foldersList {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.editionFolder {
+  overflow: hidden;
+
+  border:
+    1px solid
+    var(--color-gray-200);
+
+  border-radius:
+    var(--radius-md);
+
+  background:
+    white;
+
+  box-shadow:
+    var(--shadow-sm);
+}
+
+.folderHeader {
+  width: 100%;
+  min-height: 78px;
+
+  display: grid;
+
+  grid-template-columns:
+    24px
+    34px
+    minmax(0, 1fr)
+    auto;
+
+  align-items: center;
+  gap: 11px;
+
+  padding:
+    14px
+    18px;
+
+  border: none;
+  border-bottom:
+    1px solid
+    transparent;
+
+  color:
+    var(--color-primary);
+
+  background:
+    color-mix(
+      in srgb,
+      white 96%,
+      var(--color-accent) 4%
+    );
+
+  text-align: left;
+  cursor: pointer;
+
+  transition:
+    background-color
+    0.2s ease,
+    border-color
+    0.2s ease;
+}
+
+.folderHeader:hover {
+  background:
+    color-mix(
+      in srgb,
+      white 91%,
+      var(--color-accent) 9%
+    );
+}
+
+.folderHeader[aria-expanded='true'] {
+  border-bottom-color:
+    var(--color-gray-200);
+}
+
+.folderChevron,
+.folderIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.folderChevron {
+  color:
+    var(--color-gray-400);
+}
+
+.folderIcon {
+  color:
+    var(--color-accent);
+}
+
+.folderInformation {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.folderTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.folderTitleRow strong {
+  color:
+    var(--color-primary);
+
+  font-family:
+    var(--font-sans);
+
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 900;
+}
+
+.folderInformation small {
+  color:
+    var(--color-gray-400);
+
+  font-family:
+    var(--font-body);
+
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.currentEditionBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 21px;
+  padding: 4px 8px;
+
+  border-radius:
+    999px;
+
+  color:
+    white;
+
+  background:
+    var(--color-accent);
+
+  font-family:
+    var(--font-sans);
+
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 900;
+
+  letter-spacing:
+    0.8px;
+
+  text-transform:
+    uppercase;
+}
+
+.folderCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 28px;
+  padding: 5px 10px;
+
+  border:
+    1px solid
+    var(--color-gray-200);
+
+  border-radius:
+    999px;
+
+  color:
+    var(--color-gray-400);
+
+  background:
+    white;
+
+  font-family:
+    var(--font-sans);
+
+  font-size: 10px;
+  font-weight: 800;
+
+  white-space:
+    nowrap;
+}
+
+.folderContent {
+  background:
+    white;
+}
+
+.folderTableScroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.folderEmpty {
+  min-height: 120px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+
+  padding: 24px;
+
+  border:
+    1px dashed
+    var(--color-gray-200);
+
+  margin: 18px;
+
+  color:
+    var(--color-gray-400);
+
+  background:
+    var(--color-gray-100);
+}
+
+.folderEmpty > svg {
+  flex-shrink: 0;
+
+  color:
+    var(--color-accent);
+
+  opacity: 0.58;
+}
+
+.folderEmpty > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.folderEmpty strong {
+  color:
+    var(--color-primary);
+
+  font-family:
+    var(--font-sans);
+
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.folderEmpty span {
+  color:
+    var(--color-gray-400);
+
+  font-family:
+    var(--font-body);
+
+  font-size: 12px;
+}
+
+.folderEmptyButton {
+  min-height: 36px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  margin-left: auto;
+  padding: 8px 13px;
+
+  border:
+    1px solid
+    var(--color-accent);
+
+  border-radius:
+    var(--radius-sm);
+
+  color:
+    white;
+
+  background:
+    var(--color-accent);
+
+  text-decoration:
+    none;
+
+  font-family:
+    var(--font-sans);
+
+  font-size: 9px;
+  font-weight: 900;
+
+  letter-spacing:
+    0.7px;
+
+  text-transform:
+    uppercase;
+
+  transition:
+    background-color
+    0.2s ease,
+    border-color
+    0.2s ease;
+}
+
+.folderEmptyButton:hover {
+  color:
+    white;
+
+  background:
+    var(--color-accent-light);
+
+  border-color:
+    var(--color-accent-light);
 }
 
 /* ── Tabla ───────────────────────────────────────────── */
@@ -571,7 +900,8 @@
 
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 1100px) {
-  .tableWrap {
+  .tableWrap,
+  .folderTableScroll {
     overflow-x: auto;
   }
 
@@ -609,7 +939,7 @@
     min-width: 100px;
   }
 
-    .headerActions {
+  .headerActions {
     width: 100%;
     justify-content: stretch;
   }
@@ -620,4 +950,58 @@
     justify-content: center;
   }
 
+  .folderHeader {
+    grid-template-columns:
+      20px
+      26px
+      minmax(0, 1fr);
+
+    gap: 8px;
+
+    padding:
+      12px;
+  }
+
+  .folderCount {
+    grid-column:
+      3;
+
+    width:
+      fit-content;
+
+    margin-top:
+      3px;
+  }
+
+  .folderTitleRow {
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+
+    gap: 5px;
+  }
+
+  .folderEmpty {
+    align-items:
+      center;
+
+    flex-direction:
+      column;
+
+    margin:
+      12px;
+
+    text-align:
+      center;
+  }
+
+  .folderEmptyButton {
+    width:
+      100%;
+
+    margin-left:
+      0;
+  }
 }

@@ -46,7 +46,8 @@ const GALLERY_BASE_SELECT = `
     id,
     number,
     name,
-    cover_image_url
+    cover_image_url,
+    is_current
   ),
 
   gallery_photos (
@@ -96,7 +97,8 @@ const GALLERY_COMPLETE_SELECT = `
     number,
     name,
     description,
-    cover_image_url
+    cover_image_url,
+    is_current
   ),
 
   gallery_photos (
@@ -344,6 +346,127 @@ const attachPhotosCount =
     );
   };
 
+const validateEditionHighlight =
+  async ({
+    editionId,
+    isFeatured,
+    featuredOrder,
+    galleryId = null,
+  }) => {
+    if (!isFeatured) {
+      return;
+    }
+
+    if (!editionId) {
+      throw createHttpError(
+        400,
+        'Selecciona una edición antes de marcar la galería como highlight.'
+      );
+    }
+
+    const order =
+      Number(
+        featuredOrder
+      );
+
+    if (
+      !Number.isInteger(order) ||
+      order < 1 ||
+      order > 4
+    ) {
+      throw createHttpError(
+        400,
+        'El orden del highlight debe estar entre 1 y 4.'
+      );
+    }
+
+    let galleriesQuery =
+      supabase
+        .from('galleries')
+        .select(
+          'id, featured_order'
+        )
+        .eq(
+          'edition_id',
+          editionId
+        )
+        .eq(
+          'is_featured',
+          true
+        );
+
+    if (galleryId) {
+      galleriesQuery =
+        galleriesQuery.neq(
+          'id',
+          galleryId
+        );
+    }
+
+    const [
+      articlesResult,
+      galleriesResult,
+    ] = await Promise.all([
+      supabase
+        .from('articles')
+        .select(
+          'id, featured_order'
+        )
+        .eq(
+          'edition_id',
+          editionId
+        )
+        .eq(
+          'is_featured',
+          true
+        ),
+
+      galleriesQuery,
+    ]);
+
+    if (
+      articlesResult.error
+    ) {
+      throw articlesResult.error;
+    }
+
+    if (
+      galleriesResult.error
+    ) {
+      throw galleriesResult.error;
+    }
+
+    const currentHighlights = [
+      ...(articlesResult.data || []),
+      ...(galleriesResult.data || []),
+    ];
+
+    if (
+      currentHighlights.length >=
+      4
+    ) {
+      throw createHttpError(
+        400,
+        'Esta edición ya tiene cuatro highlights. Desmarca uno antes de agregar otro.'
+      );
+    }
+
+    const duplicatedOrder =
+      currentHighlights.some(
+        item =>
+          Number(
+            item.featured_order
+          ) === order
+      );
+
+    if (duplicatedOrder) {
+      throw createHttpError(
+        400,
+        `La posición ${order} ya está ocupada por otro highlight de esta edición.`
+      );
+    }
+  };
+
 const validateCollaborator =
   async collaboratorId => {
     if (!collaboratorId) {
@@ -470,6 +593,46 @@ const buildGalleryPayload =
         currentGallery?.id || null
       );
 
+    const resolvedEditionId =
+      body.edition_id ||
+      currentGallery
+        ?.edition_id ||
+      null;
+
+    const resolvedIsFeatured =
+      normalizeBoolean(
+        body.is_featured,
+        currentGallery
+          ?.is_featured ||
+          false
+      );
+
+    const resolvedFeaturedOrder =
+      resolvedIsFeatured
+        ? Number(
+            body.featured_order ??
+            currentGallery
+              ?.featured_order ??
+            0
+          )
+        : null;
+
+    await validateEditionHighlight({
+      editionId:
+        resolvedEditionId,
+
+      isFeatured:
+        resolvedIsFeatured,
+
+      featuredOrder:
+        resolvedFeaturedOrder,
+
+      galleryId:
+        currentGallery
+          ?.id ||
+        null,
+    });
+
     const seed =
       normalizeNullableString(
         body.museum_seed
@@ -508,32 +671,16 @@ const buildGalleryPayload =
         collaboratorId,
 
       edition_id:
-        body.edition_id ||
-        null,
+        resolvedEditionId,
 
       max_photos:
         maxPhotos,
 
       is_featured:
-        normalizeBoolean(
-          body.is_featured,
-          currentGallery
-            ?.is_featured ||
-            false
-        ),
+        resolvedIsFeatured,
 
       featured_order:
-        normalizeBoolean(
-          body.is_featured,
-          currentGallery
-            ?.is_featured ||
-            false
-        )
-          ? Number(
-              body.featured_order ||
-              0
-            )
-          : null,
+        resolvedFeaturedOrder,
 
       museum_seed:
         seed,
@@ -631,6 +778,7 @@ const getAll = async ({
   limit = 12,
   status = 'published',
   search = '',
+  editionId = 'all',
 } = {}) => {
   const normalizedPage =
     normalizePositiveInteger(
@@ -673,6 +821,24 @@ const getAll = async ({
     query = query.eq(
       'status',
       status
+    );
+  }
+
+  if (
+    editionId ===
+    'without-edition'
+  ) {
+    query = query.is(
+      'edition_id',
+      null
+    );
+  } else if (
+    editionId &&
+    editionId !== 'all'
+  ) {
+    query = query.eq(
+      'edition_id',
+      editionId
     );
   }
 

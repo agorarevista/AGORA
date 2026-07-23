@@ -15,10 +15,13 @@ import {
 
 import {
   Archive,
+  ChevronDown,
+  ChevronRight,
   Edit,
   Eye,
   FileImage,
   Filter,
+  FolderOpen,
   Images,
   Plus,
   Search,
@@ -34,6 +37,10 @@ import {
 } from '../../api/galleries.api';
 
 import {
+  getEditions,
+} from '../../api/editions.api';
+
+import {
   formatDate,
 } from '../../utils/formatDate';
 
@@ -42,7 +49,7 @@ import useConfirm from '../../hooks/useConfirm';
 
 import styles from './GalleriesPage.module.css';
 
-const LIMIT = 12;
+const LIMIT = 100;
 
 const STATUS_LABELS = {
   draft: {
@@ -80,6 +87,11 @@ export default function GalleriesPage() {
   ] = useState([]);
 
   const [
+    editions,
+    setEditions,
+  ] = useState([]);
+
+  const [
     loading,
     setLoading,
   ] = useState(true);
@@ -87,6 +99,11 @@ export default function GalleriesPage() {
   const [
     statusFilter,
     setStatusFilter,
+  ] = useState('all');
+
+  const [
+    editionFilter,
+    setEditionFilter,
   ] = useState('all');
 
   const [
@@ -109,38 +126,91 @@ export default function GalleriesPage() {
     setProcessingId,
   ] = useState(null);
 
+  const [
+    openFolders,
+    setOpenFolders,
+  ] = useState({});
+
   const loadGalleries =
     async () => {
       setLoading(true);
 
       try {
-        const response =
-          await getAdminGalleries({
-            page,
-            limit: LIMIT,
-            status:
-              statusFilter,
-          });
+        const [
+          galleryResponse,
+          editionResponse,
+        ] =
+          await Promise.all([
+            getAdminGalleries({
+              page,
+
+              limit:
+                LIMIT,
+
+              status:
+                statusFilter,
+
+              edition_id:
+                editionFilter,
+            }),
+
+            getEditions(),
+          ]);
+
+        const galleryList =
+          Array.isArray(
+            galleryResponse
+              ?.data
+          )
+            ? galleryResponse.data
+            : Array.isArray(
+                galleryResponse
+              )
+              ? galleryResponse
+              : [];
+
+        const editionList =
+          Array.isArray(
+            editionResponse
+          )
+            ? editionResponse
+            : Array.isArray(
+                editionResponse
+                  ?.data
+              )
+              ? editionResponse.data
+              : [];
 
         setGalleries(
-          Array.isArray(
-            response?.data
-          )
-            ? response.data
-            : []
+          galleryList
+        );
+
+        setEditions(
+          editionList
         );
 
         setTotal(
           Number(
-            response?.total ||
+            galleryResponse
+              ?.total ||
+            galleryList.length ||
             0
           )
         );
       } catch (error) {
-        console.error(error);
+        console.error(
+          'ERROR cargando galerías y ediciones:',
+          error
+        );
 
         alert.error(
           'Error',
+          error?.response
+            ?.data
+            ?.error ||
+          error?.response
+            ?.data
+            ?.message ||
           'No se pudieron cargar las galerías'
         );
       } finally {
@@ -153,6 +223,7 @@ export default function GalleriesPage() {
   }, [
     page,
     statusFilter,
+    editionFilter,
   ]);
 
   const filteredGalleries =
@@ -178,30 +249,245 @@ export default function GalleriesPage() {
                 'es-MX'
               );
 
-          const author =
-            String(
-              gallery
-                .collaborators
-                ?.name || ''
-            )
-              .toLocaleLowerCase(
-                'es-MX'
-              );
+const author =
+  String(
+    gallery
+      .collaborators
+      ?.name || ''
+  )
+    .toLocaleLowerCase(
+      'es-MX'
+    );
 
-          return (
-            title.includes(
-              normalizedSearch
-            ) ||
-            author.includes(
-              normalizedSearch
-            )
-          );
+const editionName =
+  String(
+    gallery
+      .editions
+      ?.name || ''
+  )
+    .toLocaleLowerCase(
+      'es-MX'
+    );
+
+const editionNumber =
+  String(
+    gallery
+      .editions
+      ?.number || ''
+  )
+    .toLocaleLowerCase(
+      'es-MX'
+    );
+
+return (
+  title.includes(
+    normalizedSearch
+  ) ||
+  author.includes(
+    normalizedSearch
+  ) ||
+  editionName.includes(
+    normalizedSearch
+  ) ||
+  editionNumber.includes(
+    normalizedSearch
+  )
+);
         }
       );
     }, [
       galleries,
       search,
     ]);
+
+  const groupedGalleries =
+    useMemo(() => {
+      const visibleEditions =
+        editionFilter === 'all'
+          ? [...editions]
+          : editionFilter ===
+              'without-edition'
+            ? []
+            : editions.filter(
+                edition =>
+                  String(
+                    edition.id
+                  ) ===
+                  String(
+                    editionFilter
+                  )
+              );
+
+      const editionGroups =
+        visibleEditions
+          .sort(
+            (
+              firstEdition,
+              secondEdition
+            ) => {
+              const firstIsCurrent =
+                Boolean(
+                  firstEdition
+                    .is_current
+                );
+
+              const secondIsCurrent =
+                Boolean(
+                  secondEdition
+                    .is_current
+                );
+
+              if (
+                firstIsCurrent !==
+                secondIsCurrent
+              ) {
+                return firstIsCurrent
+                  ? -1
+                  : 1;
+              }
+
+              return (
+                Number(
+                  secondEdition
+                    .number ||
+                  0
+                ) -
+                Number(
+                  firstEdition
+                    .number ||
+                  0
+                )
+              );
+            }
+          )
+          .map(
+            edition => {
+              const editionGalleries =
+                filteredGalleries.filter(
+                  gallery => {
+                    const galleryEditionId =
+                      gallery
+                        .edition_id ||
+                      gallery
+                        .editions
+                        ?.id ||
+                      null;
+
+                    return (
+                      String(
+                        galleryEditionId
+                      ) ===
+                      String(
+                        edition.id
+                      )
+                    );
+                  }
+                );
+
+              return {
+                key:
+                  String(
+                    edition.id
+                  ),
+
+                edition,
+
+                galleries:
+                  editionGalleries,
+              };
+            }
+          );
+
+      const galleriesWithoutEdition =
+        filteredGalleries.filter(
+          gallery =>
+            !gallery
+              .edition_id &&
+            !gallery
+              .editions
+              ?.id
+        );
+
+      if (
+        editionFilter !== 'all' &&
+        editionFilter !==
+          'without-edition'
+      ) {
+        return editionGroups;
+      }
+
+      return [
+        ...editionGroups,
+
+        {
+          key:
+            'without-edition',
+
+          edition:
+            null,
+
+          galleries:
+            galleriesWithoutEdition,
+        },
+      ];
+    }, [
+      filteredGalleries,
+      editions,
+      editionFilter,
+    ]);
+
+  useEffect(() => {
+    setOpenFolders(
+      current => {
+        const next = {
+          ...current,
+        };
+
+        groupedGalleries.forEach(
+          (
+            group,
+            index
+          ) => {
+            if (
+              Object.prototype
+                .hasOwnProperty
+                .call(
+                  next,
+                  group.key
+                )
+            ) {
+              return;
+            }
+
+            next[group.key] =
+              Boolean(
+                group.edition
+                  ?.is_current
+              ) ||
+              index === 0;
+          }
+        );
+
+        return next;
+      }
+    );
+  }, [
+    groupedGalleries,
+  ]);
+
+  const toggleFolder =
+    folderKey => {
+      setOpenFolders(
+        current => ({
+          ...current,
+
+          [folderKey]:
+            !current[
+              folderKey
+            ],
+        })
+      );
+    };
 
   const handlePublish =
     async gallery => {
@@ -454,42 +740,99 @@ export default function GalleriesPage() {
           />
         </div>
 
-        <div
-          className={
-            styles.statusFilter
-          }
+<div
+  className={
+    styles.statusFilter
+  }
+>
+  <FolderOpen size={14} />
+
+  <select
+    value={
+      editionFilter
+    }
+    onChange={event => {
+      setEditionFilter(
+        event.target.value
+      );
+
+      setPage(1);
+    }}
+  >
+    <option value="all">
+      Todas las ediciones
+    </option>
+
+    {editions
+      .slice()
+      .sort(
+        (
+          firstEdition,
+          secondEdition
+        ) =>
+          Number(
+            secondEdition.number ||
+            0
+          ) -
+          Number(
+            firstEdition.number ||
+            0
+          )
+      )
+      .map(edition => (
+        <option
+          key={edition.id}
+          value={edition.id}
         >
-          <Filter size={14} />
+          Edición № {edition.number}
+          {edition.name
+            ? ` — ${edition.name}`
+            : ''}
+        </option>
+      ))}
 
-          <select
-            value={
-              statusFilter
-            }
-            onChange={event => {
-              setStatusFilter(
-                event.target.value
-              );
+    <option value="without-edition">
+      Sin edición
+    </option>
+  </select>
+</div>
 
-              setPage(1);
-            }}
-          >
-            <option value="all">
-              Todos los estados
-            </option>
+<div
+  className={
+    styles.statusFilter
+  }
+>
+  <Filter size={14} />
 
-            <option value="draft">
-              Borradores
-            </option>
+  <select
+    value={
+      statusFilter
+    }
+    onChange={event => {
+      setStatusFilter(
+        event.target.value
+      );
 
-            <option value="published">
-              Publicadas
-            </option>
+      setPage(1);
+    }}
+  >
+    <option value="all">
+      Todos los estados
+    </option>
 
-            <option value="archived">
-              Archivadas
-            </option>
-          </select>
-        </div>
+    <option value="draft">
+      Borradores
+    </option>
+
+    <option value="published">
+      Publicadas
+    </option>
+
+    <option value="archived">
+      Archivadas
+    </option>
+  </select>
+</div>
 
         <div
           className={
@@ -505,13 +848,21 @@ export default function GalleriesPage() {
 
       {loading ? (
         <GallerySkeleton />
-      ) : filteredGalleries.length ===
-        0 ? (
+      ) : search.trim() &&
+        filteredGalleries.length ===
+          0 ? (
         <EmptyState
           hasSearch={
-            Boolean(
-              search.trim()
-            )
+            true
+          }
+        />
+      ) : editions.length ===
+          0 &&
+        filteredGalleries.length ===
+          0 ? (
+        <EmptyState
+          hasSearch={
+            false
           }
         />
       ) : (
@@ -523,279 +874,213 @@ export default function GalleriesPage() {
             opacity: 1,
           }}
           className={
-            styles.galleryGrid
+            styles.folderList
           }
         >
-          {filteredGalleries.map(
-            (
-              gallery,
-              index
-            ) => {
-              const status =
-                STATUS_LABELS[
-                  gallery.status
-                ] ||
-                STATUS_LABELS
-                  .draft;
+          {groupedGalleries.map(
+            group => {
+              const isOpen =
+                Boolean(
+                  openFolders[
+                    group.key
+                  ]
+                );
 
-              const isProcessing =
-                processingId ===
-                gallery.id;
+              const editionLabel =
+                group.edition
+                  ? `Edición № ${group.edition.number}`
+                  : 'Sin edición';
 
               return (
-                <motion.article
-                  key={gallery.id}
-                  initial={{
-                    opacity: 0,
-                    y: 16,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  transition={{
-                    delay:
-                      Math.min(
-                        index,
-                        8
-                      ) * 0.04,
-                  }}
+                <section
+                  key={
+                    group.key
+                  }
                   className={
-                    styles.card
+                    styles.folder
                   }
                 >
-                  <div
+                  <button
+                    type="button"
                     className={
-                      styles.cardMedia
+                      styles.folderHeader
+                    }
+                    onClick={() => {
+                      toggleFolder(
+                        group.key
+                      );
+                    }}
+                    aria-expanded={
+                      isOpen
                     }
                   >
-                    {gallery.cover_image_url ? (
-                      <img
-                        src={
-                          gallery.cover_image_url
-                        }
-                        alt={
-                          gallery.title
-                        }
-                      />
-                    ) : (
-                      <div
-                        className={
-                          styles.cardPlaceholder
-                        }
-                      >
-                        <FileImage
-                          size={30}
+                    <span
+                      className={
+                        styles.folderChevron
+                      }
+                    >
+                      {isOpen ? (
+                        <ChevronDown
+                          size={18}
                         />
-                      </div>
-                    )}
+                      ) : (
+                        <ChevronRight
+                          size={18}
+                        />
+                      )}
+                    </span>
 
                     <span
                       className={
-                        styles.statusBadge
+                        styles.folderIcon
                       }
-                      style={{
-                        color:
-                          status.color,
-
-                        background:
-                          status.background,
-                      }}
                     >
-                      {status.label}
+                      <FolderOpen
+                        size={20}
+                      />
                     </span>
 
-                    <div
+                    <span
                       className={
-                        styles.photoCount
+                        styles.folderInfo
                       }
                     >
-                      <Images
-                        size={13}
-                      />
-
-                      <span>
-                        {
-                          gallery.photos_count ||
-                          0
-                        }
-                      </span>
-                    </div>
-                  </div>
-
-                  <div
-                    className={
-                      styles.cardBody
-                    }
-                  >
-                    <h2
-                      className={
-                        styles.cardTitle
-                      }
-                    >
-                      {gallery.title}
-                    </h2>
-
-                    {gallery.subtitle && (
-                      <p
+                      <span
                         className={
-                          styles.cardSubtitle
+                          styles.folderTitleRow
                         }
                       >
-                        {
-                          gallery.subtitle
-                        }
-                      </p>
-                    )}
+                        <strong>
+                          {editionLabel}
+                        </strong>
 
-                    <div
-                      className={
-                        styles.cardMeta
-                      }
-                    >
-                      <span>
-                        {gallery
-                          .collaborators
-                          ?.name ||
-                          'Sin autor'}
-                      </span>
-
-                      <span>·</span>
-
-                      <span>
-                        {formatDate(
-                          gallery
-                            .published_at ||
-                          gallery
-                            .created_at
-                        )}
-                      </span>
-                    </div>
-
-                    <div
-                      className={
-                        styles.cardFooter
-                      }
-                    >
-                      <div
-                        className={
-                          styles.views
-                        }
-                      >
-                        <Eye
-                          size={13}
-                        />
-
-                        <span>
-                          {
-                            gallery.views ||
-                            0
-                          }
-                        </span>
-                      </div>
-
-                      <div
-                        className={
-                          styles.actions
-                        }
-                      >
-                        {gallery.status ===
-                          'published' && (
-                          <a
-                            href={`/galeria/${gallery.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        {group.edition
+                          ?.is_current && (
+                          <span
                             className={
-                              styles.actionButton
+                              styles.currentEditionBadge
                             }
-                            title="Ver galería"
                           >
-                            <Eye
-                              size={15}
-                            />
-                          </a>
+                            Edición actual
+                          </span>
                         )}
+                      </span>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigate(
-                              `/admin/galerias/editar/${gallery.id}`
-                            );
-                          }}
+                      {group.edition
+                        ?.name && (
+                        <small>
+                          {
+                            group
+                              .edition
+                              .name
+                          }
+                        </small>
+                      )}
+                    </span>
+
+                    <span
+                      className={
+                        styles.folderCount
+                      }
+                    >
+                      {
+                        group
+                          .galleries
+                          .length
+                      }{' '}
+                      {group
+                        .galleries
+                        .length === 1
+                        ? 'galería'
+                        : 'galerías'}
+                    </span>
+                  </button>
+
+                  {isOpen && (
+                    <div
+                      className={
+                        styles.folderContent
+                      }
+                    >
+                      {group.galleries
+                        .length >
+                      0 ? (
+                        <div
                           className={
-                            styles.actionButton
+                            styles.galleryGrid
                           }
-                          title="Editar galería"
                         >
-                          <Edit
-                            size={15}
-                          />
-                        </button>
-
-                        {gallery.status ===
-                          'draft' && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handlePublish(
-                                gallery
-                              );
-                            }}
-                            disabled={
-                              isProcessing
-                            }
-                            className={`${styles.actionButton} ${styles.publishAction}`}
-                            title="Publicar galería"
-                          >
-                            <Send
-                              size={15}
-                            />
-                          </button>
-                        )}
-
-                        {gallery.status ===
-                          'published' && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleArchive(
-                                gallery
-                              );
-                            }}
-                            disabled={
-                              isProcessing
-                            }
-                            className={`${styles.actionButton} ${styles.archiveAction}`}
-                            title="Archivar galería"
-                          >
-                            <Archive
-                              size={15}
-                            />
-                          </button>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handlePermanentDelete(
-                              gallery
-                            );
-                          }}
-                          disabled={
-                            isProcessing
+                          {group.galleries.map(
+                            (
+                              gallery,
+                              index
+                            ) => (
+                              <GalleryAdminCard
+                                key={
+                                  gallery.id
+                                }
+                                gallery={
+                                  gallery
+                                }
+                                index={
+                                  index
+                                }
+                                processingId={
+                                  processingId
+                                }
+                                navigate={
+                                  navigate
+                                }
+                                onPublish={
+                                  handlePublish
+                                }
+                                onArchive={
+                                  handleArchive
+                                }
+                                onDelete={
+                                  handlePermanentDelete
+                                }
+                              />
+                            )
+                          )}
+                        </div>
+                      ) : (
+                        <div
+                          className={
+                            styles.folderEmpty
                           }
-                          className={`${styles.actionButton} ${styles.deleteAction}`}
-                          title="Eliminar permanentemente"
                         >
-                          <Trash2
-                            size={15}
+                          <Images
+                            size={28}
                           />
-                        </button>
-                      </div>
+
+                          <div>
+                            <strong>
+                              Sin galerías
+                            </strong>
+
+                            <span>
+                              No hay álbumes relacionados con esta edición.
+                            </span>
+                          </div>
+
+                          <Link
+                            to="/admin/galerias/nueva"
+                            className={
+                              styles.folderEmptyButton
+                            }
+                          >
+                            <Plus
+                              size={14}
+                            />
+
+                            Nueva galería
+                          </Link>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </motion.article>
+                  )}
+                </section>
               );
             }
           )}
@@ -852,6 +1137,271 @@ export default function GalleriesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function GalleryAdminCard({
+  gallery,
+  index,
+  processingId,
+  navigate,
+  onPublish,
+  onArchive,
+  onDelete,
+}) {
+  const status =
+    STATUS_LABELS[
+      gallery.status
+    ] ||
+    STATUS_LABELS.draft;
+
+  const isProcessing =
+    processingId ===
+    gallery.id;
+
+  return (
+    <motion.article
+      initial={{
+        opacity: 0,
+        y: 16,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      transition={{
+        delay:
+          Math.min(
+            index,
+            8
+          ) * 0.04,
+      }}
+      className={
+        styles.card
+      }
+    >
+      <div
+        className={
+          styles.cardMedia
+        }
+      >
+        {gallery.cover_image_url ? (
+          <img
+            src={
+              gallery.cover_image_url
+            }
+            alt={
+              gallery.title
+            }
+          />
+        ) : (
+          <div
+            className={
+              styles.cardPlaceholder
+            }
+          >
+            <FileImage
+              size={30}
+            />
+          </div>
+        )}
+
+        <span
+          className={
+            styles.statusBadge
+          }
+          style={{
+            color:
+              status.color,
+
+            background:
+              status.background,
+          }}
+        >
+          {status.label}
+        </span>
+
+        <div
+          className={
+            styles.photoCount
+          }
+        >
+          <Images
+            size={13}
+          />
+
+          <span>
+            {
+              gallery.photos_count ||
+              0
+            }
+          </span>
+        </div>
+      </div>
+
+      <div
+        className={
+          styles.cardBody
+        }
+      >
+        <h2
+          className={
+            styles.cardTitle
+          }
+        >
+          {gallery.title}
+        </h2>
+
+        {gallery.subtitle && (
+          <p
+            className={
+              styles.cardSubtitle
+            }
+          >
+            {gallery.subtitle}
+          </p>
+        )}
+
+        <div
+          className={
+            styles.cardMeta
+          }
+        >
+          <span>
+            {gallery
+              .collaborators
+              ?.name ||
+              'Sin autor'}
+          </span>
+
+          <span>·</span>
+
+          <span>
+            {formatDate(
+              gallery.published_at ||
+              gallery.created_at
+            )}
+          </span>
+        </div>
+
+        <div
+          className={
+            styles.cardFooter
+          }
+        >
+          <div
+            className={
+              styles.views
+            }
+          >
+            <Eye
+              size={13}
+            />
+
+            <span>
+              {
+                gallery.views ||
+                0
+              }
+            </span>
+          </div>
+
+          <div
+            className={
+              styles.actions
+            }
+          >
+            {gallery.status ===
+              'published' && (
+              <a
+                href={`/galeria/${gallery.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={
+                  styles.actionButton
+                }
+                title="Ver galería"
+              >
+                <Eye size={15} />
+              </a>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                navigate(
+                  `/admin/galerias/editar/${gallery.id}`
+                );
+              }}
+              className={
+                styles.actionButton
+              }
+              title="Editar galería"
+            >
+              <Edit size={15} />
+            </button>
+
+            {gallery.status ===
+              'draft' && (
+              <button
+                type="button"
+                onClick={() => {
+                  onPublish(
+                    gallery
+                  );
+                }}
+                disabled={
+                  isProcessing
+                }
+                className={`${styles.actionButton} ${styles.publishAction}`}
+                title="Publicar galería"
+              >
+                <Send size={15} />
+              </button>
+            )}
+
+            {gallery.status ===
+              'published' && (
+              <button
+                type="button"
+                onClick={() => {
+                  onArchive(
+                    gallery
+                  );
+                }}
+                disabled={
+                  isProcessing
+                }
+                className={`${styles.actionButton} ${styles.archiveAction}`}
+                title="Archivar galería"
+              >
+                <Archive
+                  size={15}
+                />
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                onDelete(
+                  gallery
+                );
+              }}
+              disabled={
+                isProcessing
+              }
+              className={`${styles.actionButton} ${styles.deleteAction}`}
+              title="Eliminar permanentemente"
+            >
+              <Trash2
+                size={15}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.article>
   );
 }
 

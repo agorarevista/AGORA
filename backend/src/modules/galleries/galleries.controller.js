@@ -15,6 +15,7 @@ const getAllPublic = async (
       page,
       limit,
       search,
+      edition_id,
     } = req.query;
 
     const result =
@@ -23,6 +24,9 @@ const getAllPublic = async (
         limit,
         search,
         status: 'published',
+
+        editionId:
+          edition_id,
       });
 
     return res.json(result);
@@ -46,15 +50,21 @@ const getAllAdmin = async (
       limit,
       status,
       search,
+      edition_id,
     } = req.query;
 
     const result =
       await service.getAll({
         page,
         limit,
+
         status:
           status || 'all',
+
         search,
+
+        editionId:
+          edition_id,
       });
 
     return res.json(result);

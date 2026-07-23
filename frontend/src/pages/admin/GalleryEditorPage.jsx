@@ -318,7 +318,7 @@ export default function GalleryEditorPage() {
   const [
     featuredOrder,
     setFeaturedOrder,
-  ] = useState(0);
+  ] = useState(1);
 
   const [
     museumSeed,
@@ -569,7 +569,7 @@ export default function GalleryEditorPage() {
           setFeaturedOrder(
             Number(
               gallery.featured_order ||
-              0
+              1
             )
           );
 
@@ -2380,7 +2380,8 @@ export default function GalleryEditorPage() {
 
                   <input
                     type="number"
-                    min="0"
+                    min="1"
+                    max="4"
                     value={
                       featuredOrder
                     }
