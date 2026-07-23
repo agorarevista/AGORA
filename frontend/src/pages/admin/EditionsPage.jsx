@@ -8,8 +8,49 @@ import { formatDate } from '../../utils/formatDate';
 import styles from './EditionsPage.module.css';
 
 const EMPTY_FORM = {
-  number: '', name: '', description: '',
-  cover_image_url: '', published_at: '', is_current: false, is_special: false
+  number: '',
+  name: '',
+  description: '',
+  cover_image_url: '',
+  published_at: '',
+  is_current: false,
+  is_special: false,
+};
+
+const dateInputToISOString = dateValue => {
+  if (!dateValue) {
+    return null;
+  }
+
+  const [
+    year,
+    month,
+    day,
+  ] = dateValue
+    .split('-')
+    .map(Number);
+
+  if (
+    !year ||
+    !month ||
+    !day
+  ) {
+    return null;
+  }
+
+  /*
+   * Se guarda a mediodía local para evitar
+   * que la conversión UTC cambie el día.
+   */
+  return new Date(
+    year,
+    month - 1,
+    day,
+    12,
+    0,
+    0,
+    0
+  ).toISOString();
 };
 
 export default function EditionsPage() {
@@ -39,17 +80,40 @@ export default function EditionsPage() {
     setShowForm(true);
   };
 
-  const openEdit = (ed) => {
+  const openEdit = ed => {
     setEditing(ed.id);
-setForm({
-      number: ed.number,
-      name: ed.name || '',
-      description: ed.description || '',
-      cover_image_url: ed.cover_image_url || '',
-      published_at: ed.published_at?.split('T')[0] || '',
-      is_current: ed.is_current || false,
-      is_special: ed.is_special || false,
+
+    setForm({
+      number:
+        ed.number,
+
+      name:
+        ed.name || '',
+
+      description:
+        ed.description || '',
+
+      cover_image_url:
+        ed.cover_image_url || '',
+
+      published_at:
+        ed.published_at
+          ? String(
+              ed.published_at
+            ).slice(0, 10)
+          : '',
+
+      is_current:
+        Boolean(
+          ed.is_current
+        ),
+
+      is_special:
+        Boolean(
+          ed.is_special
+        ),
     });
+
     setShowForm(true);
   };
 
@@ -66,28 +130,128 @@ setForm({
   };
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.number) {
-      alert.warning('Faltan datos', 'Número y nombre son requeridos');
+    if (
+      !form.name.trim() ||
+      !form.number
+    ) {
+      alert.warning(
+        'Faltan datos',
+        'Número y nombre son requeridos'
+      );
+
       return;
     }
+
     setSaving(true);
+
     try {
       const payload = {
-        ...form,
-        number: parseInt(form.number),
-        published_at: form.published_at ? new Date(form.published_at).toISOString() : null,
+        number:
+          Number.parseInt(
+            form.number,
+            10
+          ),
+
+        name:
+          form.name.trim(),
+
+        description:
+          form.description.trim(),
+
+        cover_image_url:
+          form.cover_image_url.trim(),
+
+        published_at:
+          dateInputToISOString(
+            form.published_at
+          ),
+
+        is_special:
+          Boolean(
+            form.is_special
+          ),
       };
+
+      let savedEditionId =
+        editing;
+
       if (editing) {
-        await updateEdition(editing, payload);
-        alert.success('Actualizada', 'Edición actualizada');
+        await updateEdition(
+          editing,
+          payload
+        );
       } else {
-        await createEdition(payload);
-        alert.success('Creada', 'Edición creada correctamente');
+        const createdEdition =
+          await createEdition(
+            payload
+          );
+
+        savedEditionId =
+          createdEdition?.id ||
+          createdEdition?.data?.id;
+
+        if (!savedEditionId) {
+          throw new Error(
+            'La API no devolvió el ID de la edición creada'
+          );
+        }
       }
+
+      const wasCurrent =
+        Boolean(
+          editions.find(
+            edition =>
+              String(edition.id) ===
+              String(savedEditionId)
+          )?.is_current
+        );
+
+      if (
+        form.is_current &&
+        !wasCurrent
+      ) {
+        await setCurrentEdition(
+          savedEditionId
+        );
+      }
+
+      if (
+        editing &&
+        wasCurrent &&
+        !form.is_current
+      ) {
+        await updateEdition(
+          savedEditionId,
+          {
+            is_current: false,
+          }
+        );
+      }
+
+      alert.success(
+        editing
+          ? 'Actualizada'
+          : 'Creada',
+
+        form.is_current
+          ? 'La edición fue guardada y establecida como edición actual'
+          : editing
+            ? 'Edición actualizada correctamente'
+            : 'Edición creada correctamente'
+      );
+
       setShowForm(false);
-      load();
-    } catch (err) {
-      alert.error('Error', err.response?.data?.error || 'No se pudo guardar');
+      setEditing(null);
+      setForm(EMPTY_FORM);
+
+      await load();
+    } catch (error) {
+      alert.error(
+        'Error',
+        error.response?.data?.error ||
+        error.message ||
+        'No se pudo guardar'
+      );
     } finally {
       setSaving(false);
     }
@@ -231,20 +395,72 @@ setForm({
               </div>
             </div>
 
-          {/* Edición especial */}
-          <div style={{ padding: '0 24px 16px' }}>
-            <label style={{ display:'flex', alignItems:'center', gap:8, fontFamily:'var(--font-sans)', fontSize:13, cursor:'pointer', color:'var(--color-primary)' }}>
+          <div
+            className={
+              styles.editionOptions
+            }
+          >
+            <label
+              className={
+                styles.editionOption
+              }
+            >
               <input
                 type="checkbox"
-                checked={form.is_special}
-                onChange={e => setForm(f => ({ ...f, is_special: e.target.checked }))}
-                style={{ accentColor:'var(--color-accent)', width:15, height:15 }}
+                checked={
+                  form.is_special
+                }
+                onChange={event => {
+                  setForm(previous => ({
+                    ...previous,
+                    is_special:
+                      event.target
+                        .checked,
+                  }));
+                }}
               />
-              Marcar como edición especial
+
+              <span>
+                <strong>
+                  Edición especial
+                </strong>
+
+                <small>
+                  Aparecerá en “Ediciones especiales” del navbar.
+                </small>
+              </span>
             </label>
-            <p style={{ margin:'4px 0 0 23px', fontFamily:'var(--font-sans)', fontSize:11, color:'var(--color-gray-400)' }}>
-              Aparecerá en "Ediciones especiales" del navbar
-            </p>
+
+            <label
+              className={
+                styles.editionOption
+              }
+            >
+              <input
+                type="checkbox"
+                checked={
+                  form.is_current
+                }
+                onChange={event => {
+                  setForm(previous => ({
+                    ...previous,
+                    is_current:
+                      event.target
+                        .checked,
+                  }));
+                }}
+              />
+
+              <span>
+                <strong>
+                  Establecer como edición actual
+                </strong>
+
+                <small>
+                  Reemplazará automáticamente cualquier edición actual existente.
+                </small>
+              </span>
+            </label>
           </div>
 
             <div className={styles.modalFooter}>
