@@ -50,9 +50,18 @@ const normalizeText = value => {
 const stripHtml = html => {
   return normalizeText(
     String(html || '')
-      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<[^>]+>/g, ' ')
+      .replace(
+        /<script[\s\S]*?<\/script>/gi,
+        ' '
+      )
+      .replace(
+        /<style[\s\S]*?<\/style>/gi,
+        ' '
+      )
+      .replace(
+        /<[^>]+>/g,
+        ' '
+      )
   );
 };
 
@@ -62,35 +71,44 @@ const stripHtml = html => {
  * Busca primero una etiqueta <p>.
  * Si no existe, usa el texto completo limpio.
  */
-const extractFirstParagraph = html => {
-  const source =
-    String(html || '');
+const extractFirstParagraph =
+  html => {
+    const source =
+      String(html || '');
 
-  const paragraphs =
-    source.match(
-      /<p\b[^>]*>[\s\S]*?<\/p>/gi
-    ) || [];
+    const paragraphs =
+      source.match(
+        /<p\b[^>]*>[\s\S]*?<\/p>/gi
+      ) || [];
 
-  for (
-    const paragraph of paragraphs
-  ) {
-    const text =
-      stripHtml(paragraph);
+    for (
+      const paragraph of paragraphs
+    ) {
+      const text =
+        stripHtml(
+          paragraph
+        );
 
-    if (text.length >= 20) {
-      return text;
+      if (
+        text.length >= 20
+      ) {
+        return text;
+      }
     }
-  }
 
-  return stripHtml(source);
-};
+    return stripHtml(
+      source
+    );
+  };
 
 const truncateText = (
   value,
   maximum
 ) => {
   const text =
-    normalizeText(value);
+    normalizeText(
+      value
+    );
 
   if (
     text.length <= maximum
@@ -131,7 +149,9 @@ const ensureAbsoluteUrl = (
   }
 
   if (
-    clean.startsWith('/')
+    clean.startsWith(
+      '/'
+    )
   ) {
     return (
       `${SITE_URL}${clean}`
@@ -192,14 +212,13 @@ const buildArticleMetadata =
       );
 
     /*
-     * La fotografía original continúa almacenada
-     * en Imgur, pero Open Graph recibe una tarjeta
-     * completa generada por el backend.
+     * Open Graph recibe el JPEG real
+     * generado por Sharp en el backend.
      */
     const socialImage =
       `${BACKEND_URL}/og/articulos/${encodeURIComponent(
         article.slug
-      )}.png`;
+      )}.jpg`;
 
     return {
       pageType:
@@ -266,14 +285,13 @@ const buildGalleryMetadata =
       );
 
     /*
-     * La portada original puede seguir viniendo
-     * desde Imgur. Esta URL devuelve la composición
-     * social terminada como PNG.
+     * Open Graph recibe el JPEG real
+     * generado por Sharp en el backend.
      */
     const socialImage =
       `${BACKEND_URL}/og/galerias/${encodeURIComponent(
         gallery.slug
-      )}.png`;
+      )}.jpg`;
 
     return {
       pageType:
@@ -340,6 +358,7 @@ const buildSeoTags =
           )}" />`
         : ''
     }
+
     ${
       metadata.author
         ? `<meta name="author" content="${escapeHtml(
@@ -395,13 +414,18 @@ const buildSeoTags =
     />
 
     <meta
+      property="og:image:url"
+      content="${image}"
+    />
+
+    <meta
       property="og:image:secure_url"
       content="${image}"
     />
 
     <meta
       property="og:image:type"
-      content="image/png"
+      content="image/jpeg"
     />
 
     <meta
@@ -472,8 +496,7 @@ const injectSeoIntoHtml = (
     );
 
   /*
-   * Evita duplicados en caso de que posteriormente
-   * agregues etiquetas generales en index.html.
+   * Evita etiquetas SEO dinámicas duplicadas.
    */
   result =
     result.replace(

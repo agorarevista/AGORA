@@ -1,502 +1,375 @@
-const SITE_URL =
-  process.env.PUBLIC_SITE_URL ||
-  'https://agorarevista.mx';
+const fs =
+  require('fs');
 
-const BACKEND_URL =
-  process.env.PUBLIC_BACKEND_URL ||
-  SITE_URL;
+const path =
+  require('path');
 
-const DEFAULT_TITLE =
-  'Agorá Revista';
+const sharp =
+  require('sharp');
 
-const DEFAULT_DESCRIPTION =
-  'Cultura, pensamiento y creación.';
+const CARD_WIDTH =
+  1200;
 
-const DEFAULT_IMAGE =
-  `${SITE_URL}/android-chrome-512x512.png`;
+const CARD_HEIGHT =
+  630;
 
-/*
- * Convierte caracteres peligrosos para que
- * ningún título o descripción pueda romper
- * el HTML del documento.
- */
-const escapeHtml = value => {
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-};
+const BRAND_ICON_SIZE =
+  86;
+
+const BRAND_ICON_MARGIN =
+  30;
+
+const BRAND_ICON_OPACITY =
+  0.68;
 
 /*
- * Limpia espacios, saltos y entidades comunes.
- */
-const normalizeText = value => {
-  return String(value || '')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#039;/gi, "'")
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/\s+/g, ' ')
-    .trim();
-};
-
-/*
- * Elimina etiquetas HTML.
- */
-const stripHtml = html => {
-  return normalizeText(
-    String(html || '')
-      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<[^>]+>/g, ' ')
-  );
-};
-
-/*
- * Obtiene el primer párrafo real del artículo.
+ * Carpeta generada por Vite.
  *
- * Busca primero una etiqueta <p>.
- * Si no existe, usa el texto completo limpio.
+ * Buscamos automáticamente cualquier
+ * archivo cuyo nombre sea ICON-*.png.
  */
-const extractFirstParagraph = html => {
-  const source =
-    String(html || '');
+const frontendAssetsPath =
+  path.resolve(
+    __dirname,
+    '../../../../frontend/dist/assets'
+  );
 
-  const paragraphs =
-    source.match(
-      /<p\b[^>]*>[\s\S]*?<\/p>/gi
-    ) || [];
-
-  for (
-    const paragraph of paragraphs
-  ) {
-    const text =
-      stripHtml(paragraph);
-
-    if (text.length >= 20) {
-      return text;
-    }
-  }
-
-  return stripHtml(source);
-};
-
-const truncateText = (
-  value,
-  maximum
-) => {
-  const text =
-    normalizeText(value);
-
-  if (
-    text.length <= maximum
-  ) {
-    return text;
-  }
-
-  return (
-    text
-      .slice(
-        0,
-        maximum - 1
+/*
+ * Busca el ícono de Agorá dentro
+ * de los assets generados por Vite.
+ */
+const findAgoraBrandIconPath =
+  () => {
+    if (
+      !fs.existsSync(
+        frontendAssetsPath
       )
-      .trimEnd() +
-    '…'
-  );
-};
-
-const ensureAbsoluteUrl = (
-  value,
-  fallback =
-    DEFAULT_IMAGE
-) => {
-  const clean =
-    String(value || '')
-      .trim();
-
-  if (!clean) {
-    return fallback;
-  }
-
-  if (
-    /^https?:\/\//i.test(
-      clean
-    )
-  ) {
-    return clean;
-  }
-
-  if (
-    clean.startsWith('/')
-  ) {
-    return (
-      `${SITE_URL}${clean}`
-    );
-  }
-
-  return (
-    `${SITE_URL}/${clean}`
-  );
-};
-
-const buildArticleMetadata =
-  article => {
-    const canonicalUrl =
-      `${SITE_URL}/articulos/${article.slug}`;
-
-    const firstParagraph =
-      extractFirstParagraph(
-        article.content_html
+    ) {
+      console.warn(
+        `No existe la carpeta de assets: ${frontendAssetsPath}`
       );
 
-    const fallbackDescription =
-      firstParagraph ||
-      article.excerpt ||
-      article.subtitle ||
-      DEFAULT_DESCRIPTION;
-
-    const seoTitle =
-      truncateText(
-        article.seo_title ||
-        article.title ||
-        DEFAULT_TITLE,
-        70
-      );
-
-    const seoDescription =
-      truncateText(
-        article.seo_description ||
-        fallbackDescription,
-        180
-      );
-
-    const socialTitle =
-      truncateText(
-        article.social_title ||
-        article.seo_title ||
-        article.title ||
-        DEFAULT_TITLE,
-        100
-      );
-
-    const socialDescription =
-      truncateText(
-        article.social_description ||
-        article.seo_description ||
-        fallbackDescription,
-        200
-      );
-
-    /*
-     * Open Graph recibe una fotografía social
-     * generada como JPEG 1200 × 630.
-     */
-    const socialImage =
-      `${BACKEND_URL}/og/articulos/${encodeURIComponent(
-        article.slug
-      )}.jpg`;
-
-    return {
-      pageType:
-        'article',
-
-      canonicalUrl,
-      seoTitle,
-      seoDescription,
-      socialTitle,
-      socialDescription,
-      socialImage,
-
-      publishedAt:
-        article.published_at ||
-        null,
-
-      author:
-        article.collaborators
-          ?.name ||
-        null,
-    };
-  };
-
-const buildGalleryMetadata =
-  gallery => {
-    const canonicalUrl =
-      `${SITE_URL}/galeria/${gallery.slug}`;
-
-    const fallbackDescription =
-      gallery.excerpt ||
-      gallery.subtitle ||
-      'Álbum fotográfico de Agorá Revista.';
-
-    const seoTitle =
-      truncateText(
-        gallery.seo_title ||
-        gallery.title ||
-        DEFAULT_TITLE,
-        70
-      );
-
-    const seoDescription =
-      truncateText(
-        gallery.seo_description ||
-        fallbackDescription,
-        180
-      );
-
-    const socialTitle =
-      truncateText(
-        gallery.social_title ||
-        gallery.seo_title ||
-        gallery.title ||
-        DEFAULT_TITLE,
-        100
-      );
-
-    const socialDescription =
-      truncateText(
-        gallery.social_description ||
-        gallery.seo_description ||
-        fallbackDescription,
-        200
-      );
-
-    /*
-     * La imagen social de la galería se sirve
-     * como JPEG 1200 × 630.
-     */
-    const socialImage =
-      `${BACKEND_URL}/og/galerias/${encodeURIComponent(
-        gallery.slug
-      )}.jpg`;
-
-    return {
-      pageType:
-        'website',
-
-      canonicalUrl,
-      seoTitle,
-      seoDescription,
-      socialTitle,
-      socialDescription,
-      socialImage,
-
-      publishedAt:
-        gallery.published_at ||
-        null,
-
-      author:
-        gallery.collaborators
-          ?.name ||
-        null,
-    };
-  };
-
-const buildSeoTags =
-  metadata => {
-    const title =
-      escapeHtml(
-        metadata.seoTitle
-      );
-
-    const description =
-      escapeHtml(
-        metadata.seoDescription
-      );
-
-    const socialTitle =
-      escapeHtml(
-        metadata.socialTitle
-      );
-
-    const socialDescription =
-      escapeHtml(
-        metadata.socialDescription
-      );
-
-    const image =
-      escapeHtml(
-        metadata.socialImage
-      );
-
-    const canonicalUrl =
-      escapeHtml(
-        metadata.canonicalUrl
-      );
-
-    const extraArticleTags =
-      metadata.pageType ===
-      'article'
-        ? `
-    ${
-      metadata.publishedAt
-        ? `<meta property="article:published_time" content="${escapeHtml(
-            metadata.publishedAt
-          )}" />`
-        : ''
+      return null;
     }
-    ${
-      metadata.author
-        ? `<meta name="author" content="${escapeHtml(
-            metadata.author
-          )}" />`
-        : ''
-    }`
-        : '';
 
-    return `
-    <!-- SEO_DYNAMIC_START -->
+    const files =
+      fs.readdirSync(
+        frontendAssetsPath
+      );
 
-    <title>${title}</title>
+    const iconFile =
+      files.find(
+        filename =>
+          /^ICON-.*\.png$/i.test(
+            filename
+          )
+      );
 
-    <meta
-      name="description"
-      content="${description}"
-    />
+    if (!iconFile) {
+      console.warn(
+        'No se encontró un archivo ICON-*.png para la marca de agua.'
+      );
 
-    <link
-      rel="canonical"
-      href="${canonicalUrl}"
-    />
+      return null;
+    }
 
-    <meta
-      property="og:locale"
-      content="es_MX"
-    />
-
-    <meta
-      property="og:site_name"
-      content="Agorá Revista"
-    />
-
-    <meta
-      property="og:type"
-      content="${metadata.pageType}"
-    />
-
-    <meta
-      property="og:title"
-      content="${socialTitle}"
-    />
-
-    <meta
-      property="og:description"
-      content="${socialDescription}"
-    />
-
-    <meta
-      property="og:image"
-      content="${image}"
-    />
-
-    <meta
-      property="og:image:url"
-      content="${image}"
-    />
-
-    <meta
-      property="og:image:secure_url"
-      content="${image}"
-    />
-
-    <meta
-      property="og:image:type"
-      content="image/jpeg"
-    />
-
-    <meta
-      property="og:image:width"
-      content="1200"
-    />
-
-    <meta
-      property="og:image:height"
-      content="630"
-    />
-
-    <meta
-      property="og:image:alt"
-      content="${socialTitle}"
-    />
-
-    <meta
-      property="og:url"
-      content="${canonicalUrl}"
-    />
-
-    <meta
-      name="twitter:card"
-      content="summary_large_image"
-    />
-
-    <meta
-      name="twitter:title"
-      content="${socialTitle}"
-    />
-
-    <meta
-      name="twitter:description"
-      content="${socialDescription}"
-    />
-
-    <meta
-      name="twitter:image"
-      content="${image}"
-    />
-
-    <meta
-      name="twitter:image:alt"
-      content="${socialTitle}"
-    />
-
-    ${extraArticleTags}
-
-    <!-- SEO_DYNAMIC_END -->
-`;
+    return path.join(
+      frontendAssetsPath,
+      iconFile
+    );
   };
 
-const injectSeoIntoHtml = (
-  html,
-  metadata
-) => {
-  let result =
-    String(html || '');
+/*
+ * Descarga la portada original desde Imgur
+ * o desde cualquier URL HTTPS válida.
+ */
+const fetchImageBuffer =
+  async imageUrl => {
+    if (!imageUrl) {
+      return null;
+    }
 
-  /*
-   * Elimina el título genérico de Vite.
-   */
-  result =
-    result.replace(
-      /<title>[\s\S]*?<\/title>/i,
-      ''
-    );
+    const controller =
+      new AbortController();
 
-  /*
-   * Evita duplicados si el HTML ya contiene
-   * etiquetas dinámicas anteriores.
-   */
-  result =
-    result.replace(
-      /<!-- SEO_DYNAMIC_START -->[\s\S]*?<!-- SEO_DYNAMIC_END -->/gi,
-      ''
-    );
+    const timeout =
+      setTimeout(
+        () => {
+          controller.abort();
+        },
+        12000
+      );
 
-  const seoTags =
-    buildSeoTags(
-      metadata
-    );
+    try {
+      const response =
+        await fetch(
+          imageUrl,
+          {
+            signal:
+              controller.signal,
 
-  return result.replace(
-    '</head>',
-    `${seoTags}\n  </head>`
-  );
-};
+            headers: {
+              'User-Agent':
+                'Agora-OG-Image/1.0',
+
+              Accept:
+                'image/avif,image/webp,image/png,image/jpeg,*/*',
+            },
+          }
+        );
+
+      if (!response.ok) {
+        throw new Error(
+          `La imagen respondió con ${response.status}`
+        );
+      }
+
+      const arrayBuffer =
+        await response.arrayBuffer();
+
+      return Buffer.from(
+        arrayBuffer
+      );
+    } catch (error) {
+      console.warn(
+        'No se pudo descargar la portada para Open Graph:',
+        error.message
+      );
+
+      return null;
+    } finally {
+      clearTimeout(
+        timeout
+      );
+    }
+  };
+
+/*
+ * Prepara el ícono de Agorá como una
+ * marca de agua semitransparente.
+ */
+const createBrandWatermark =
+  async brandIconPath => {
+    if (!brandIconPath) {
+      return null;
+    }
+
+    try {
+      const resizedIcon =
+        await sharp(
+          brandIconPath
+        )
+          .resize({
+            width:
+              BRAND_ICON_SIZE,
+
+            height:
+              BRAND_ICON_SIZE,
+
+            fit:
+              'contain',
+
+            position:
+              'centre',
+
+            withoutEnlargement:
+              true,
+
+            background: {
+              r: 0,
+              g: 0,
+              b: 0,
+              alpha: 0,
+            },
+          })
+          .ensureAlpha()
+          .png()
+          .toBuffer();
+
+      /*
+       * Aplicamos la opacidad al ícono
+       * conservando el fondo transparente.
+       */
+      return sharp(
+        resizedIcon
+      )
+        .ensureAlpha()
+        .linear(
+          [
+            1,
+            1,
+            1,
+            BRAND_ICON_OPACITY,
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+          ]
+        )
+        .png()
+        .toBuffer();
+    } catch (error) {
+      console.warn(
+        'No se pudo procesar la marca de agua de Agorá:',
+        error.message
+      );
+
+      return null;
+    }
+  };
+
+/*
+ * Genera la imagen Open Graph final:
+ *
+ * - JPEG
+ * - 1200 × 630
+ * - sRGB
+ * - portada a pantalla completa
+ * - logo arriba a la derecha
+ * - sin transparencia final
+ */
+const createOgImage =
+  async content => {
+    const sourceImage =
+      content.cover_image_url ||
+      content.social_image_url ||
+      null;
+
+    const sourceBuffer =
+      await fetchImageBuffer(
+        sourceImage
+      );
+
+    /*
+     * Usamos PNG como formato intermedio
+     * para poder componer la marca de agua.
+     */
+    let baseImage;
+
+    if (sourceBuffer) {
+      try {
+        baseImage =
+          await sharp(
+            sourceBuffer
+          )
+            .rotate()
+            .resize({
+              width:
+                CARD_WIDTH,
+
+              height:
+                CARD_HEIGHT,
+
+              fit:
+                'cover',
+
+              position:
+                sharp.strategy.attention,
+            })
+            .flatten({
+              background:
+                '#ffffff',
+            })
+            .toColourspace(
+              'srgb'
+            )
+            .png()
+            .toBuffer();
+      } catch (error) {
+        console.warn(
+          'No se pudo procesar la portada Open Graph:',
+          error.message
+        );
+      }
+    }
+
+    /*
+     * Fondo de respaldo cuando el artículo
+     * no tiene una portada válida.
+     */
+    if (!baseImage) {
+      baseImage =
+        await sharp({
+          create: {
+            width:
+              CARD_WIDTH,
+
+            height:
+              CARD_HEIGHT,
+
+            channels: 3,
+
+            background:
+              '#181217',
+          },
+        })
+          .toColourspace(
+            'srgb'
+          )
+          .png()
+          .toBuffer();
+    }
+
+    const composites = [];
+
+    const brandIconPath =
+      findAgoraBrandIconPath();
+
+    const brandWatermark =
+      await createBrandWatermark(
+        brandIconPath
+      );
+
+    if (brandWatermark) {
+      composites.push({
+        input:
+          brandWatermark,
+
+        left:
+          CARD_WIDTH -
+          BRAND_ICON_SIZE -
+          BRAND_ICON_MARGIN,
+
+        top:
+          BRAND_ICON_MARGIN,
+      });
+    }
+
+    /*
+     * El resultado final siempre se entrega
+     * como JPEG real.
+     */
+    return sharp(
+      baseImage
+    )
+      .composite(
+        composites
+      )
+      .flatten({
+        background:
+          '#ffffff',
+      })
+      .toColourspace(
+        'srgb'
+      )
+      .jpeg({
+        quality:
+          88,
+
+        progressive:
+          true,
+
+        chromaSubsampling:
+          '4:4:4',
+
+        mozjpeg:
+          true,
+      })
+      .toBuffer();
+  };
 
 module.exports = {
-  buildArticleMetadata,
-  buildGalleryMetadata,
-  injectSeoIntoHtml,
+  createOgImage,
 };

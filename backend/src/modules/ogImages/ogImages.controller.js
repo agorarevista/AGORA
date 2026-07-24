@@ -45,6 +45,7 @@ const saveCachedImage = (
     key,
     {
       buffer,
+
       createdAt:
         Date.now(),
     }
@@ -56,11 +57,17 @@ const sendImage = (
   buffer
 ) => {
     res.set({
+      /*
+       * El renderer devuelve JPEG,
+       * por eso debe enviarse como image/jpeg.
+       */
       'Content-Type':
-        'image/png',
+        'image/jpeg',
 
       'Content-Length':
-        buffer.length,
+        String(
+          buffer.length
+        ),
 
       'Cache-Control':
         'public, max-age=3600, s-maxage=3600',
@@ -115,9 +122,18 @@ const renderArticleImage =
 
       const buffer =
         await createOgImage(
-          article,
-          'article'
+          article
         );
+
+      if (
+        !Buffer.isBuffer(
+          buffer
+        )
+      ) {
+        throw new Error(
+          'createOgImage no devolvió un Buffer válido.'
+        );
+      }
 
       saveCachedImage(
         cacheKey,
@@ -129,7 +145,14 @@ const renderArticleImage =
         buffer
       );
     } catch (error) {
-      return next(error);
+      console.error(
+        'Error generando imagen Open Graph del artículo:',
+        error
+      );
+
+      return next(
+        error
+      );
     }
   };
 
@@ -174,9 +197,18 @@ const renderGalleryImage =
 
       const buffer =
         await createOgImage(
-          gallery,
-          'gallery'
+          gallery
         );
+
+      if (
+        !Buffer.isBuffer(
+          buffer
+        )
+      ) {
+        throw new Error(
+          'createOgImage no devolvió un Buffer válido.'
+        );
+      }
 
       saveCachedImage(
         cacheKey,
@@ -188,7 +220,14 @@ const renderGalleryImage =
         buffer
       );
     } catch (error) {
-      return next(error);
+      console.error(
+        'Error generando imagen Open Graph de la galería:',
+        error
+      );
+
+      return next(
+        error
+      );
     }
   };
 
