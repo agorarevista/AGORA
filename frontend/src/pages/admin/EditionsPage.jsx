@@ -363,8 +363,72 @@ export default function EditionsPage() {
     setEditionToConfirm(null);
   };
 
-  const current    = editions.find(e => e.is_current);
-  const historical = editions.filter(e => !e.is_current);
+  const current =
+    editions.find(
+      edition =>
+        edition.is_current
+    );
+
+  const regularEditions =
+    editions
+      .filter(
+        edition =>
+          !edition.is_current &&
+          !edition.is_special
+      )
+      .sort(
+        (
+          firstEdition,
+          secondEdition
+        ) =>
+          Number(
+            secondEdition.number ||
+            0
+          ) -
+          Number(
+            firstEdition.number ||
+            0
+          )
+      );
+
+  const specialEditions =
+    editions
+      .filter(
+        edition =>
+          !edition.is_current &&
+          edition.is_special
+      )
+      .sort(
+        (
+          firstEdition,
+          secondEdition
+        ) => {
+          const firstDate =
+            new Date(
+              firstEdition.published_at ||
+              firstEdition.created_at ||
+              0
+            ).getTime();
+
+          const secondDate =
+            new Date(
+              secondEdition.published_at ||
+              secondEdition.created_at ||
+              0
+            ).getTime();
+
+          return (
+            secondDate -
+            firstDate
+          );
+        }
+      );
+
+  const hasHistoricalEditions =
+    regularEditions.length >
+      0 ||
+    specialEditions.length >
+      0;
 
   return (
     <div className={styles.page}>
@@ -779,71 +843,428 @@ export default function EditionsPage() {
         </motion.div>
       )}
 
-      {/* Historial */}
+      {/* ── ARCHIVO DE EDICIONES ─────────────────────── */}
       {loading ? (
-        <div className={styles.grid}>
-          {[1,2,3].map(i => <div key={i} className={styles.skeletonCard} />)}
+        <div
+          className={
+            styles.grid
+          }
+        >
+          {[1, 2, 3, 4].map(
+            item => (
+              <div
+                key={
+                  item
+                }
+                className={
+                  styles.skeletonCard
+                }
+              />
+            )
+          )}
         </div>
-      ) : historical.length > 0 ? (
-        <div className={styles.histSection}>
-          <div className={styles.histTitle}>Archivo histórico</div>
-          <div className={styles.grid}>
-            {historical.map((ed, i) => (
-              <motion.div
-                key={ed.id}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04 }}
-                className={styles.edCard}
+      ) : hasHistoricalEditions ? (
+        <div
+          className={
+            styles.archiveSections
+          }
+        >
+          {/* ── EDICIONES REGULARES ─────────────────── */}
+          {regularEditions.length >
+            0 && (
+            <section
+              className={
+                styles.histSection
+              }
+            >
+              <div
+                className={
+                  styles.sectionHeader
+                }
               >
-                <div className={styles.edCover}>
-                  {ed.cover_image_url
-                    ? <img src={ed.cover_image_url} alt="" />
-                    : <div className={styles.edCoverEmpty}><BookOpen size={24} /></div>
-                  }
-                </div>
-                <div className={styles.edInfo}>
-                  <div
+                <div>
+                  <span
                     className={
-                      styles.edNumber
+                      styles.sectionEyebrow
                     }
                   >
-                    {ed.is_special
-                      ? 'Edición especial'
-                      : `№ ${ed.number}`}
-                  </div>
+                    Archivo histórico
+                  </span>
 
-                  <div
+                  <h2
                     className={
-                      styles.edName
+                      styles.histTitle
                     }
                   >
-                    {ed.name}
-                  </div>
-                  {ed.published_at && (
-                    <div className={styles.edDate}>{formatDate(ed.published_at)}</div>
-                  )}
+                    Ediciones regulares
+                  </h2>
                 </div>
-                <div className={styles.edActions}>
-                  <button
-                    className={`${styles.actionBtn} ${styles.actionStar}`}
-                    onClick={() => handleSetCurrent(ed)}
-                    title="Establecer como actual"
+
+                <span
+                  className={
+                    styles.sectionCount
+                  }
+                >
+                  {
+                    regularEditions
+                      .length
+                  }{' '}
+                  {regularEditions
+                    .length === 1
+                    ? 'edición'
+                    : 'ediciones'}
+                </span>
+              </div>
+
+              <div
+                className={
+                  styles.grid
+                }
+              >
+                {regularEditions.map(
+                  (
+                    edition,
+                    index
+                  ) => (
+                    <motion.div
+                      key={
+                        edition.id
+                      }
+                      initial={{
+                        opacity: 0,
+                        y: 12,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        y: 0,
+                      }}
+                      transition={{
+                        delay:
+                          index *
+                          0.04,
+                      }}
+                      className={
+                        styles.edCard
+                      }
+                    >
+                      <div
+                        className={
+                          styles.edCover
+                        }
+                      >
+                        {edition.cover_image_url ? (
+                          <img
+                            src={
+                              edition
+                                .cover_image_url
+                            }
+                            alt={
+                              edition.name ||
+                              ''
+                            }
+                          />
+                        ) : (
+                          <div
+                            className={
+                              styles.edCoverEmpty
+                            }
+                          >
+                            <BookOpen
+                              size={24}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div
+                        className={
+                          styles.edInfo
+                        }
+                      >
+                        <div
+                          className={
+                            styles.edNumber
+                          }
+                        >
+                          №{' '}
+                          {
+                            edition.number
+                          }
+                        </div>
+
+                        <div
+                          className={
+                            styles.edName
+                          }
+                        >
+                          {
+                            edition.name
+                          }
+                        </div>
+
+                        {edition.published_at && (
+                          <div
+                            className={
+                              styles.edDate
+                            }
+                          >
+                            {formatDate(
+                              edition
+                                .published_at
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div
+                        className={
+                          styles.edActions
+                        }
+                      >
+                        <button
+                          type="button"
+                          className={`${styles.actionBtn} ${styles.actionStar}`}
+                          onClick={() => {
+                            handleSetCurrent(
+                              edition
+                            );
+                          }}
+                          title="Establecer como actual"
+                        >
+                          <Star
+                            size={13}
+                          />
+                        </button>
+
+                        <button
+                          type="button"
+                          className={
+                            styles.actionBtn
+                          }
+                          onClick={() => {
+                            openEdit(
+                              edition
+                            );
+                          }}
+                          title="Editar"
+                        >
+                          <Edit
+                            size={13}
+                          />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* ── EDICIONES ESPECIALES ────────────────── */}
+          {specialEditions.length >
+            0 && (
+            <section
+              className={`${styles.histSection} ${styles.specialSection}`}
+            >
+              <div
+                className={
+                  styles.sectionHeader
+                }
+              >
+                <div>
+                  <span
+                    className={
+                      styles.specialEyebrow
+                    }
                   >
-                    <Star size={13} />
-                  </button>
-                  <button className={styles.actionBtn} onClick={() => openEdit(ed)} title="Editar">
-                    <Edit size={13} />
-                  </button>
+                    Publicaciones temáticas
+                  </span>
+
+                  <h2
+                    className={
+                      styles.histTitle
+                    }
+                  >
+                    Ediciones especiales
+                  </h2>
                 </div>
-              </motion.div>
-            ))}
-          </div>
+
+                <span
+                  className={
+                    styles.sectionCount
+                  }
+                >
+                  {
+                    specialEditions
+                      .length
+                  }{' '}
+                  {specialEditions
+                    .length === 1
+                    ? 'edición'
+                    : 'ediciones'}
+                </span>
+              </div>
+
+              <div
+                className={
+                  styles.grid
+                }
+              >
+                {specialEditions.map(
+                  (
+                    edition,
+                    index
+                  ) => (
+                    <motion.div
+                      key={
+                        edition.id
+                      }
+                      initial={{
+                        opacity: 0,
+                        y: 12,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        y: 0,
+                      }}
+                      transition={{
+                        delay:
+                          index *
+                          0.04,
+                      }}
+                      className={`${styles.edCard} ${styles.specialCard}`}
+                    >
+                      <div
+                        className={
+                          styles.edCover
+                        }
+                      >
+                        {edition.cover_image_url ? (
+                          <img
+                            src={
+                              edition
+                                .cover_image_url
+                            }
+                            alt={
+                              edition.name ||
+                              ''
+                            }
+                          />
+                        ) : (
+                          <div
+                            className={
+                              styles.edCoverEmpty
+                            }
+                          >
+                            <BookOpen
+                              size={24}
+                            />
+                          </div>
+                        )}
+
+                        <span
+                          className={
+                            styles.specialCardBadge
+                          }
+                        >
+                          Especial
+                        </span>
+                      </div>
+
+                      <div
+                        className={
+                          styles.edInfo
+                        }
+                      >
+                        <div
+                          className={
+                            styles.edNumber
+                          }
+                        >
+                          Edición especial
+                        </div>
+
+                        <div
+                          className={
+                            styles.edName
+                          }
+                        >
+                          {
+                            edition.name
+                          }
+                        </div>
+
+                        {edition.published_at && (
+                          <div
+                            className={
+                              styles.edDate
+                            }
+                          >
+                            {formatDate(
+                              edition
+                                .published_at
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div
+                        className={
+                          styles.edActions
+                        }
+                      >
+                        <button
+                          type="button"
+                          className={`${styles.actionBtn} ${styles.actionStar}`}
+                          onClick={() => {
+                            handleSetCurrent(
+                              edition
+                            );
+                          }}
+                          title="Establecer como actual"
+                        >
+                          <Star
+                            size={13}
+                          />
+                        </button>
+
+                        <button
+                          type="button"
+                          className={
+                            styles.actionBtn
+                          }
+                          onClick={() => {
+                            openEdit(
+                              edition
+                            );
+                          }}
+                          title="Editar"
+                        >
+                          <Edit
+                            size={13}
+                          />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )
+                )}
+              </div>
+            </section>
+          )}
         </div>
       ) : !current ? (
-        <div className={styles.empty}>
-          <span>◈</span>
-          <p>No hay ediciones todavía. Crea la primera.</p>
+        <div
+          className={
+            styles.empty
+          }
+        >
+          <span>
+            ◈
+          </span>
+
+          <p>
+            No hay ediciones todavía. Crea la primera.
+          </p>
         </div>
       ) : null}
 
