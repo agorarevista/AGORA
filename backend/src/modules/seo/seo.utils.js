@@ -199,7 +199,7 @@ const buildArticleMetadata =
     const socialImage =
       `${BACKEND_URL}/og/articulos/${encodeURIComponent(
         article.slug
-      )}`;
+      )}.png`;
 
     return {
       pageType:
@@ -273,7 +273,7 @@ const buildGalleryMetadata =
     const socialImage =
       `${BACKEND_URL}/og/galerias/${encodeURIComponent(
         gallery.slug
-      )}`;
+      )}.png`;
 
     return {
       pageType:
