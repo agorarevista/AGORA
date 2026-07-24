@@ -388,6 +388,21 @@ const buildSeoTags =
     />
 
     <meta
+      property="og:image:type"
+      content="image/jpeg"
+    />
+
+    <meta
+      property="og:image:width"
+      content="1200"
+    />
+
+    <meta
+      property="og:image:height"
+      content="630"
+    />
+
+    <meta
       property="og:image:alt"
       content="${socialTitle}"
     />
@@ -415,6 +430,11 @@ const buildSeoTags =
     <meta
       name="twitter:image"
       content="${image}"
+    />
+
+    <meta
+      name="twitter:image:alt"
+      content="${socialTitle}"
     />
 
     ${extraArticleTags}
