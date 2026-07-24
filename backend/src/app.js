@@ -95,6 +95,14 @@ app.use(
 
         scriptSrc: [
           "'self'",
+          'https://www.youtube.com',
+          'https://www.youtube-nocookie.com',
+        ],
+
+        frameSrc: [
+          "'self'",
+          'https://www.youtube.com',
+          'https://www.youtube-nocookie.com',
         ],
       },
     },
@@ -321,6 +329,20 @@ if (fs.existsSync(frontendIndexPath)) {
 
         fallthrough: true,
       }
+    )
+  );
+
+  /* ══════════════════════════════════════════════════════
+     HTML SEO DINÁMICO
+
+     Debe ir después de los assets y antes del
+     fallback general de React Router.
+  ═══════════════════════════════════════════════════════ */
+
+  app.use(
+    '/',
+    require('./modules/seo/seo.routes')(
+      frontendIndexPath
     )
   );
 
