@@ -10,12 +10,12 @@ const router =
   express.Router();
 
 router.get(
-  '/articulos/:slug.png',
+  '/articulos/:slug.jpg',
   renderArticleImage
 );
 
 router.get(
-  '/galerias/:slug.png',
+  '/galerias/:slug.jpg',
   renderGalleryImage
 );
 
