@@ -47,7 +47,8 @@ const GALLERY_BASE_SELECT = `
     number,
     name,
     cover_image_url,
-    is_current
+    is_current,
+    is_special
   ),
 
   gallery_photos (
@@ -98,7 +99,8 @@ const GALLERY_COMPLETE_SELECT = `
     name,
     description,
     cover_image_url,
-    is_current
+    is_current,
+    is_special
   ),
 
   gallery_photos (

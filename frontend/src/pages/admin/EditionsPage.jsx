@@ -74,33 +74,77 @@ export default function EditionsPage() {
 
   useEffect(() => { load(); }, []);
 
-  const openNew = () => {
-    setEditing(null);
-    setForm({ ...EMPTY_FORM, number: (editions.length + 1) });
-    setShowForm(true);
-  };
+  const openNew =
+    () => {
+      const regularNumbers =
+        editions
+          .filter(
+            edition =>
+              !edition.is_special
+          )
+          .map(
+            edition =>
+              Number(
+                edition.number
+              )
+          )
+          .filter(
+            number =>
+              Number.isInteger(
+                number
+              ) &&
+              number > 0
+          );
 
+      const nextNumber =
+        regularNumbers.length >
+        0
+          ? Math.max(
+              ...regularNumbers
+            ) + 1
+          : 1;
+
+      setEditing(null);
+
+      setForm({
+        ...EMPTY_FORM,
+
+        number:
+          nextNumber,
+      });
+
+      setShowForm(true);
+    };
   const openEdit = ed => {
     setEditing(ed.id);
 
     setForm({
       number:
-        ed.number,
+        ed.is_special
+          ? ''
+          : ed.number ??
+            '',
 
       name:
-        ed.name || '',
+        ed.name ||
+        '',
 
       description:
-        ed.description || '',
+        ed.description ||
+        '',
 
       cover_image_url:
-        ed.cover_image_url || '',
+        ed.cover_image_url ||
+        '',
 
       published_at:
         ed.published_at
           ? String(
               ed.published_at
-            ).slice(0, 10)
+            ).slice(
+              0,
+              10
+            )
           : '',
 
       is_current:
@@ -129,48 +173,76 @@ export default function EditionsPage() {
     finally { setUploading(false); }
   };
 
-  const handleSave = async () => {
-    if (
-      !form.name.trim() ||
-      !form.number
-    ) {
-      alert.warning(
-        'Faltan datos',
-        'Número y nombre son requeridos'
-      );
+  const handleSave =
+    async () => {
+      const cleanName =
+        form.name.trim();
 
-      return;
-    }
+      const isSpecial =
+        Boolean(
+          form.is_special
+        );
 
-    setSaving(true);
+      const parsedNumber =
+        Number.parseInt(
+          form.number,
+          10
+        );
 
-    try {
-      const payload = {
-        number:
-          Number.parseInt(
-            form.number,
-            10
-          ),
+      if (!cleanName) {
+        alert.warning(
+          'Faltan datos',
+          'El nombre de la edición es obligatorio'
+        );
 
-        name:
-          form.name.trim(),
+        return;
+      }
 
-        description:
-          form.description.trim(),
+      if (
+        !isSpecial &&
+        (
+          !Number.isInteger(
+            parsedNumber
+          ) ||
+          parsedNumber < 1
+        )
+      ) {
+        alert.warning(
+          'Faltan datos',
+          'Las ediciones regulares necesitan un número válido'
+        );
 
-        cover_image_url:
-          form.cover_image_url.trim(),
+        return;
+      }
 
-        published_at:
-          dateInputToISOString(
-            form.published_at
-          ),
+      setSaving(true);
 
-        is_special:
-          Boolean(
-            form.is_special
-          ),
-      };
+      try {
+        const payload = {
+          number:
+            isSpecial
+              ? null
+              : parsedNumber,
+
+          name:
+            cleanName,
+
+          description:
+            form.description
+              .trim(),
+
+          cover_image_url:
+            form.cover_image_url
+              .trim(),
+
+          published_at:
+            dateInputToISOString(
+              form.published_at
+            ),
+
+          is_special:
+            isSpecial,
+        };
 
       let savedEditionId =
         editing;
@@ -268,9 +340,15 @@ export default function EditionsPage() {
 
     try {
       await setCurrentEdition(editionToConfirm.id);
+      const editionLabel =
+        editionToConfirm
+          .is_special
+          ? `Especial — ${editionToConfirm.name}`
+          : `№${editionToConfirm.number} — ${editionToConfirm.name}`;
+
       alert.success(
         'Edición actual',
-        `№${editionToConfirm.number} — ${editionToConfirm.name} es ahora la edición actual`
+        `${editionLabel} es ahora la edición actual`
       );
       setConfirmCurrentOpen(false);
       setEditionToConfirm(null);
@@ -349,25 +427,101 @@ export default function EditionsPage() {
                 />
               </div>
 
-              <div className={styles.formGrid}>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Número *</label>
-                  <input
-                    type="number"
-                    value={form.number}
-                    onChange={e => setForm(f => ({ ...f, number: e.target.value }))}
-                    className={styles.input}
-                    min={1}
-                  />
-                </div>
+              <div
+                className={
+                  styles.formGrid
+                }
+              >
+                {!form.is_special ? (
+                  <div
+                    className={
+                      styles.formGroup
+                    }
+                  >
+                    <label
+                      className={
+                        styles.label
+                      }
+                    >
+                      Número *
+                    </label>
 
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Fecha de publicación</label>
+                    <input
+                      type="number"
+                      value={
+                        form.number
+                      }
+                      onChange={
+                        event => {
+                          setForm(
+                            previous => ({
+                              ...previous,
+
+                              number:
+                                event
+                                  .target
+                                  .value,
+                            })
+                          );
+                        }
+                      }
+                      className={
+                        styles.input
+                      }
+                      min={1}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className={
+                      styles.specialNumberNotice
+                    }
+                  >
+                    <strong>
+                      Sin numeración
+                    </strong>
+
+                    <span>
+                      Las ediciones especiales se identifican por su título.
+                    </span>
+                  </div>
+                )}
+
+                <div
+                  className={
+                    styles.formGroup
+                  }
+                >
+                  <label
+                    className={
+                      styles.label
+                    }
+                  >
+                    Fecha de publicación
+                  </label>
+
                   <input
                     type="date"
-                    value={form.published_at}
-                    onChange={e => setForm(f => ({ ...f, published_at: e.target.value }))}
-                    className={styles.input}
+                    value={
+                      form.published_at
+                    }
+                    onChange={
+                      event => {
+                        setForm(
+                          previous => ({
+                            ...previous,
+
+                            published_at:
+                              event
+                                .target
+                                .value,
+                          })
+                        );
+                      }
+                    }
+                    className={
+                      styles.input
+                    }
                   />
                 </div>
 
@@ -410,14 +564,72 @@ export default function EditionsPage() {
                 checked={
                   form.is_special
                 }
-                onChange={event => {
-                  setForm(previous => ({
-                    ...previous,
-                    is_special:
+                onChange={
+                  event => {
+                    const isSpecial =
                       event.target
-                        .checked,
-                  }));
-                }}
+                        .checked;
+
+                    setForm(
+                      previous => {
+                        if (isSpecial) {
+                          return {
+                            ...previous,
+
+                            is_special:
+                              true,
+
+                            number:
+                              '',
+                          };
+                        }
+
+                        const regularNumbers =
+                          editions
+                            .filter(
+                              edition =>
+                                !edition
+                                  .is_special
+                            )
+                            .map(
+                              edition =>
+                                Number(
+                                  edition
+                                    .number
+                                )
+                            )
+                            .filter(
+                              number =>
+                                Number
+                                  .isInteger(
+                                    number
+                                  ) &&
+                                number > 0
+                            );
+
+                        const nextNumber =
+                          regularNumbers
+                            .length > 0
+                            ? Math.max(
+                                ...regularNumbers
+                              ) + 1
+                            : 1;
+
+                        return {
+                          ...previous,
+
+                          is_special:
+                            false,
+
+                          number:
+                            previous
+                              .number ||
+                            nextNumber,
+                        };
+                      }
+                    );
+                  }
+                }
               />
 
               <span>
@@ -491,8 +703,19 @@ export default function EditionsPage() {
             </div>
 
             <div className={styles.modalBody}>
-              <p className={styles.confirmText}>
-                ¿Establecer la edición <strong>№{editionToConfirm.number}</strong> como la edición actual?
+              <p
+                className={
+                  styles.confirmText
+                }
+              >
+                ¿Establecer{' '}
+                <strong>
+                  {editionToConfirm
+                    .is_special
+                    ? `la edición especial “${editionToConfirm.name}”`
+                    : `la edición №${editionToConfirm.number}`}
+                </strong>{' '}
+                como la edición actual?
               </p>
               <p className={styles.confirmSubtext}>
                 Esto reemplazará la edición actual visible en la portada del sitio.
@@ -527,8 +750,23 @@ export default function EditionsPage() {
               <img src={current.cover_image_url} alt="" className={styles.currentCover} />
             )}
             <div className={styles.currentInfo}>
-              <div className={styles.currentNumber}>№ {current.number}</div>
-              <h2 className={styles.currentName}>{current.name}</h2>
+              <div
+                className={
+                  styles.currentNumber
+                }
+              >
+                {current.is_special
+                  ? 'Edición especial'
+                  : `№ ${current.number}`}
+              </div>
+
+              <h2
+                className={
+                  styles.currentName
+                }
+              >
+                {current.name}
+              </h2>
               {current.description && <p className={styles.currentDesc}>{current.description}</p>}
               {current.published_at && (
                 <div className={styles.currentDate}>Publicada: {formatDate(current.published_at)}</div>
@@ -565,8 +803,23 @@ export default function EditionsPage() {
                   }
                 </div>
                 <div className={styles.edInfo}>
-                  <div className={styles.edNumber}>№ {ed.number}</div>
-                  <div className={styles.edName}>{ed.name}</div>
+                  <div
+                    className={
+                      styles.edNumber
+                    }
+                  >
+                    {ed.is_special
+                      ? 'Edición especial'
+                      : `№ ${ed.number}`}
+                  </div>
+
+                  <div
+                    className={
+                      styles.edName
+                    }
+                  >
+                    {ed.name}
+                  </div>
                   {ed.published_at && (
                     <div className={styles.edDate}>{formatDate(ed.published_at)}</div>
                   )}

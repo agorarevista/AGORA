@@ -358,17 +358,60 @@ const [
                     : 1;
                 }
 
-                return (
-                  Number(
-                    secondEdition
-                      .number ||
-                    0
-                  ) -
-                  Number(
+                const firstSpecial =
+                  Boolean(
                     firstEdition
-                      .number ||
-                    0
-                  )
+                      .is_special
+                  );
+
+                const secondSpecial =
+                  Boolean(
+                    secondEdition
+                      .is_special
+                  );
+
+                if (
+                  firstSpecial !==
+                  secondSpecial
+                ) {
+                  return firstSpecial
+                    ? 1
+                    : -1;
+                }
+
+                if (
+                  !firstSpecial &&
+                  !secondSpecial
+                ) {
+                  return (
+                    Number(
+                      secondEdition
+                        .number ||
+                      0
+                    ) -
+                    Number(
+                      firstEdition
+                        .number ||
+                      0
+                    )
+                  );
+                }
+
+                return String(
+                  firstEdition
+                    .name ||
+                  ''
+                ).localeCompare(
+                  String(
+                    secondEdition
+                      .name ||
+                    ''
+                  ),
+                  'es',
+                  {
+                    sensitivity:
+                      'base',
+                  }
                 );
               }
             )
@@ -1458,27 +1501,108 @@ const handleDeleteVoice = async (
         (
           firstEdition,
           secondEdition
-        ) =>
-          Number(
-            secondEdition.number ||
-            0
-          ) -
-          Number(
-            firstEdition.number ||
-            0
-          )
+        ) => {
+          const firstCurrent =
+            Boolean(
+              firstEdition
+                .is_current
+            );
+
+          const secondCurrent =
+            Boolean(
+              secondEdition
+                .is_current
+            );
+
+          if (
+            firstCurrent !==
+            secondCurrent
+          ) {
+            return firstCurrent
+              ? -1
+              : 1;
+          }
+
+          const firstSpecial =
+            Boolean(
+              firstEdition
+                .is_special
+            );
+
+          const secondSpecial =
+            Boolean(
+              secondEdition
+                .is_special
+            );
+
+          if (
+            firstSpecial !==
+            secondSpecial
+          ) {
+            return firstSpecial
+              ? 1
+              : -1;
+          }
+
+          if (
+            !firstSpecial &&
+            !secondSpecial
+          ) {
+            return (
+              Number(
+                secondEdition
+                  .number ||
+                0
+              ) -
+              Number(
+                firstEdition
+                  .number ||
+                0
+              )
+            );
+          }
+
+          return String(
+            firstEdition.name ||
+            ''
+          ).localeCompare(
+            String(
+              secondEdition.name ||
+              ''
+            ),
+            'es',
+            {
+              sensitivity:
+                'base',
+            }
+          );
+        }
       )
-      .map(edition => (
-        <option
-          key={edition.id}
-          value={edition.id}
-        >
-          Edición № {edition.number}
-          {edition.name
-            ? ` — ${edition.name}`
-            : ''}
-        </option>
-      ))}
+      .map(
+        edition => {
+          const optionLabel =
+            edition.is_special
+              ? `Especial — ${edition.name}`
+              : `Edición № ${edition.number}${
+                  edition.name
+                    ? ` — ${edition.name}`
+                    : ''
+                }`;
+
+          return (
+            <option
+              key={
+                edition.id
+              }
+              value={
+                edition.id
+              }
+            >
+              {optionLabel}
+            </option>
+          );
+        }
+      )}
 
     <option value="without-edition">
       Sin edición
@@ -1591,9 +1715,12 @@ const handleDeleteVoice = async (
                 );
 
               const folderTitle =
-                folder.edition
-                  ? `Edición ${folder.edition.number}`
-                  : 'Sin edición';
+                !folder.edition
+                  ? 'Sin edición'
+                  : folder.edition
+                      .is_special
+                    ? 'Edición especial'
+                    : `Edición № ${folder.edition.number}`;
 
               return (
                 <section

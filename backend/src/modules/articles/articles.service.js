@@ -322,6 +322,7 @@ const BASE_SELECT = `
   status,
   views,
   reading_time,
+  edition_id,
   is_featured,
   featured_order,
   audio_male_url,
@@ -336,7 +337,8 @@ const BASE_SELECT = `
     id,
     number,
     name,
-    is_current
+    is_current,
+    is_special
   ),
   article_categories ( categories ( id, name, slug, color ) ),
   article_tags ( tag, tag_type )
@@ -375,7 +377,8 @@ const EDITOR_SELECT = `
     id,
     number,
     name,
-    is_current
+    is_current,
+    is_special
   ),
   article_categories ( categories ( id, name, slug, color ) ),
   article_tags ( id, tag, tag_type )
