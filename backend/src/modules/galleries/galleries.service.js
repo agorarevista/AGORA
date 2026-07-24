@@ -975,7 +975,7 @@ const getBySlug = async slug => {
     );
   }
 
-  await supabase
+  supabase
     .from('galleries')
     .update({
       views:
@@ -986,6 +986,27 @@ const getBySlug = async slug => {
     .eq(
       'id',
       data.id
+    )
+    .then(
+      ({
+        error:
+          viewsError,
+      }) => {
+        if (viewsError) {
+          console.warn(
+            'No se pudo incrementar la vista de la galería:',
+            viewsError.message
+          );
+        }
+      }
+    )
+    .catch(
+      viewsError => {
+        console.warn(
+          'Error incrementando vista de la galería:',
+          viewsError.message
+        );
+      }
     );
 
   return sortGalleryPhotos(

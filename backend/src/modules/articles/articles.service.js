@@ -509,35 +509,89 @@ const getAll = async ({
   };
 };
 
-const getBySlug = async (slug) => {
-  const { data, error } = await supabase
+const getBySlug = async (
+  slug
+) => {
+  const {
+    data,
+    error,
+  } = await supabase
     .from('articles')
     .select(
       BASE_SELECT +
       ', content, content_html'
     )
-    .eq('slug', slug)
-    .eq('status', 'published')
+    .eq(
+      'slug',
+      slug
+    )
+    .eq(
+      'status',
+      'published'
+    )
     .maybeSingle();
 
   if (error) {
-    console.error('articles.service.getBySlug error:', error);
+    console.error(
+      'articles.service.getBySlug error:',
+      error
+    );
+
     throw error;
   }
 
   if (!data) {
-    throw { status: 404, message: 'Artículo no encontrado' };
+    throw {
+      status: 404,
+      message:
+        'Artículo no encontrado',
+    };
   }
 
-  // Incrementar vistas
-  await supabase
+  /*
+   * La lectura del artículo no debe esperar
+   * la actualización del contador.
+   *
+   * Si Supabase tarda o falla actualizando
+   * vistas, el artículo se entrega de todos
+   * modos al visitante.
+   */
+  supabase
     .from('articles')
-    .update({ views: (data.views || 0) + 1 })
-    .eq('id', data.id);
+    .update({
+      views:
+        Number(
+          data.views || 0
+        ) + 1,
+    })
+    .eq(
+      'id',
+      data.id
+    )
+    .then(
+      ({
+        error:
+          viewsError,
+      }) => {
+        if (viewsError) {
+          console.warn(
+            'No se pudo incrementar la vista del artículo:',
+            viewsError.message
+          );
+        }
+      }
+    )
+    .catch(
+      viewsError => {
+        console.warn(
+          'Error incrementando vista del artículo:',
+          viewsError.message
+        );
+      }
+    );
 
   return data;
 };
-
 const getById = async (id) => {
   const { data, error } = await supabase
     .from('articles')
