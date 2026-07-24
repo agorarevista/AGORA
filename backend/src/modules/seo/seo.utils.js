@@ -2,6 +2,10 @@ const SITE_URL =
   process.env.PUBLIC_SITE_URL ||
   'https://agorarevista.mx';
 
+const BACKEND_URL =
+  process.env.PUBLIC_BACKEND_URL ||
+  SITE_URL;
+
 const DEFAULT_TITLE =
   'Agorá Revista';
 
@@ -187,11 +191,15 @@ const buildArticleMetadata =
         200
       );
 
+    /*
+     * La fotografía original continúa almacenada
+     * en Imgur, pero Open Graph recibe una tarjeta
+     * completa generada por el backend.
+     */
     const socialImage =
-      ensureAbsoluteUrl(
-        article.social_image_url ||
-        article.cover_image_url
-      );
+      `${BACKEND_URL}/og/articulos/${encodeURIComponent(
+        article.slug
+      )}`;
 
     return {
       pageType:
@@ -257,11 +265,15 @@ const buildGalleryMetadata =
         200
       );
 
+    /*
+     * La portada original puede seguir viniendo
+     * desde Imgur. Esta URL devuelve la composición
+     * social terminada como PNG.
+     */
     const socialImage =
-      ensureAbsoluteUrl(
-        gallery.social_image_url ||
-        gallery.cover_image_url
-      );
+      `${BACKEND_URL}/og/galerias/${encodeURIComponent(
+        gallery.slug
+      )}`;
 
     return {
       pageType:
@@ -390,6 +402,16 @@ const buildSeoTags =
     <meta
       property="og:image:type"
       content="image/png"
+    />
+
+    <meta
+      property="og:image:width"
+      content="1200"
+    />
+
+    <meta
+      property="og:image:height"
+      content="630"
     />
 
     <meta

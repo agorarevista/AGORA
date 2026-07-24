@@ -333,6 +333,18 @@ if (fs.existsSync(frontendIndexPath)) {
   );
 
   /* ══════════════════════════════════════════════════════
+     IMÁGENES OPEN GRAPH DINÁMICAS
+
+     Genera una tarjeta PNG de 1200 × 630 con:
+     fotografía, categoría, título, extracto y logo.
+  ═══════════════════════════════════════════════════════ */
+
+  app.use(
+    '/og',
+    require('./modules/ogImages/ogImages.routes')
+  );
+
+  /* ══════════════════════════════════════════════════════
      HTML SEO DINÁMICO
 
      Debe ir después de los assets y antes del
