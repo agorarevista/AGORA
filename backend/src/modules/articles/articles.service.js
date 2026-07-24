@@ -556,39 +556,19 @@ const getBySlug = async (
    * vistas, el artículo se entrega de todos
    * modos al visitante.
    */
-  supabase
-    .from('articles')
-    .update({
-      views:
-        Number(
-          data.views || 0
-        ) + 1,
-    })
-    .eq(
-      'id',
-      data.id
-    )
-    .then(
-      ({
-        error:
-          viewsError,
-      }) => {
-        if (viewsError) {
-          console.warn(
-            'No se pudo incrementar la vista del artículo:',
-            viewsError.message
-          );
-        }
-      }
-    )
-    .catch(
-      viewsError => {
-        console.warn(
-          'Error incrementando vista del artículo:',
-          viewsError.message
-        );
-      }
-    );
+supabase
+  .rpc(
+    'increment_article_views',
+    {
+      target_article_id: data.id,
+    }
+  )
+  .then(({ error }) => {
+    if (error) {
+      console.warn(error.message);
+    }
+  })
+  .catch(console.error);
 
   return data;
 };

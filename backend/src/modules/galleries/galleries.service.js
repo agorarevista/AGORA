@@ -975,39 +975,19 @@ const getBySlug = async slug => {
     );
   }
 
-  supabase
-    .from('galleries')
-    .update({
-      views:
-        Number(
-          data.views || 0
-        ) + 1,
-    })
-    .eq(
-      'id',
-      data.id
-    )
-    .then(
-      ({
-        error:
-          viewsError,
-      }) => {
-        if (viewsError) {
-          console.warn(
-            'No se pudo incrementar la vista de la galería:',
-            viewsError.message
-          );
-        }
-      }
-    )
-    .catch(
-      viewsError => {
-        console.warn(
-          'Error incrementando vista de la galería:',
-          viewsError.message
-        );
-      }
-    );
+supabase
+  .rpc(
+    'increment_gallery_views',
+    {
+      target_gallery_id: data.id,
+    }
+  )
+  .then(({ error }) => {
+    if (error) {
+      console.warn(error.message);
+    }
+  })
+  .catch(console.error);
 
   return sortGalleryPhotos(
     data
