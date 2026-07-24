@@ -105,6 +105,13 @@ const owner = useMemo(() => {
       collaborator.bio ||
       '',
 
+    columnDescription:
+      collaborator
+        .section_description ||
+      category
+        ?.description ||
+      '',
+
     socials: {
       instagram:
         socialLinks.instagram ||
@@ -281,215 +288,345 @@ return (
 
           {category ? (
             <>
-              <div className={styles.headerLabel}>Sección</div>
+              <div
+                className={
+                  styles.headerLabel
+                }
+              >
+                Columna
+              </div>
 
-              <div className={styles.headerTopRow}>
-                <div className={styles.headerTitleCol}>
-                  <h1 className={styles.headerTitle}>{category.name}</h1>
-                  {category.description && (
-                    <p className={styles.headerDesc}>{category.description}</p>
+              {owner ? (
+                <div
+                  className={
+                    styles.columnProfile
+                  }
+                >
+                  <div
+                    className={
+                      styles.columnProfilePhotoColumn
+                    }
+                  >
+                    {owner.slug ? (
+                      <Link
+                        to={`/colaborador/${owner.slug}`}
+                        className={
+                          styles.columnProfilePhotoLink
+                        }
+                        aria-label={`Ver perfil de ${owner.name}`}
+                      >
+                        {owner.photo ? (
+                          <img
+                            src={
+                              owner.photo
+                            }
+                            alt={
+                              owner.name
+                            }
+                            className={
+                              styles.columnProfilePhoto
+                            }
+                          />
+                        ) : (
+                          <div
+                            className={
+                              styles.columnProfilePhotoPlaceholder
+                            }
+                          >
+                            {(owner.name ||
+                              '?')[0]
+                              .toUpperCase()}
+                          </div>
+                        )}
+                      </Link>
+                    ) : owner.photo ? (
+                      <img
+                        src={
+                          owner.photo
+                        }
+                        alt={
+                          owner.name
+                        }
+                        className={
+                          styles.columnProfilePhoto
+                        }
+                      />
+                    ) : (
+                      <div
+                        className={
+                          styles.columnProfilePhotoPlaceholder
+                        }
+                      >
+                        {(owner.name ||
+                          '?')[0]
+                          .toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+
+                  <div
+                    className={
+                      styles.columnProfileContent
+                    }
+                  >
+                    <span
+                      className={
+                        styles.columnProfileEyebrow
+                      }
+                    >
+                      {category.name}
+                    </span>
+
+                    {owner.slug ? (
+                      <Link
+                        to={`/colaborador/${owner.slug}`}
+                        className={
+                          styles.columnProfileNameLink
+                        }
+                      >
+                        <h1
+                          className={
+                            styles.columnProfileName
+                          }
+                        >
+                          {owner.name}
+                        </h1>
+                      </Link>
+                    ) : (
+                      <h1
+                        className={
+                          styles.columnProfileName
+                        }
+                      >
+                        {owner.name}
+                      </h1>
+                    )}
+
+                    {owner.columnDescription && (
+                      <p
+                        className={
+                          styles.columnProfileDescription
+                        }
+                      >
+                        {
+                          owner.columnDescription
+                        }
+                      </p>
+                    )}
+                  </div>
+
+                  <aside
+                    className={
+                      styles.columnProfileAside
+                    }
+                  >
+                    <div
+                      className={
+                        styles.columnProfileCount
+                      }
+                    >
+                      <strong>
+                        {total}
+                      </strong>
+
+                      <span>
+                        {total === 1
+                          ? 'publicación'
+                          : 'publicaciones'}
+                      </span>
+                    </div>
+
+                    <div
+                      className={
+                        styles.columnProfileSocials
+                      }
+                    >
+                      {owner.socials.instagram && (
+                        <a
+                          href={
+                            owner.socials
+                              .instagram
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={
+                            styles.columnProfileSocial
+                          }
+                          aria-label="Instagram"
+                          title="Instagram"
+                        >
+                          <InstagramIcon />
+                        </a>
+                      )}
+
+                      {owner.socials.facebook && (
+                        <a
+                          href={
+                            owner.socials
+                              .facebook
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={
+                            styles.columnProfileSocial
+                          }
+                          aria-label="Facebook"
+                          title="Facebook"
+                        >
+                          <FacebookIcon />
+                        </a>
+                      )}
+
+                      {owner.socials.x && (
+                        <a
+                          href={
+                            owner.socials.x
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={
+                            styles.columnProfileSocial
+                          }
+                          aria-label="X"
+                          title="X"
+                        >
+                          <XIcon />
+                        </a>
+                      )}
+
+                      {owner.socials.tiktok && (
+                        <a
+                          href={
+                            owner.socials
+                              .tiktok
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={
+                            styles.columnProfileSocial
+                          }
+                          aria-label="TikTok"
+                          title="TikTok"
+                        >
+                          <TikTokIcon />
+                        </a>
+                      )}
+
+                      {owner.socials.youtube && (
+                        <a
+                          href={
+                            owner.socials
+                              .youtube
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={
+                            styles.columnProfileSocial
+                          }
+                          aria-label="YouTube"
+                          title="YouTube"
+                        >
+                          <YouTubeIcon />
+                        </a>
+                      )}
+
+                      {owner.socials.website && (
+                        <a
+                          href={
+                            owner.socials
+                              .website
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={
+                            styles.columnProfileSocial
+                          }
+                          aria-label="Sitio web"
+                          title="Sitio web"
+                        >
+                          <Globe
+                            size={17}
+                          />
+                        </a>
+                      )}
+
+                      {owner.socials.email && (
+                        <a
+                          href={
+                            owner.socials
+                              .email
+                          }
+                          className={
+                            styles.columnProfileSocial
+                          }
+                          aria-label="Correo"
+                          title="Correo"
+                        >
+                          <Mail
+                            size={17}
+                          />
+                        </a>
+                      )}
+
+                      {owner.slug && (
+                        <Link
+                          to={`/colaborador/${owner.slug}`}
+                          className={
+                            styles.columnProfileSocial
+                          }
+                          aria-label={`Ver perfil de ${owner.name}`}
+                          title="Ver perfil"
+                        >
+                          <ExternalLink
+                            size={16}
+                          />
+                        </Link>
+                      )}
+                    </div>
+                  </aside>
+                </div>
+              ) : (
+                <div
+                  className={
+                    styles.headerTopRow
+                  }
+                >
+                  <div
+                    className={
+                      styles.headerTitleCol
+                    }
+                  >
+                    <h1
+                      className={
+                        styles.headerTitle
+                      }
+                    >
+                      {category.name}
+                    </h1>
+
+                    {category.description && (
+                      <p
+                        className={
+                          styles.headerDesc
+                        }
+                      >
+                        {
+                          category.description
+                        }
+                      </p>
+                    )}
+                  </div>
+
+                  {sectionCollaborators.length >
+                    0 && (
+                    <AuthorsCollage
+                      collaborators={
+                        sectionCollaborators
+                      }
+                    />
                   )}
                 </div>
-
-{owner && (
-  <aside className={styles.ownerPanel}>
-    <div className={styles.ownerPanelLabel}>
-      Autor de la columna
-    </div>
-
-    <div className={styles.ownerPanelMain}>
-      {owner.slug ? (
-        <Link
-          to={`/colaborador/${owner.slug}`}
-          className={styles.ownerPhotoLink}
-          aria-label={`Ver perfil de ${owner.name}`}
-        >
-          {owner.photo ? (
-            <img
-              src={owner.photo}
-              alt={owner.name}
-              className={styles.ownerPhoto}
-            />
-          ) : (
-            <div className={styles.ownerPhotoPlaceholder}>
-              {(owner.name || '?')[0].toUpperCase()}
-            </div>
-          )}
-        </Link>
-      ) : (
-        <>
-          {owner.photo ? (
-            <img
-              src={owner.photo}
-              alt={owner.name}
-              className={styles.ownerPhoto}
-            />
-          ) : (
-            <div className={styles.ownerPhotoPlaceholder}>
-              {(owner.name || '?')[0].toUpperCase()}
-            </div>
-          )}
-        </>
-      )}
-
-      <div className={styles.ownerPanelInfo}>
-        {owner.slug ? (
-          <Link
-            to={`/colaborador/${owner.slug}`}
-            className={styles.ownerNameLink}
-          >
-            <h2 className={styles.ownerName}>
-              {owner.name}
-            </h2>
-          </Link>
-        ) : (
-          <h2 className={styles.ownerName}>
-            {owner.name}
-          </h2>
-        )}
-
-        <div className={styles.ownerArticleCount}>
-          <strong>{total}</strong>
-
-          <span>
-            {total === 1
-              ? 'artículo publicado'
-              : 'artículos publicados'}
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <div className={styles.ownerSocials}>
-      {owner.socials.instagram && (
-        <a
-          href={owner.socials.instagram}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.ownerSocial}
-          aria-label="Instagram"
-          title="Instagram"
-        >
-          <InstagramIcon
-            className={styles.ownerSocialIcon}
-          />
-        </a>
-      )}
-
-      {owner.socials.facebook && (
-        <a
-          href={owner.socials.facebook}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.ownerSocial}
-          aria-label="Facebook"
-          title="Facebook"
-        >
-          <FacebookIcon
-            className={styles.ownerSocialIcon}
-          />
-        </a>
-      )}
-
-      {owner.socials.x && (
-        <a
-          href={owner.socials.x}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.ownerSocial}
-          aria-label="X"
-          title="X"
-        >
-          <XIcon
-            className={styles.ownerSocialIcon}
-          />
-        </a>
-      )}
-
-      {owner.socials.tiktok && (
-        <a
-          href={owner.socials.tiktok}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.ownerSocial}
-          aria-label="TikTok"
-          title="TikTok"
-        >
-          <TikTokIcon
-            className={styles.ownerSocialIcon}
-          />
-        </a>
-      )}
-
-      {owner.socials.youtube && (
-        <a
-          href={owner.socials.youtube}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.ownerSocial}
-          aria-label="YouTube"
-          title="YouTube"
-        >
-          <YouTubeIcon
-            className={styles.ownerSocialIcon}
-          />
-        </a>
-      )}
-
-      {owner.socials.website && (
-        <a
-          href={owner.socials.website}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.ownerSocial}
-          aria-label="Sitio web"
-          title="Sitio web"
-        >
-          <Globe
-            size={16}
-            className={styles.ownerSocialIcon}
-          />
-        </a>
-      )}
-
-      {owner.socials.email && (
-        <a
-          href={owner.socials.email}
-          className={styles.ownerSocial}
-          aria-label="Correo"
-          title="Correo"
-        >
-          <Mail
-            size={16}
-            className={styles.ownerSocialIcon}
-          />
-        </a>
-      )}
-
-      {owner.slug && (
-        <Link
-          to={`/colaborador/${owner.slug}`}
-          className={`${styles.ownerSocial} ${styles.ownerProfileButton}`}
-          aria-label={`Abrir perfil de ${owner.name}`}
-          title="Ver perfil"
-        >
-          <ExternalLink
-            size={15}
-            className={styles.ownerSocialIcon}
-          />
-        </Link>
-      )}
-    </div>
-  </aside>
-)}
-
-{!owner && sectionCollaborators.length > 0 && (
-  <AuthorsCollage
-    collaborators={sectionCollaborators}
-  />
-)}
-
-</div>
+              )}
             </>
           ) : (
             <h1 className={styles.headerTitle}>{slug}</h1>

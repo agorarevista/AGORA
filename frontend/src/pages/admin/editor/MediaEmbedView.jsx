@@ -103,6 +103,25 @@ export default function MediaEmbedView({
     rotation = 0,
     align = 'center',
     locked = false,
+    caption = '',
+
+    captionFontFamily =
+      'var(--font-sans)',
+
+    captionFontSize =
+      '12px',
+
+    captionBold = false,
+    captionItalic = false,
+    captionUnderline = false,
+
+    captionColor =
+      '#6b7280',
+
+    captionAlign =
+      'center',
+
+    captionHref = '',
   } = node.attrs;
 
   const wrapperRef = useRef(null);
@@ -779,6 +798,102 @@ export default function MediaEmbedView({
           </>
         )}
       </div>
+
+      {(selected || caption) && (
+        <div
+          className={
+            styles.mediaCaptionEditor
+          }
+          contentEditable={false}
+          onMouseDown={event => {
+            event.stopPropagation();
+          }}
+          onClick={event => {
+            event.stopPropagation();
+          }}
+        >
+          <textarea
+            value={caption}
+            onFocus={() => {
+              window.dispatchEvent(
+                new CustomEvent(
+                  'agora-caption-focus',
+                  {
+                    detail: {
+                      type:
+                        'media',
+
+                      updateAttributes,
+
+                      attrs: {
+                        captionFontFamily,
+                        captionFontSize,
+                        captionBold,
+                        captionItalic,
+                        captionUnderline,
+                        captionColor,
+                        captionAlign,
+                        captionHref,
+                      },
+                    },
+                  }
+                )
+              );
+            }}
+            onChange={event => {
+              const nextCaption =
+                event.target.value;
+
+              updateAttributes({
+                caption:
+                  nextCaption,
+              });
+            }}
+            placeholder="Escribe un pie de video o crédito..."
+            className={
+              styles.mediaCaptionInput
+            }
+            style={{
+              fontFamily:
+                captionFontFamily,
+
+              fontSize:
+                captionFontSize,
+
+              fontWeight:
+                captionBold
+                  ? 700
+                  : 400,
+
+              fontStyle:
+                captionItalic
+                  ? 'italic'
+                  : 'normal',
+
+              textDecoration:
+                captionUnderline
+                  ? 'underline'
+                  : 'none',
+
+              color:
+                captionColor,
+
+              textAlign:
+                captionAlign,
+            }}
+            rows={2}
+            maxLength={500}
+          />
+
+          <span
+            className={
+              styles.mediaCaptionCount
+            }
+          >
+            {caption.length}/500
+          </span>
+        </div>
+           )}
     </NodeViewWrapper>
   );
-}
+} 

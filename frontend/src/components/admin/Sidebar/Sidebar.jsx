@@ -17,6 +17,7 @@ import {
   PanelLeftOpen,
   Settings,
   Sparkles,
+  SearchCheck,
   Users,
   UsersRound,
 } from 'lucide-react';
@@ -109,6 +110,11 @@ const NAVIGATION_GROUPS = [
         label: 'Usuarios',
         to: '/admin/usuarios',
         icon: Users,
+      },
+      {
+        label: 'SEO',
+        to: '/admin/seo',
+        icon: SearchCheck,
       },
       {
         label: 'Configuración',

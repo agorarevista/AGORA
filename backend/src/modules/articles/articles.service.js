@@ -317,6 +317,13 @@ const BASE_SELECT = `
   subtitle,
   excerpt,
   cover_image_url,
+  cover_caption,
+  cover_caption_format,
+  seo_title,
+  seo_description,
+  social_title,
+  social_description,
+  social_image_url,
   published_at,
   created_at,
   status,
@@ -354,6 +361,13 @@ const EDITOR_SELECT = `
   content,
   content_html,
   cover_image_url,
+  cover_caption,
+  cover_caption_format,
+  seo_title,
+  seo_description,
+  social_title,
+  social_description,
+  social_image_url,
   collaborator_id,
   edition_id,
   published_at,
@@ -498,7 +512,10 @@ const getAll = async ({
 const getBySlug = async (slug) => {
   const { data, error } = await supabase
     .from('articles')
-    .select(BASE_SELECT + ', content_html')
+    .select(
+      BASE_SELECT +
+      ', content, content_html'
+    )
     .eq('slug', slug)
     .eq('status', 'published')
     .maybeSingle();
@@ -1064,6 +1081,13 @@ const create = async (body) => {
     content,
     content_html,
     cover_image_url,
+    cover_caption,
+    cover_caption_format,
+    seo_title,
+    seo_description,
+    social_title,
+    social_description,
+    social_image_url,
     collaborator_id,
     edition_id,
     is_featured,
@@ -1112,6 +1136,52 @@ const create = async (body) => {
       content,
       content_html,
       cover_image_url,
+      cover_caption:
+        typeof cover_caption === 'string'
+          ? cover_caption.trim() || null
+          : null,
+
+      cover_caption_format:
+        cover_caption_format &&
+        typeof cover_caption_format === 'object'
+          ? cover_caption_format
+          : {
+              fontFamily:
+                'var(--font-sans)',
+              fontSize: '12px',
+              bold: false,
+              italic: false,
+              underline: false,
+              color: '#6b7280',
+              align: 'left',
+              href: '',
+            },
+
+      seo_title:
+        typeof seo_title === 'string'
+          ? seo_title.trim() || null
+          : null,
+
+      seo_description:
+        typeof seo_description === 'string'
+          ? seo_description.trim() || null
+          : null,
+
+      social_title:
+        typeof social_title === 'string'
+          ? social_title.trim() || null
+          : null,
+
+      social_description:
+        typeof social_description === 'string'
+          ? social_description.trim() || null
+          : null,
+
+      social_image_url:
+        typeof social_image_url === 'string'
+          ? social_image_url.trim() || null
+          : null,
+
       collaborator_id,
       edition_id,
       is_featured: is_featured || false,
@@ -1152,7 +1222,37 @@ const update = async (
   id,
   body
 ) => {
-  
+  const {
+    data: currentArticle,
+    error: currentArticleError,
+  } = await supabase
+    .from('articles')
+    .select(
+      `
+        id,
+        edition_id,
+        is_featured,
+        featured_order
+      `
+    )
+    .eq(
+      'id',
+      id
+    )
+    .maybeSingle();
+
+  if (currentArticleError) {
+    throw currentArticleError;
+  }
+
+  if (!currentArticle) {
+    throw {
+      status: 404,
+      message:
+        'Artículo no encontrado',
+    };
+  }
+
   const {
     category_ids,
     tags,
@@ -1160,12 +1260,41 @@ const update = async (
     ...rest
   } = body;
 
+  const stringFields = [
+    'seo_title',
+    'seo_description',
+    'social_title',
+    'social_description',
+    'social_image_url',
+  ];
+
+  stringFields.forEach(field => {
+    if (
+      Object.prototype
+        .hasOwnProperty.call(
+          rest,
+          field
+        )
+    ) {
+      rest[field] =
+        typeof rest[field] ===
+          'string'
+          ? rest[field].trim() ||
+            null
+          : null;
+    }
+  });
+
   await validateEditionHighlight({
     editionId:
-      rest.edition_id ||
-      currentArticle
-        ?.edition_id ||
-      null,
+      Object.prototype
+        .hasOwnProperty.call(
+          rest,
+          'edition_id'
+        )
+        ? rest.edition_id
+        : currentArticle
+            .edition_id,
 
     isFeatured:
       Object.prototype
@@ -1178,7 +1307,7 @@ const update = async (
           )
         : Boolean(
             currentArticle
-              ?.is_featured
+              .is_featured
           ),
 
     featuredOrder:
@@ -1189,7 +1318,7 @@ const update = async (
         )
         ? rest.featured_order
         : currentArticle
-            ?.featured_order,
+            .featured_order,
 
     articleId:
       id,
@@ -1208,10 +1337,13 @@ const update = async (
     content_html !==
     undefined
   ) {
-    rest.content_html = content_html;
+    rest.content_html =
+      content_html;
 
     rest.reading_time =
-      readingTime(content_html);
+      readingTime(
+        content_html
+      );
 
     rest.audio_status =
       'outdated';
@@ -1220,43 +1352,124 @@ const update = async (
       null;
   }
 
-  const { data: article, error } = await supabase
+  const {
+    data: article,
+    error,
+  } = await supabase
     .from('articles')
     .update(rest)
-    .eq('id', id)
+    .eq(
+      'id',
+      id
+    )
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
-  // Actualizar categorías si vienen
-  if (category_ids !== undefined) {
-    await supabase.from('article_categories').delete().eq('article_id', id);
+  if (
+    category_ids !==
+    undefined
+  ) {
+    const {
+      error: categoriesDeleteError,
+    } = await supabase
+      .from(
+        'article_categories'
+      )
+      .delete()
+      .eq(
+        'article_id',
+        id
+      );
 
-    if (category_ids.length > 0) {
-      const catRows = category_ids.map(cat_id => ({
-        article_id: id,
-        category_id: cat_id
-      }));
-      await supabase.from('article_categories').insert(catRows);
+    if (
+      categoriesDeleteError
+    ) {
+      throw categoriesDeleteError;
+    }
+
+    if (
+      category_ids.length >
+      0
+    ) {
+      const catRows =
+        category_ids.map(
+          categoryId => ({
+            article_id: id,
+            category_id:
+              categoryId,
+          })
+        );
+
+      const {
+        error:
+          categoriesInsertError,
+      } = await supabase
+        .from(
+          'article_categories'
+        )
+        .insert(catRows);
+
+      if (
+        categoriesInsertError
+      ) {
+        throw categoriesInsertError;
+      }
     }
   }
 
-  // Actualizar tags si vienen
-  if (tags !== undefined) {
-    await supabase.from('article_tags').delete().eq('article_id', id);
+  if (
+    tags !==
+    undefined
+  ) {
+    const {
+      error: tagsDeleteError,
+    } = await supabase
+      .from('article_tags')
+      .delete()
+      .eq(
+        'article_id',
+        id
+      );
 
-    if (tags.length > 0) {
-      const tagRows = tags.map(t => ({
-        article_id: id,
-        tag: t.tag,
-        tag_type: t.tag_type || null
-      }));
-      await supabase.from('article_tags').insert(tagRows);
+    if (tagsDeleteError) {
+      throw tagsDeleteError;
+    }
+
+    if (
+      tags.length >
+      0
+    ) {
+      const tagRows =
+        tags.map(tag => ({
+          article_id: id,
+
+          tag:
+            tag.tag ||
+            tag,
+
+          tag_type:
+            tag.tag_type ||
+            null,
+        }));
+
+      const {
+        error:
+          tagsInsertError,
+      } = await supabase
+        .from('article_tags')
+        .insert(tagRows);
+
+      if (tagsInsertError) {
+        throw tagsInsertError;
+      }
     }
   }
 
-    invalidateHomeCache();
+  invalidateHomeCache();
 
   return article;
 };

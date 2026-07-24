@@ -501,12 +501,23 @@
   max-width: 860px;
   margin: var(--space-6) auto 0;
   padding: 0 var(--space-5);
-  position: relative;
-  cursor: zoom-in;
   display: block;
 }
 
-.coverWrap:hover .coverExpand { opacity: 1; }
+.coverButton {
+  position: relative;
+  width: 100%;
+  display: block;
+  padding: 0;
+  overflow: visible;
+  border: none;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.coverButton:hover .coverExpand {
+  opacity: 1;
+}
 
 .cover {
   width: 100%;
@@ -521,17 +532,31 @@
 .coverExpand {
   position: absolute;
   top: 16px;
-  right: 32px;
-  background: rgba(0,0,0,0.55);
-  color: white;
-  border-radius: 8px;
+  right: 16px;
   padding: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
+  background: rgba(0,0,0,0.55);
+  border-radius: 8px;
   opacity: 0;
-  transition: opacity 0.2s;
   pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.coverCaption {
+  max-width: 760px;
+  margin: 10px auto 0;
+  color: var(--color-gray-500);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1.55;
+  text-align: left;
+}
+
+:global(html.dark) .coverCaption {
+  color: var(--color-gray-400);
 }
 
 /* ── Artículo centrado (sin sidebar) ─────────────────── */
@@ -1057,12 +1082,10 @@
 }
 
 .body :global(.article-image-node figcaption) {
+  display: block;
+  width: 100%;
   margin-top: 8px;
-  color: var(--color-gray-500);
-  font-family: var(--font-sans);
-  font-size: 12px;
   line-height: 1.45;
-  text-align: center;
 }
 
 /* Compatibilidad con imágenes viejas */
@@ -1091,6 +1114,24 @@
 
 .body :global(.article-media-node video) {
   object-fit: contain;
+}
+
+.body :global(.article-media-node figcaption),
+.body :global(.media-caption) {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 0 4px;
+  line-height: 1.55;
+}
+
+:global(html.dark)
+.body
+:global(.article-media-node figcaption),
+:global(html.dark)
+.body
+:global(.media-caption) {
+  color: var(--color-gray-400);
 }
 
 /* ── Listas alfabéticas y romanas ───────────────────── */
@@ -1141,4 +1182,21 @@
 :global(html.dark) .authorAvatarAgora,
 :global(html.dark) .authorCardAvatarAgora {
   background: #f7f2e9;
+}
+
+.coverCaption a,
+.body :global(.article-image-node figcaption a),
+.body :global(.article-media-node figcaption a),
+.body :global(.media-caption a) {
+  color: inherit;
+  font: inherit;
+  text-decoration: inherit;
+  cursor: pointer;
+}
+
+.coverCaption a:hover,
+.body :global(.article-image-node figcaption a:hover),
+.body :global(.article-media-node figcaption a:hover),
+.body :global(.media-caption a:hover) {
+  opacity: 0.72;
 }

@@ -1,6 +1,16 @@
 @import './variables.css';
 @import './typography.css';
 
+@font-face {
+  font-family: 'Garbata';
+  src:
+    url('/fonts/GarbataTrial-Regular.ttf')
+    format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;

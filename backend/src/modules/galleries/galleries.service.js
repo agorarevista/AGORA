@@ -15,6 +15,11 @@ const GALLERY_BASE_SELECT = `
   excerpt,
   cover_image_url,
   cover_image_key,
+  seo_title,
+  seo_description,
+  social_title,
+  social_description,
+  social_image_url,
   collaborator_id,
   edition_id,
   status,
@@ -64,6 +69,11 @@ const GALLERY_COMPLETE_SELECT = `
   excerpt,
   cover_image_url,
   cover_image_key,
+  seo_title,
+  seo_description,
+  social_title,
+  social_description,
+  social_image_url,
   collaborator_id,
   edition_id,
   status,
@@ -667,6 +677,41 @@ const buildGalleryPayload =
       cover_image_key:
         normalizeNullableString(
           body.cover_image_key
+        ),
+
+      seo_title:
+        normalizeNullableString(
+          body.seo_title ??
+          currentGallery
+            ?.seo_title
+        ),
+
+      seo_description:
+        normalizeNullableString(
+          body.seo_description ??
+          currentGallery
+            ?.seo_description
+        ),
+
+      social_title:
+        normalizeNullableString(
+          body.social_title ??
+          currentGallery
+            ?.social_title
+        ),
+
+      social_description:
+        normalizeNullableString(
+          body.social_description ??
+          currentGallery
+            ?.social_description
+        ),
+
+      social_image_url:
+        normalizeNullableString(
+          body.social_image_url ??
+          currentGallery
+            ?.social_image_url
         ),
 
       collaborator_id:

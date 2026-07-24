@@ -64,6 +64,7 @@ fixed_collaborator:collaborators!categories_fixed_collaborator_id_fkey (
   email,
   type,
   section_name,
+  section_description,
   section_slug,
   social_links,
   is_active
@@ -106,6 +107,7 @@ fixed_collaborator:collaborators!categories_fixed_collaborator_id_fkey (
   email,
   type,
   section_name,
+  section_description,
   section_slug,
   social_links,
   is_active
@@ -136,6 +138,7 @@ fixed_collaborator:collaborators!categories_fixed_collaborator_id_fkey (
   email,
   type,
   section_name,
+  section_description,
   section_slug,
   social_links,
   is_active
@@ -231,6 +234,7 @@ fixed_collaborator:collaborators!categories_fixed_collaborator_id_fkey (
   email,
   type,
   section_name,
+  section_description,
   section_slug,
   social_links,
   is_active
@@ -321,6 +325,7 @@ fixed_collaborator:collaborators!categories_fixed_collaborator_id_fkey (
   email,
   type,
   section_name,
+  section_description,
   section_slug,
   social_links,
   is_active

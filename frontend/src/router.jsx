@@ -41,6 +41,7 @@ import ConvocatoriasPage from './pages/admin/ConvocatoriasPage';
 import CommentsPage from './pages/admin/CommentsPage';
 import UsersPage from './pages/admin/UsersPage';
 import SettingsPage from './pages/admin/SettingsPage';
+import SeoPage from './pages/admin/SeoPage';
 import SponsorsPage from './pages/admin/SponsorsPage';
 
 import useAuthStore from './store/authStore';
@@ -291,6 +292,11 @@ const router =
               path: 'usuarios',
               element:
                 <UsersPage />,
+            },
+            {
+              path: 'seo',
+              element:
+                <SeoPage />,
             },
             {
               path:

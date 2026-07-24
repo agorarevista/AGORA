@@ -90,6 +90,40 @@ const AGORA_AUTHOR = {
 };
 
 
+const getMediaCaptionsFromContent = (
+  content
+) => {
+  const captions = [];
+
+  const visitNode = node => {
+    if (!node || typeof node !== 'object') {
+      return;
+    }
+
+    if (
+      node.type === 'mediaEmbed' &&
+      typeof node.attrs?.caption ===
+        'string' &&
+      node.attrs.caption.trim()
+    ) {
+      captions.push(
+        node.attrs.caption.trim()
+      );
+    }
+
+    if (Array.isArray(node.content)) {
+      node.content.forEach(
+        visitNode
+      );
+    }
+  };
+
+  visitNode(content);
+
+  return captions;
+};
+
+
 const formatAudioTime = (value) => {
   const totalSeconds = Math.max(
     0,
@@ -231,8 +265,8 @@ export default function ArticlePage() {
   ]);
 
 
-  // Permite abrir las imágenes del artículo
-  // sin modificar su estructura HTML.
+  // Permite abrir las imágenes y restaura
+  // pies multimedia guardados en el JSON.
   useEffect(() => {
     const bodyElement =
       bodyRef.current;
@@ -250,7 +284,7 @@ export default function ArticlePage() {
     images.forEach((image) => {
       image.style.cursor = 'zoom-in';
 
-      const handleImageClick = (event) => {
+      const handleImageClick = event => {
         const parentLink =
           image.closest('a');
 
@@ -290,6 +324,65 @@ export default function ArticlePage() {
         );
       });
     });
+
+    const mediaCaptions =
+      getMediaCaptionsFromContent(
+        article.content
+      );
+
+    const mediaFigures = Array.from(
+      bodyElement.querySelectorAll(
+        'figure.article-media-node'
+      )
+    );
+
+    mediaFigures.forEach(
+      (figure, index) => {
+        const captionText =
+          mediaCaptions[index] || '';
+
+        if (!captionText) {
+          return;
+        }
+
+        const existingCaption =
+          figure.querySelector(
+            'figcaption'
+          );
+
+        if (existingCaption) {
+          if (
+            !existingCaption
+              .textContent
+              ?.trim()
+          ) {
+            existingCaption.textContent =
+              captionText;
+          }
+
+          existingCaption.classList.add(
+            'media-caption'
+          );
+
+          return;
+        }
+
+        const figcaption =
+          document.createElement(
+            'figcaption'
+          );
+
+        figcaption.className =
+          'media-caption';
+
+        figcaption.textContent =
+          captionText;
+
+        figure.appendChild(
+          figcaption
+        );
+      }
+    );
 
     return () => {
       cleanupFunctions.forEach(
@@ -1086,7 +1179,7 @@ export default function ArticlePage() {
 
       {/* ── Portada ──────────────────────────────── */}
       {article.cover_image_url && (
-        <motion.div
+        <motion.figure
           initial={{
             opacity: 0,
             scale: 1.02,
@@ -1100,26 +1193,108 @@ export default function ArticlePage() {
             delay: 0.1,
           }}
           className={styles.coverWrap}
-          onClick={() => {
-            setViewer({
-              src:
-                article.cover_image_url,
-
-              alt:
-                article.title,
-            });
-          }}
         >
-          <img
-            src={article.cover_image_url}
-            alt={article.title}
-            className={styles.cover}
-          />
+          <button
+            type="button"
+            className={styles.coverButton}
+            onClick={() => {
+              setViewer({
+                src:
+                  article.cover_image_url,
 
-          <div className={styles.coverExpand}>
-            <Maximize2 size={18} />
-          </div>
-        </motion.div>
+                alt:
+                  article.cover_caption ||
+                  article.title,
+              });
+            }}
+            aria-label="Ampliar imagen de portada"
+          >
+            <img
+              src={article.cover_image_url}
+              alt={
+                article.cover_caption ||
+                article.title
+              }
+              className={styles.cover}
+            />
+
+            <span className={styles.coverExpand}>
+              <Maximize2 size={18} />
+            </span>
+          </button>
+
+          {article.cover_caption && (
+            <figcaption
+              className={
+                styles.coverCaption
+              }
+              style={{
+                fontFamily:
+                  article
+                    .cover_caption_format
+                    ?.fontFamily ||
+                  'var(--font-sans)',
+
+                fontSize:
+                  article
+                    .cover_caption_format
+                    ?.fontSize ||
+                  '12px',
+
+                fontWeight:
+                  article
+                    .cover_caption_format
+                    ?.bold
+                    ? 700
+                    : 400,
+
+                fontStyle:
+                  article
+                    .cover_caption_format
+                    ?.italic
+                    ? 'italic'
+                    : 'normal',
+
+                textDecoration:
+                  article
+                    .cover_caption_format
+                    ?.underline
+                    ? 'underline'
+                    : 'none',
+
+                color:
+                  article
+                    .cover_caption_format
+                    ?.color ||
+                  '#6b7280',
+
+                textAlign:
+                  article
+                    .cover_caption_format
+                    ?.align ||
+                  'left',
+              }}
+            >
+              {article
+                .cover_caption_format
+                ?.href ? (
+                <a
+                  href={
+                    article
+                      .cover_caption_format
+                      .href
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {article.cover_caption}
+                </a>
+              ) : (
+                article.cover_caption
+              )}
+            </figcaption>
+          )}
+        </motion.figure>
       )}
 
       {/* ── Contenido ────────────────────────────── */}

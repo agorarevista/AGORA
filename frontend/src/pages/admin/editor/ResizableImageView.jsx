@@ -13,7 +13,6 @@ import {
   Trash2,
   Lock,
   Unlock,
-  Link as LinkIcon,
   Captions,
   FileText,
   RotateCcw,
@@ -113,6 +112,25 @@ export default function ResizableImageView(
     marginTop = '12px',
     marginBottom = '12px',
     caption = '',
+
+    captionFontFamily =
+      'var(--font-sans)',
+
+    captionFontSize =
+      '12px',
+
+    captionBold = false,
+    captionItalic = false,
+    captionUnderline = false,
+
+    captionColor =
+      '#6b7280',
+
+    captionAlign =
+      'center',
+
+    captionHref = '',
+
     href = '',
   } = node.attrs;
 
@@ -127,18 +145,7 @@ const [
   setIsDragging,
 ] = useState(false);
 
-const [
-  captionDialogOpen,
-  setCaptionDialogOpen,
-] = useState(false);
-
-const [
-  captionInput,
-  setCaptionInput,
-] = useState('');
-
 const lastDragXRef = useRef(null);
-
 const widthNumber = clampPercent(
   width,
   100
@@ -425,28 +432,31 @@ updateAttributes(
       .run();
   };
 
-const openCaptionDialog = () => {
-  setCaptionInput(
-    caption || ''
+const focusCaption = () => {
+  window.dispatchEvent(
+    new CustomEvent(
+      'agora-caption-focus',
+      {
+        detail: {
+          type:
+            'image',
+
+          updateAttributes,
+
+          attrs: {
+            captionFontFamily,
+            captionFontSize,
+            captionBold,
+            captionItalic,
+            captionUnderline,
+            captionColor,
+            captionAlign,
+            captionHref,
+          },
+        },
+      }
+    )
   );
-
-  setCaptionDialogOpen(true);
-};
-
-const closeCaptionDialog = () => {
-  setCaptionDialogOpen(false);
-  setCaptionInput('');
-};
-
-const saveCaption = event => {
-  event.preventDefault();
-
-  updateAttributes({
-    caption:
-      captionInput.trim(),
-  });
-
-  closeCaptionDialog();
 };
 
   const editAlt = () => {
@@ -458,19 +468,6 @@ const saveCaption = event => {
     if (value !== null) {
       updateAttributes({
         alt: value.trim(),
-      });
-    }
-  };
-
-  const editLink = () => {
-    const value = window.prompt(
-      'Enlace de la imagen. Déjalo vacío para eliminarlo:',
-      href || 'https://'
-    );
-
-    if (value !== null) {
-      updateAttributes({
-        href: value.trim(),
       });
     }
   };
@@ -761,8 +758,21 @@ const wrapperStyle = {
       ? styles.imageToolbarBtnActive
       : ''
   }`}
-  title="Pie de foto"
-  onClick={openCaptionDialog}
+  title="Editar pie de foto"
+  onClick={() => {
+    focusCaption();
+
+    window.setTimeout(
+      () => {
+        wrapperRef.current
+          ?.querySelector(
+            'textarea[data-image-caption="true"]'
+          )
+          ?.focus();
+      },
+      0
+    );
+  }}
 >
   <Captions size={14} />
 </button>
@@ -947,147 +957,76 @@ const wrapperStyle = {
         )}
       </div>
 
-      {caption && (
-        <figcaption
-          className={
-            styles.imageCaption
-          }
-          contentEditable={false}
-        >
-          {caption}
-        </figcaption>
-      )}
-
-      {captionDialogOpen && (
+      {(selected || caption) && (
         <div
           className={
-            styles.editorPromptBackdrop
+            styles.imageCaptionEditor
           }
-          onMouseDown={event => {
-            if (
-              event.target ===
-              event.currentTarget
-            ) {
-              closeCaptionDialog();
-            }
-          }}
           contentEditable={false}
+          onMouseDown={event => {
+            event.stopPropagation();
+          }}
+          onClick={event => {
+            event.stopPropagation();
+          }}
         >
-          <form
-            className={
-              styles.editorPromptDialog
+          <textarea
+            data-image-caption="true"
+            value={
+              caption
             }
-            onSubmit={saveCaption}
+            onFocus={
+              focusCaption
+            }
+            onChange={event => {
+              updateAttributes({
+                caption:
+                  event.target.value,
+              });
+            }}
+            placeholder="Escribe un pie de foto o crédito..."
+            className={
+              styles.imageCaptionInput
+            }
+            style={{
+              fontFamily:
+                captionFontFamily,
+
+              fontSize:
+                captionFontSize,
+
+              fontWeight:
+                captionBold
+                  ? 700
+                  : 400,
+
+              fontStyle:
+                captionItalic
+                  ? 'italic'
+                  : 'normal',
+
+              textDecoration:
+                captionUnderline
+                  ? 'underline'
+                  : 'none',
+
+              color:
+                captionColor,
+
+              textAlign:
+                captionAlign,
+            }}
+            rows={2}
+            maxLength={500}
+          />
+
+          <span
+            className={
+              styles.imageCaptionCount
+            }
           >
-            <div
-              className={
-                styles.editorPromptTopBar
-              }
-            />
-
-            <div
-              className={
-                styles.editorPromptBody
-              }
-            >
-              <div
-                className={
-                  styles.editorPromptIconWrap
-                }
-              >
-                <span
-                  className={
-                    styles.editorPromptIcon
-                  }
-                >
-                  Λ
-                </span>
-              </div>
-
-              <div
-                className={
-                  styles.editorPromptContent
-                }
-              >
-                <div
-                  className={
-                    styles.editorPromptType
-                  }
-                >
-                  Ἀγορά
-                </div>
-
-                <h2
-                  className={
-                    styles.editorPromptTitle
-                  }
-                >
-                  Pie de foto
-                </h2>
-
-                <p
-                  className={
-                    styles.editorPromptMessage
-                  }
-                >
-                  Escribe una descripción breve
-                  para mostrar debajo de la imagen.
-                </p>
-
-                <input
-                  type="text"
-                  value={captionInput}
-                  onChange={event => {
-                    setCaptionInput(
-                      event.target.value
-                    );
-                  }}
-                  placeholder="Escribe el pie de foto..."
-                  className={
-                    styles.editorPromptInput
-                  }
-                  autoFocus
-                />
-              </div>
-            </div>
-
-            <div
-              className={
-                styles.editorPromptMeander
-              }
-            >
-              <span />
-              <span />
-              <span />
-            </div>
-
-            <div
-              className={
-                styles.editorPromptActions
-              }
-            >
-              <button
-                type="button"
-                className={
-                  styles.editorPromptCancelBtn
-                }
-                onClick={
-                  closeCaptionDialog
-                }
-              >
-                Cancelar
-              </button>
-
-              <button
-                type="submit"
-                className={
-                  styles.editorPromptConfirmBtn
-                }
-              >
-                Guardar
-              </button>
-            </div>
-          </form>
+            {caption.length}/500
+          </span>
         </div>
       )}
     </NodeViewWrapper>

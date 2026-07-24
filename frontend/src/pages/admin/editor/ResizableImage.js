@@ -258,6 +258,186 @@ const ResizableImage = Image.extend({
         },
       },
 
+      captionFontFamily: {
+        default:
+          'var(--font-sans)',
+
+        parseHTML: element => {
+          const figcaption =
+            element
+              .closest('figure')
+              ?.querySelector(
+                'figcaption'
+              );
+
+          return (
+            figcaption?.style
+              ?.fontFamily ||
+            'var(--font-sans)'
+          );
+        },
+
+        renderHTML: () => {
+          return {};
+        },
+      },
+
+      captionFontSize: {
+        default: '12px',
+
+        parseHTML: element => {
+          const figcaption =
+            element
+              .closest('figure')
+              ?.querySelector(
+                'figcaption'
+              );
+
+          return (
+            figcaption?.style
+              ?.fontSize ||
+            '12px'
+          );
+        },
+
+        renderHTML: () => {
+          return {};
+        },
+      },
+
+      captionBold: {
+        default: false,
+
+        parseHTML: element => {
+          const fontWeight =
+            element
+              .closest('figure')
+              ?.querySelector(
+                'figcaption'
+              )
+              ?.style
+              ?.fontWeight;
+
+          return (
+            fontWeight === '700' ||
+            fontWeight === 'bold'
+          );
+        },
+
+        renderHTML: () => {
+          return {};
+        },
+      },
+
+      captionItalic: {
+        default: false,
+
+        parseHTML: element => {
+          return (
+            element
+              .closest('figure')
+              ?.querySelector(
+                'figcaption'
+              )
+              ?.style
+              ?.fontStyle ===
+            'italic'
+          );
+        },
+
+        renderHTML: () => {
+          return {};
+        },
+      },
+
+      captionUnderline: {
+        default: false,
+
+        parseHTML: element => {
+          const decoration =
+            element
+              .closest('figure')
+              ?.querySelector(
+                'figcaption'
+              )
+              ?.style
+              ?.textDecoration ||
+            '';
+
+          return decoration.includes(
+            'underline'
+          );
+        },
+
+        renderHTML: () => {
+          return {};
+        },
+      },
+
+      captionColor: {
+        default: '#6b7280',
+
+        parseHTML: element => {
+          return (
+            element
+              .closest('figure')
+              ?.querySelector(
+                'figcaption'
+              )
+              ?.style
+              ?.color ||
+            '#6b7280'
+          );
+        },
+
+        renderHTML: () => {
+          return {};
+        },
+      },
+
+      captionAlign: {
+        default: 'center',
+
+        parseHTML: element => {
+          return (
+            element
+              .closest('figure')
+              ?.querySelector(
+                'figcaption'
+              )
+              ?.style
+              ?.textAlign ||
+            'center'
+          );
+        },
+
+        renderHTML: () => {
+          return {};
+        },
+      },
+
+      captionHref: {
+        default: '',
+
+        parseHTML: element => {
+          return (
+            element
+              .closest('figure')
+              ?.querySelector(
+                'figcaption a'
+              )
+              ?.getAttribute(
+                'href'
+              ) ||
+            ''
+          );
+        },
+
+        renderHTML: () => {
+          return {};
+        },
+      },
+
       href: {
         default: '',
 
@@ -298,6 +478,7 @@ const ResizableImage = Image.extend({
   },
 
   renderHTML({
+    node,
     HTMLAttributes,
   }) {
     const {
@@ -312,9 +493,16 @@ const ResizableImage = Image.extend({
       marginTop,
       marginBottom,
       caption,
+      captionFontFamily,
+      captionFontSize,
+      captionBold,
+      captionItalic,
+      captionUnderline,
+      captionColor,
+      captionAlign,
+      captionHref,
       href,
-      ...rest
-    } = HTMLAttributes;
+    } = node.attrs;
 
     const safeWidth = clampPercent(
       width,
@@ -369,7 +557,7 @@ const ResizableImage = Image.extend({
     const imageAttributes =
       mergeAttributes(
         this.options.HTMLAttributes,
-        rest,
+        HTMLAttributes,
         {
           src,
 
@@ -439,10 +627,84 @@ const ResizableImage = Image.extend({
     ];
 
     if (caption) {
+      const captionStyle = [
+        `font-family:${
+          captionFontFamily ||
+          'var(--font-sans)'
+        }`,
+
+        `font-size:${
+          captionFontSize ||
+          '12px'
+        }`,
+
+        `font-weight:${
+          captionBold
+            ? '700'
+            : '400'
+        }`,
+
+        `font-style:${
+          captionItalic
+            ? 'italic'
+            : 'normal'
+        }`,
+
+        `text-decoration:${
+          captionUnderline
+            ? 'underline'
+            : 'none'
+        }`,
+
+        `color:${
+          captionColor ||
+          '#6b7280'
+        }`,
+
+        `text-align:${
+          captionAlign ||
+          'center'
+        }`,
+
+        'line-height:1.5',
+
+        'margin-top:8px',
+
+        'width:100%',
+      ].join(';');
+
+      const captionContent =
+        captionHref
+          ? [
+              'a',
+
+              {
+                href:
+                  captionHref,
+
+                target:
+                  '_blank',
+
+                rel:
+                  'noopener noreferrer',
+              },
+
+              caption,
+            ]
+          : caption;
+
       children.push([
         'figcaption',
-        {},
-        caption,
+
+        {
+          class:
+            'article-image-caption',
+
+          style:
+            captionStyle,
+        },
+
+        captionContent,
       ]);
     }
 

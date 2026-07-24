@@ -83,6 +83,36 @@ export const updateGallery = (
     );
 };
 
+export const updateGallerySeo = (
+  id,
+  data
+) => {
+  return updateGallery(
+    id,
+    {
+      seo_title:
+        data.seo_title ||
+        null,
+
+      seo_description:
+        data.seo_description ||
+        null,
+
+      social_title:
+        data.social_title ||
+        null,
+
+      social_description:
+        data.social_description ||
+        null,
+
+      social_image_url:
+        data.social_image_url ||
+        null,
+    }
+  );
+};
+
 export const publishGallery =
   id => {
     return api

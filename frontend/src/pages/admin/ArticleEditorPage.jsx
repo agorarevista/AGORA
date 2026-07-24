@@ -63,6 +63,10 @@
 
   const FONT_FAMILIES = [
     {
+      label: 'Garbata',
+      value: 'Garbata, Georgia, serif',
+    },
+    {
       label: 'Aptos',
       value: 'Aptos, Arial, sans-serif',
     },
@@ -489,6 +493,31 @@ const getOccasionalSections =
     const [coverUrl, setCoverUrl] = useState('');
 
     const [
+      coverCaption,
+      setCoverCaption,
+    ] = useState('');
+
+    const [
+      coverCaptionFormat,
+      setCoverCaptionFormat,
+    ] = useState({
+      fontFamily:
+        'var(--font-sans)',
+
+      fontSize: '12px',
+
+      bold: false,
+      italic: false,
+      underline: false,
+
+      color: '#6b7280',
+
+      align: 'left',
+
+      href: '',
+    });
+
+    const [
       collaboratorId,
       setCollaboratorId,
     ] = useState(
@@ -577,6 +606,11 @@ const getOccasionalSections =
     editingExistingLink,
     setEditingExistingLink,
   ] = useState(false);
+
+  const [
+    activeCaption,
+    setActiveCaption,
+  ] = useState(null);
 
   const [
     articleId,
@@ -701,6 +735,10 @@ const hasGalleryCategorySelected =
 
     content: '',
 
+    onFocus: () => {
+      setActiveCaption(null);
+    },
+
     editorProps: {
       attributes: {
         class: styles.editorArea,
@@ -793,6 +831,25 @@ const hasGalleryCategorySelected =
 
                       caption: '',
 
+                      captionFontFamily:
+                        'var(--font-sans)',
+
+                      captionFontSize:
+                        '12px',
+
+                      captionBold: false,
+                      captionItalic: false,
+                      captionUnderline:
+                        false,
+
+                      captionColor:
+                        '#6b7280',
+
+                      captionAlign:
+                        'center',
+
+                      captionHref: '',
+
                       href: '',
                     },
                   }
@@ -819,6 +876,81 @@ const hasGalleryCategorySelected =
       },
     },
   });
+
+  useEffect(() => {
+    const handleCaptionFocus = event => {
+      const detail =
+        event.detail;
+
+      if (
+        !detail ||
+        typeof detail.updateAttributes !==
+          'function'
+      ) {
+        return;
+      }
+
+      setActiveCaption({
+        type:
+          detail.type ||
+          'media',
+
+        updateAttributes:
+          detail.updateAttributes,
+
+        attrs:
+          detail.attrs || {},
+      });
+    };
+
+    const handleCaptionUpdate = event => {
+      const detail =
+        event.detail;
+
+      if (!detail?.attrs) {
+        return;
+      }
+
+      setActiveCaption(
+        current => {
+          if (!current) {
+            return current;
+          }
+
+          return {
+            ...current,
+
+            attrs: {
+              ...current.attrs,
+              ...detail.attrs,
+            },
+          };
+        }
+      );
+    };
+
+    window.addEventListener(
+      'agora-caption-focus',
+      handleCaptionFocus
+    );
+
+    window.addEventListener(
+      'agora-caption-update',
+      handleCaptionUpdate
+    );
+
+    return () => {
+      window.removeEventListener(
+        'agora-caption-focus',
+        handleCaptionFocus
+      );
+
+      window.removeEventListener(
+        'agora-caption-update',
+        handleCaptionUpdate
+      );
+    };
+  }, []);
 
     useEffect(() => {
       Promise.all([
@@ -850,6 +982,63 @@ const hasGalleryCategorySelected =
           setSubtitle(article.subtitle || '');
           setExcerpt(article.excerpt || '');
           setCoverUrl(article.cover_image_url || '');
+
+          setCoverCaption(
+            article.cover_caption || ''
+          );
+
+          setCoverCaptionFormat({
+            fontFamily:
+              article
+                .cover_caption_format
+                ?.fontFamily ||
+              'var(--font-sans)',
+
+            fontSize:
+              article
+                .cover_caption_format
+                ?.fontSize ||
+              '12px',
+
+            bold:
+              Boolean(
+                article
+                  .cover_caption_format
+                  ?.bold
+              ),
+
+            italic:
+              Boolean(
+                article
+                  .cover_caption_format
+                  ?.italic
+              ),
+
+            underline:
+              Boolean(
+                article
+                  .cover_caption_format
+                  ?.underline
+              ),
+
+            color:
+              article
+                .cover_caption_format
+                ?.color ||
+              '#6b7280',
+
+            align:
+              article
+                .cover_caption_format
+                ?.align ||
+              'left',
+
+            href:
+              article
+                .cover_caption_format
+                ?.href ||
+              '',
+          });
 
           setCollaboratorId(
             article.collaborator_id ||
@@ -935,6 +1124,18 @@ setCategoryIds(
         content_html: editor?.getHTML() || '',
 
         cover_image_url: coverUrl.trim(),
+
+        cover_caption:
+          coverCaption.trim(),
+
+        cover_caption_format: {
+          ...coverCaptionFormat,
+
+          href:
+            normalizeUrl(
+              coverCaptionFormat.href
+            ),
+        },
 
         collaborator_id:
           collaboratorId ===
@@ -1334,7 +1535,33 @@ const handlePublish = async () => {
 
           width: '100%',
 
+          height: 'auto',
+
+          rotation: 0,
+
           align: 'center',
+
+          locked: false,
+
+          caption: '',
+
+          captionFontFamily:
+            'var(--font-sans)',
+
+          captionFontSize:
+            '12px',
+
+          captionBold: false,
+          captionItalic: false,
+          captionUnderline: false,
+
+          captionColor:
+            '#6b7280',
+
+          captionAlign:
+            'center',
+
+          captionHref: '',
         },
       })
       .run();
@@ -1463,6 +1690,105 @@ const handlePublish = async () => {
       setDetectingUrl(false);
     }
   };
+
+  const updateActiveCaption = patch => {
+    if (!activeCaption) {
+      return false;
+    }
+
+    const nextAttrs = {
+      ...activeCaption.attrs,
+      ...patch,
+    };
+
+    activeCaption.updateAttributes(
+      patch
+    );
+
+    setActiveCaption(
+      current => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          attrs:
+            nextAttrs,
+        };
+      }
+    );
+
+    return true;
+  };
+
+  const runEditorOrCaption = ({
+    editorAction,
+    captionPatch,
+  }) => {
+    if (
+      activeCaption &&
+      captionPatch
+    ) {
+      const patch =
+        typeof captionPatch ===
+        'function'
+          ? captionPatch(
+              activeCaption.attrs
+            )
+          : captionPatch;
+
+      updateActiveCaption(
+        patch
+      );
+
+      return;
+    }
+
+    editorAction?.();
+  };
+
+  const activeCaptionAttrs =
+    activeCaption?.attrs ||
+    null;
+
+  const activeFontFamily =
+    activeCaptionAttrs
+      ? activeCaptionAttrs
+          .captionFontFamily ||
+        'var(--font-sans)'
+      : editor?.getAttributes(
+          'textStyle'
+        ).fontFamily || '';
+
+  const activeFontSize =
+    activeCaptionAttrs
+      ? String(
+          activeCaptionAttrs
+            .captionFontSize ||
+          '12px'
+        ).replace(
+          'px',
+          ''
+        )
+      : String(
+          editor?.getAttributes(
+            'textStyle'
+          ).fontSize || ''
+        ).replace(
+          'px',
+          ''
+        );
+
+  const activeTextColor =
+    activeCaptionAttrs
+      ? activeCaptionAttrs
+          .captionColor ||
+        '#6b7280'
+      : editor?.getAttributes(
+          'textStyle'
+        ).color ||
+        '#111111';
 
     const handleMediaUpload = () => {
       const input =
@@ -2041,29 +2367,39 @@ const handlePublish = async () => {
                   <select
                     className={`${styles.toolSelect} ${styles.fontSelect}`}
                     value={
-                      editor.getAttributes(
-                        'textStyle'
-                      ).fontFamily || ''
+                      activeFontFamily
                     }
                     onChange={event => {
                       const value =
                         event.target.value;
 
-                      if (!value) {
-                        editor
-                          .chain()
-                          .focus()
-                          .unsetFontFamily()
-                          .run();
+                      runEditorOrCaption({
+                        captionPatch: {
+                          captionFontFamily:
+                            value ||
+                            'var(--font-sans)',
+                        },
 
-                        return;
-                      }
+                        editorAction: () => {
+                          if (!value) {
+                            editor
+                              .chain()
+                              .focus()
+                              .unsetFontFamily()
+                              .run();
 
-                      editor
-                        .chain()
-                        .focus()
-                        .setFontFamily(value)
-                        .run();
+                            return;
+                          }
+
+                          editor
+                            .chain()
+                            .focus()
+                            .setFontFamily(
+                              value
+                            )
+                            .run();
+                        },
+                      });
                     }}
                     title="Tipografía"
                   >
@@ -2087,32 +2423,41 @@ const handlePublish = async () => {
 
                   <select
                     className={`${styles.toolSelect} ${styles.sizeSelect}`}
-                    value={String(
-                      editor.getAttributes(
-                        'textStyle'
-                      ).fontSize || ''
-                    ).replace('px', '')}
+                    value={
+                      activeFontSize
+                    }
                     onChange={event => {
                       const value =
                         event.target.value;
 
-                      if (!value) {
-                        editor
-                          .chain()
-                          .focus()
-                          .unsetFontSize()
-                          .run();
+                      runEditorOrCaption({
+                        captionPatch: {
+                          captionFontSize:
+                            value
+                              ? `${value}px`
+                              : '12px',
+                        },
 
-                        return;
-                      }
+                        editorAction: () => {
+                          if (!value) {
+                            editor
+                              .chain()
+                              .focus()
+                              .unsetFontSize()
+                              .run();
 
-                      editor
-                        .chain()
-                        .focus()
-                        .setFontSize(
-                          `${value}px`
-                        )
-                        .run();
+                            return;
+                          }
+
+                          editor
+                            .chain()
+                            .focus()
+                            .setFontSize(
+                              `${value}px`
+                            )
+                            .run();
+                        },
+                      });
                     }}
                     title="Tamaño de texto"
                   >
@@ -2134,14 +2479,34 @@ const handlePublish = async () => {
 
                   <ToolBtn
                     onClick={() => {
-                      editor
-                        .chain()
-                        .focus()
-                        .toggleBold()
-                        .run();
+                      runEditorOrCaption({
+                        captionPatch:
+                          attrs => ({
+                            captionBold:
+                              !Boolean(
+                                attrs
+                                  .captionBold
+                              ),
+                          }),
+
+                        editorAction: () => {
+                          editor
+                            .chain()
+                            .focus()
+                            .toggleBold()
+                            .run();
+                        },
+                      });
                     }}
                     active={
-                      editor.isActive('bold')
+                      activeCaptionAttrs
+                        ? Boolean(
+                            activeCaptionAttrs
+                              .captionBold
+                          )
+                        : editor.isActive(
+                            'bold'
+                          )
                     }
                     title="Negrita"
                   >
@@ -2150,16 +2515,34 @@ const handlePublish = async () => {
 
                   <ToolBtn
                     onClick={() => {
-                      editor
-                        .chain()
-                        .focus()
-                        .toggleItalic()
-                        .run();
+                      runEditorOrCaption({
+                        captionPatch:
+                          attrs => ({
+                            captionItalic:
+                              !Boolean(
+                                attrs
+                                  .captionItalic
+                              ),
+                          }),
+
+                        editorAction: () => {
+                          editor
+                            .chain()
+                            .focus()
+                            .toggleItalic()
+                            .run();
+                        },
+                      });
                     }}
                     active={
-                      editor.isActive(
-                        'italic'
-                      )
+                      activeCaptionAttrs
+                        ? Boolean(
+                            activeCaptionAttrs
+                              .captionItalic
+                          )
+                        : editor.isActive(
+                            'italic'
+                          )
                     }
                     title="Cursiva"
                   >
@@ -2168,20 +2551,40 @@ const handlePublish = async () => {
 
                   <ToolBtn
                     onClick={() => {
-                      editor
-                        .chain()
-                        .focus()
-                        .toggleUnderline()
-                        .run();
+                      runEditorOrCaption({
+                        captionPatch:
+                          attrs => ({
+                            captionUnderline:
+                              !Boolean(
+                                attrs
+                                  .captionUnderline
+                              ),
+                          }),
+
+                        editorAction: () => {
+                          editor
+                            .chain()
+                            .focus()
+                            .toggleUnderline()
+                            .run();
+                        },
+                      });
                     }}
                     active={
-                      editor.isActive(
-                        'underline'
-                      )
+                      activeCaptionAttrs
+                        ? Boolean(
+                            activeCaptionAttrs
+                              .captionUnderline
+                          )
+                        : editor.isActive(
+                            'underline'
+                          )
                     }
                     title="Subrayado"
                   >
-                    <UnderlineIcon size={15} />
+                    <UnderlineIcon
+                      size={15}
+                    />
                   </ToolBtn>
 
                   <ToolBtn
@@ -2202,54 +2605,79 @@ const handlePublish = async () => {
                     <Strikethrough size={15} />
                   </ToolBtn>
 
-  <label
-    className={styles.colorControl}
-    title="Cambiar color del texto"
-  >
-    <span
-      className={styles.colorLetter}
-      style={{
-        color:
-          editor.getAttributes(
-            'textStyle'
-          ).color || '#111111',
-      }}
-    >
-      A
-    </span>
+                  <label
+                    className={
+                      styles.colorControl
+                    }
+                    title="Cambiar color del texto"
+                  >
+                    <span
+                      className={
+                        styles.colorLetter
+                      }
+                      style={{
+                        color:
+                          activeTextColor,
+                      }}
+                    >
+                      A
+                    </span>
 
-    <input
-      type="color"
-      className={styles.colorPicker}
-      value={
-        editor.getAttributes(
-          'textStyle'
-        ).color || '#111111'
-      }
-      onInput={event => {
-        editor
-          .chain()
-          .focus()
-          .setColor(
-            event.target.value
-          )
-          .run();
-      }}
-      aria-label="Cambiar color del texto"
-    />
-  </label>
+                    <input
+                      type="color"
+                      className={
+                        styles.colorPicker
+                      }
+                      value={
+                        activeTextColor
+                      }
+                      onInput={event => {
+                        const value =
+                          event.target.value;
+
+                        runEditorOrCaption({
+                          captionPatch: {
+                            captionColor:
+                              value,
+                          },
+
+                          editorAction: () => {
+                            editor
+                              .chain()
+                              .focus()
+                              .setColor(
+                                value
+                              )
+                              .run();
+                          },
+                        });
+                      }}
+                      aria-label="Cambiar color del texto"
+                    />
+                  </label>
 
                   <ToolBtn
                     onClick={() => {
-                      editor
-                        .chain()
-                        .focus()
-                        .unsetColor()
-                        .run();
+                      runEditorOrCaption({
+                        captionPatch: {
+                          captionColor:
+                            '#6b7280',
+                        },
+
+                        editorAction: () => {
+                          editor
+                            .chain()
+                            .focus()
+                            .unsetColor()
+                            .run();
+                        },
+                      });
                     }}
                     title="Quitar color"
                   >
-                    <RotateCcw size={14} />
+                    <RotateCcw
+                      size={14}
+                    />
                   </ToolBtn>
                 </div>
 
@@ -2294,74 +2722,145 @@ const handlePublish = async () => {
 
                   <ToolBtn
                     onClick={() => {
-                      editor
-                        .chain()
-                        .focus()
-                        .setTextAlign(
-                          'left'
-                        )
-                        .run();
+                      runEditorOrCaption({
+                        captionPatch: {
+                          captionAlign:
+                            'left',
+                        },
+
+                        editorAction: () => {
+                          editor
+                            .chain()
+                            .focus()
+                            .setTextAlign(
+                              'left'
+                            )
+                            .run();
+                        },
+                      });
                     }}
-                    active={editor.isActive({
-                      textAlign: 'left',
-                    })}
+                    active={
+                      activeCaptionAttrs
+                        ? activeCaptionAttrs
+                            .captionAlign ===
+                          'left'
+                        : editor.isActive({
+                            textAlign:
+                              'left',
+                          })
+                    }
                     title="Alinear a la izquierda"
                   >
-                    <AlignLeft size={15} />
+                    <AlignLeft
+                      size={15}
+                    />
                   </ToolBtn>
 
                   <ToolBtn
                     onClick={() => {
-                      editor
-                        .chain()
-                        .focus()
-                        .setTextAlign(
-                          'center'
-                        )
-                        .run();
+                      runEditorOrCaption({
+                        captionPatch: {
+                          captionAlign:
+                            'center',
+                        },
+
+                        editorAction: () => {
+                          editor
+                            .chain()
+                            .focus()
+                            .setTextAlign(
+                              'center'
+                            )
+                            .run();
+                        },
+                      });
                     }}
-                    active={editor.isActive({
-                      textAlign: 'center',
-                    })}
+                    active={
+                      activeCaptionAttrs
+                        ? activeCaptionAttrs
+                            .captionAlign ===
+                          'center'
+                        : editor.isActive({
+                            textAlign:
+                              'center',
+                          })
+                    }
                     title="Centrar"
                   >
-                    <AlignCenter size={15} />
+                    <AlignCenter
+                      size={15}
+                    />
                   </ToolBtn>
-
                   <ToolBtn
                     onClick={() => {
-                      editor
-                        .chain()
-                        .focus()
-                        .setTextAlign(
-                          'right'
-                        )
-                        .run();
+                      runEditorOrCaption({
+                        captionPatch: {
+                          captionAlign:
+                            'right',
+                        },
+
+                        editorAction: () => {
+                          editor
+                            .chain()
+                            .focus()
+                            .setTextAlign(
+                              'right'
+                            )
+                            .run();
+                        },
+                      });
                     }}
-                    active={editor.isActive({
-                      textAlign: 'right',
-                    })}
+                    active={
+                      activeCaptionAttrs
+                        ? activeCaptionAttrs
+                            .captionAlign ===
+                          'right'
+                        : editor.isActive({
+                            textAlign:
+                              'right',
+                          })
+                    }
                     title="Alinear a la derecha"
                   >
-                    <AlignRight size={15} />
+                    <AlignRight
+                      size={15}
+                    />
                   </ToolBtn>
 
                   <ToolBtn
                     onClick={() => {
-                      editor
-                        .chain()
-                        .focus()
-                        .setTextAlign(
-                          'justify'
-                        )
-                        .run();
+                      runEditorOrCaption({
+                        captionPatch: {
+                          captionAlign:
+                            'justify',
+                        },
+
+                        editorAction: () => {
+                          editor
+                            .chain()
+                            .focus()
+                            .setTextAlign(
+                              'justify'
+                            )
+                            .run();
+                        },
+                      });
                     }}
-                    active={editor.isActive({
-                      textAlign: 'justify',
-                    })}
+                    active={
+                      activeCaptionAttrs
+                        ? activeCaptionAttrs
+                            .captionAlign ===
+                          'justify'
+                        : editor.isActive({
+                            textAlign:
+                              'justify',
+                          })
+                    }
                     title="Justificar"
                   >
-                    <AlignJustify size={15} />
+                    <AlignJustify
+                      size={15}
+                    />
                   </ToolBtn>
 
                   <div className={styles.toolSep} />
@@ -2569,11 +3068,82 @@ const handlePublish = async () => {
                 </div>
 
                 {coverUrl && (
-                  <img
-                    src={coverUrl}
-                    alt="Portada"
-                    className={styles.previewCover}
-                  />
+                  <figure
+                    className={
+                      styles.previewCoverFigure
+                    }
+                  >
+                    <img
+                      src={coverUrl}
+                      alt={
+                        coverCaption ||
+                        title ||
+                        'Portada'
+                      }
+                      className={
+                        styles.previewCover
+                      }
+                    />
+
+                    {coverCaption && (
+                      <figcaption
+                        className={
+                          styles.previewCoverCaption
+                        }
+                        style={{
+                          fontFamily:
+                            coverCaptionFormat
+                              .fontFamily,
+
+                          fontSize:
+                            coverCaptionFormat
+                              .fontSize,
+
+                          fontWeight:
+                            coverCaptionFormat
+                              .bold
+                              ? 700
+                              : 400,
+
+                          fontStyle:
+                            coverCaptionFormat
+                              .italic
+                              ? 'italic'
+                              : 'normal',
+
+                          textDecoration:
+                            coverCaptionFormat
+                              .underline
+                              ? 'underline'
+                              : 'none',
+
+                          color:
+                            coverCaptionFormat
+                              .color,
+
+                          textAlign:
+                            coverCaptionFormat
+                              .align,
+                        }}
+                      >
+                        {coverCaptionFormat
+                          .href ? (
+                          <a
+                            href={normalizeUrl(
+                              coverCaptionFormat
+                                .href
+                            )}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {coverCaption}
+                          </a>
+                        ) : (
+                          coverCaption
+                        )}
+                      </figcaption>
+                    )}
+                  </figure>
                 )}
 
                 <h1 className={styles.previewTitle}>
@@ -2616,7 +3186,29 @@ const handlePublish = async () => {
                     className={styles.removeCover}
                     onClick={() => {
                       setCoverUrl('');
+                      setCoverCaption('');
+
+                      setCoverCaptionFormat({
+                        fontFamily:
+                          'var(--font-sans)',
+
+                        fontSize:
+                          '12px',
+
+                        bold: false,
+                        italic: false,
+                        underline: false,
+
+                        color:
+                          '#6b7280',
+
+                        align: 'left',
+
+                        href: '',
+                      });
                     }}
+                    aria-label="Eliminar portada"
+                    title="Eliminar portada"
                   >
                     <X size={14} />
                   </button>
@@ -2651,8 +3243,196 @@ const handlePublish = async () => {
                 placeholder="O pega URL de imagen..."
                 className={styles.sideInput}
               />
-            </SidePanel>
 
+              <textarea
+                value={
+                  coverCaption
+                }
+                onFocus={() => {
+                  setActiveCaption({
+                    type: 'cover',
+
+                    attrs: {
+                      captionFontFamily:
+                        coverCaptionFormat
+                          .fontFamily,
+
+                      captionFontSize:
+                        coverCaptionFormat
+                          .fontSize,
+
+                      captionBold:
+                        coverCaptionFormat
+                          .bold,
+
+                      captionItalic:
+                        coverCaptionFormat
+                          .italic,
+
+                      captionUnderline:
+                        coverCaptionFormat
+                          .underline,
+
+                      captionColor:
+                        coverCaptionFormat
+                          .color,
+
+                      captionAlign:
+                        coverCaptionFormat
+                          .align,
+
+                      captionHref:
+                        coverCaptionFormat
+                          .href,
+                    },
+
+                    updateAttributes:
+                      patch => {
+                        setCoverCaptionFormat(
+                          current => ({
+                            ...current,
+
+                            ...(Object.prototype.hasOwnProperty.call(
+                              patch,
+                              'captionFontFamily'
+                            )
+                              ? {
+                                  fontFamily:
+                                    patch.captionFontFamily,
+                                }
+                              : {}),
+
+                            ...(Object.prototype.hasOwnProperty.call(
+                              patch,
+                              'captionFontSize'
+                            )
+                              ? {
+                                  fontSize:
+                                    patch.captionFontSize,
+                                }
+                              : {}),
+
+                            ...(Object.prototype.hasOwnProperty.call(
+                              patch,
+                              'captionBold'
+                            )
+                              ? {
+                                  bold:
+                                    patch.captionBold,
+                                }
+                              : {}),
+
+                            ...(Object.prototype.hasOwnProperty.call(
+                              patch,
+                              'captionItalic'
+                            )
+                              ? {
+                                  italic:
+                                    patch.captionItalic,
+                                }
+                              : {}),
+
+                            ...(Object.prototype.hasOwnProperty.call(
+                              patch,
+                              'captionUnderline'
+                            )
+                              ? {
+                                  underline:
+                                    patch.captionUnderline,
+                                }
+                              : {}),
+
+                            ...(Object.prototype.hasOwnProperty.call(
+                              patch,
+                              'captionColor'
+                            )
+                              ? {
+                                  color:
+                                    patch.captionColor,
+                                }
+                              : {}),
+
+                            ...(Object.prototype.hasOwnProperty.call(
+                              patch,
+                              'captionAlign'
+                            )
+                              ? {
+                                  align:
+                                    patch.captionAlign,
+                                }
+                              : {}),
+
+                            ...(Object.prototype.hasOwnProperty.call(
+                              patch,
+                              'captionHref'
+                            )
+                              ? {
+                                  href:
+                                    patch.captionHref,
+                                }
+                              : {}),
+                          })
+                        );
+                      },
+                  });
+                }}
+                onChange={event => {
+                  setCoverCaption(
+                    event.target.value
+                  );
+                }}
+                placeholder="Pie de foto o crédito de la portada..."
+                className={
+                  styles.coverCaptionInput
+                }
+                style={{
+                  fontFamily:
+                    coverCaptionFormat
+                      .fontFamily,
+
+                  fontSize:
+                    coverCaptionFormat
+                      .fontSize,
+
+                  fontWeight:
+                    coverCaptionFormat
+                      .bold
+                      ? 700
+                      : 400,
+
+                  fontStyle:
+                    coverCaptionFormat
+                      .italic
+                      ? 'italic'
+                      : 'normal',
+
+                  textDecoration:
+                    coverCaptionFormat
+                      .underline
+                      ? 'underline'
+                      : 'none',
+
+                  color:
+                    coverCaptionFormat
+                      .color,
+
+                  textAlign:
+                    coverCaptionFormat
+                      .align,
+                }}
+                rows={3}
+                maxLength={500}
+                disabled={!coverUrl}
+              />
+
+              <div
+                className={
+                  styles.charCount
+                }
+              >
+                {coverCaption.length}/500
+              </div>
+            </SidePanel>
             <SidePanel title="Extracto">
               <textarea
                 value={excerpt}
@@ -3364,7 +4144,11 @@ const handlePublish = async () => {
   }) {
     return (
       <div className={styles.sidePanel}>
-        <div className={styles.sidePanelTitle}>
+        <div
+          className={
+            styles.sidePanelTitle
+          }
+        >
           {title}
         </div>
 
@@ -3372,3 +4156,4 @@ const handlePublish = async () => {
       </div>
     );
   }
+  

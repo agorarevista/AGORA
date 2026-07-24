@@ -226,67 +226,101 @@ export default function CollaboratorPage() {
             className={styles.profile}
           >
 <div className={styles.profileMain}>
-              <div className={styles.avatarWrap}>
-                {collab.photo_url
-                  ? <img src={collab.photo_url} alt={collab.name} className={styles.avatar} />
-                  : <div className={styles.avatarPlaceholder}>{collab.name?.[0]?.toUpperCase()}</div>
-                }
-              </div>
+  <div className={styles.avatarWrap}>
+    {collab.photo_url ? (
+      <img
+        src={collab.photo_url}
+        alt={collab.name}
+        className={styles.avatar}
+      />
+    ) : (
+      <div className={styles.avatarPlaceholder}>
+        {collab.name?.[0]?.toUpperCase()}
+      </div>
+    )}
+  </div>
 
-              <div className={styles.profileInfo}>
-                {collab.section_name && (
-                  <div className={styles.profileSection}>{collab.section_name}</div>
-                )}
+  <div className={styles.profileInfo}>
+    <span className={styles.profileEyebrow}>
+      {collab.type === 'fixed'
+        ? 'Colaborador fijo'
+        : 'Colaborador'}
+    </span>
 
-                <h1 className={styles.profileName}>{collab.name}</h1>
+    <h1 className={styles.profileName}>
+      {collab.name}
+    </h1>
 
-                {collab.bio && (
-                  <p className={styles.profileBio}>{collab.bio}</p>
-                )}
-              </div>
+    {collab.bio && (
+      <p className={styles.profileBio}>
+        {collab.bio}
+      </p>
+    )}
 
-              <aside className={styles.profileSide}>
-                <div className={styles.articleCount}>
-                  <span
-                    className={
-                      styles.articleCountNum
-                    }
-                  >
-                    {contents.length}
-                  </span>
+    {collab.section_name && (
+      <Link
+        to={`/categoria/${
+          collab.section_slug ||
+          collab.section_name
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+        }`}
+        className={styles.profileColumnLink}
+      >
+        <span className={styles.profileColumnLabel}>
+          Columna
+        </span>
 
-                  <span
-                    className={
-                      styles.articleCountLabel
-                    }
-                  >
-                    publicación
-                    {contents.length !==
-                    1
-                      ? 'es'
-                      : ''}
-                  </span>
-                </div>
+        <strong className={styles.profileColumnName}>
+          {collab.section_name}
+        </strong>
+      </Link>
+    )}
+  </div>
 
-                {socialEntries.length > 0 && (
-                  <div className={styles.socials}>
-                    {socialEntries.map((item) => (
-                      <a
-                        key={item.key}
-                        href={item.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.socialIconLink}
-                        aria-label={item.key}
-                        title={item.key}
-                      >
-                        {item.icon}
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </aside>
-            </div>
+  <aside className={styles.profileSide}>
+    <div className={styles.articleCount}>
+      <span className={styles.articleCountNum}>
+        {contents.length}
+      </span>
+
+      <span className={styles.articleCountLabel}>
+        {contents.length === 1
+          ? 'publicación'
+          : 'publicaciones'}
+      </span>
+    </div>
+
+    {socialEntries.length > 0 && (
+      <div className={styles.socials}>
+        {socialEntries.map(item => (
+          <a
+            key={item.key}
+            href={item.href}
+            target={
+              item.key === 'email'
+                ? undefined
+                : '_blank'
+            }
+            rel={
+              item.key === 'email'
+                ? undefined
+                : 'noopener noreferrer'
+            }
+            className={styles.socialIconLink}
+            aria-label={item.key}
+            title={item.key}
+          >
+            {item.icon}
+          </a>
+        ))}
+      </div>
+    )}
+  </aside>
+</div>
           </motion.div>
         </div>
       </div>

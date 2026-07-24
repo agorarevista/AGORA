@@ -235,6 +235,148 @@ caption: {
     return {};
   },
 },
+
+captionFontFamily: {
+  default: 'var(--font-sans)',
+
+  parseHTML: element => {
+    return (
+      element.querySelector(
+        'figcaption'
+      )?.style.fontFamily ||
+      'var(--font-sans)'
+    );
+  },
+
+  renderHTML: () => {
+    return {};
+  },
+},
+
+captionFontSize: {
+  default: '12px',
+
+  parseHTML: element => {
+    return (
+      element.querySelector(
+        'figcaption'
+      )?.style.fontSize ||
+      '12px'
+    );
+  },
+
+  renderHTML: () => {
+    return {};
+  },
+},
+
+captionBold: {
+  default: false,
+
+  parseHTML: element => {
+    const fontWeight =
+      element.querySelector(
+        'figcaption'
+      )?.style.fontWeight;
+
+    return (
+      fontWeight === '700' ||
+      fontWeight === 'bold'
+    );
+  },
+
+  renderHTML: () => {
+    return {};
+  },
+},
+
+captionItalic: {
+  default: false,
+
+  parseHTML: element => {
+    return (
+      element.querySelector(
+        'figcaption'
+      )?.style.fontStyle ===
+      'italic'
+    );
+  },
+
+  renderHTML: () => {
+    return {};
+  },
+},
+
+captionUnderline: {
+  default: false,
+
+  parseHTML: element => {
+    const decoration =
+      element.querySelector(
+        'figcaption'
+      )?.style.textDecoration ||
+      '';
+
+    return decoration.includes(
+      'underline'
+    );
+  },
+
+  renderHTML: () => {
+    return {};
+  },
+},
+
+captionColor: {
+  default: '#6b7280',
+
+  parseHTML: element => {
+    return (
+      element.querySelector(
+        'figcaption'
+      )?.style.color ||
+      '#6b7280'
+    );
+  },
+
+  renderHTML: () => {
+    return {};
+  },
+},
+
+captionAlign: {
+  default: 'center',
+
+  parseHTML: element => {
+    return (
+      element.querySelector(
+        'figcaption'
+      )?.style.textAlign ||
+      'center'
+    );
+  },
+
+  renderHTML: () => {
+    return {};
+  },
+},
+
+captionHref: {
+  default: '',
+
+  parseHTML: element => {
+    return (
+      element.querySelector(
+        'figcaption a'
+      )?.getAttribute('href') ||
+      ''
+    );
+  },
+
+  renderHTML: () => {
+    return {};
+  },
+},
     };
   },
 
@@ -248,21 +390,30 @@ caption: {
   },
 
   renderHTML({
+    node,
     HTMLAttributes,
   }) {
-const {
-  provider,
-  src,
-  originalUrl,
-  title,
-  width,
-  height,
-  rotation,
-  align,
-  locked,
-  caption,
-  ...rest
-} = HTMLAttributes;
+    const {
+      provider,
+      src,
+      originalUrl,
+      title,
+      width,
+      height,
+      rotation,
+      align,
+      locked,
+      caption,
+
+      captionFontFamily,
+      captionFontSize,
+      captionBold,
+      captionItalic,
+      captionUnderline,
+      captionColor,
+      captionAlign,
+      captionHref,
+    } = node.attrs;
 
     const safeWidth =
       clampPercent(
@@ -382,7 +533,7 @@ const {
       'figure',
 
       mergeAttributes(
-        rest,
+        HTMLAttributes,
         {
           class:
             'article-media-node',
@@ -421,8 +572,74 @@ const {
         ? [
             [
               'figcaption',
-              {},
-              caption,
+
+              {
+                class:
+                  'media-caption',
+
+                style: [
+                  `font-family:${
+                    captionFontFamily ||
+                    'var(--font-sans)'
+                  }`,
+
+                  `font-size:${
+                    captionFontSize ||
+                    '12px'
+                  }`,
+
+                  `font-weight:${
+                    captionBold
+                      ? '700'
+                      : '400'
+                  }`,
+
+                  `font-style:${
+                    captionItalic
+                      ? 'italic'
+                      : 'normal'
+                  }`,
+
+                  `text-decoration:${
+                    captionUnderline
+                      ? 'underline'
+                      : 'none'
+                  }`,
+
+                  `color:${
+                    captionColor ||
+                    '#6b7280'
+                  }`,
+
+                  `text-align:${
+                    captionAlign ||
+                    'center'
+                  }`,
+
+                  'line-height:1.5',
+                  'margin-top:8px',
+                  'width:100%',
+                ].join(';'),
+              },
+
+              captionHref
+                ? [
+                    'a',
+
+                    {
+                      href:
+                        captionHref,
+
+                      target:
+                        '_blank',
+
+                      rel:
+                        'noopener noreferrer',
+                    },
+
+                    caption,
+                  ]
+                : caption,
             ],
           ]
         : []),
