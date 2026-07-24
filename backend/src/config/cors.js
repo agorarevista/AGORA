@@ -8,6 +8,8 @@ const allowedOrigins = [
   'http://127.0.0.1:5173',
 
   'https://agora-fronted.onrender.com',
+  'https://agora-backend-jdpx.onrender.com',
+
   'https://agorarevista.mx',
   'https://www.agorarevista.mx',
 
