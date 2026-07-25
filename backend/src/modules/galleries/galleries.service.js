@@ -22,6 +22,7 @@ const GALLERY_BASE_SELECT = `
   social_image_url,
   collaborator_id,
   edition_id,
+  edition_order,
   status,
   views,
   max_photos,
@@ -76,6 +77,7 @@ const GALLERY_COMPLETE_SELECT = `
   social_image_url,
   collaborator_id,
   edition_id,
+  edition_order,
   status,
   views,
   max_photos,
@@ -720,6 +722,26 @@ const buildGalleryPayload =
       edition_id:
         resolvedEditionId,
 
+      edition_order:
+        Number.isInteger(
+          Number(
+            body.edition_order ??
+            currentGallery
+              ?.edition_order
+          )
+        ) &&
+        Number(
+          body.edition_order ??
+          currentGallery
+            ?.edition_order
+        ) > 0
+          ? Number(
+              body.edition_order ??
+              currentGallery
+                ?.edition_order
+            )
+          : null,
+
       max_photos:
         maxPhotos,
 
@@ -1328,6 +1350,16 @@ const getByCollaborator =
       .eq(
         'status',
         'published'
+      )
+      .order(
+        'edition_order',
+        {
+          ascending:
+            true,
+
+          nullsFirst:
+            false,
+        }
       )
       .order(
         'published_at',

@@ -540,7 +540,7 @@ function CollaboratorContentCard({
                 styles.newBadgeText
               }
             >
-              New
+              Nuevo
             </span>
 
             <span

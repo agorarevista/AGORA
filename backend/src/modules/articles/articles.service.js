@@ -75,14 +75,47 @@ const getContentDate =
       : 0;
   };
 
-const sortContentsByDate =
+const getEditionOrder =
+  item => {
+    const order =
+      Number(
+        item?.edition_order
+      );
+
+    return (
+      Number.isInteger(order) &&
+      order > 0
+    )
+      ? order
+      : Number.MAX_SAFE_INTEGER;
+  };
+
+const sortContentsByEditionOrder =
   contents => {
     return [
       ...(contents || []),
     ].sort(
-      (a, b) =>
-        getContentDate(b) -
-        getContentDate(a)
+      (a, b) => {
+        const orderA =
+          getEditionOrder(a);
+
+        const orderB =
+          getEditionOrder(b);
+
+        if (
+          orderA !== orderB
+        ) {
+          return (
+            orderA -
+            orderB
+          );
+        }
+
+        return (
+          getContentDate(b) -
+          getContentDate(a)
+        );
+      }
     );
   };
 
@@ -329,10 +362,16 @@ const BASE_SELECT = `
   status,
   views,
   reading_time,
+  collaborator_id,
   edition_id,
+  edition_order,
+  published_at,
+  created_at,
+  status,
+  views,
+  reading_time,
   is_featured,
   featured_order,
-  audio_male_url,
   audio_female_url,
   audio_male_duration,
   audio_female_duration,
@@ -649,28 +688,120 @@ const getByCollaborator = async (slug, { page = 1, limit = 12 } = {}) => {
   return { collaborator: collab, data, total: count, page: Number(page), limit: Number(limit) };
 };
 
-const getByEdition = async (number, { page = 1, limit = 50 } = {}) => {
-  const from = (page - 1) * limit;
-  const to = from + limit - 1;
+const getByEdition = async (
+  number,
+  {
+    page = 1,
+    limit = 50,
+  } = {}
+) => {
+  const normalizedPage =
+    Math.max(
+      Number.parseInt(
+        page,
+        10
+      ) || 1,
+      1
+    );
 
-  const { data: edition } = await supabase
+  const normalizedLimit =
+    Math.min(
+      Math.max(
+        Number.parseInt(
+          limit,
+          10
+        ) || 50,
+        1
+      ),
+      100
+    );
+
+  const from =
+    (
+      normalizedPage -
+      1
+    ) *
+    normalizedLimit;
+
+  const to =
+    from +
+    normalizedLimit -
+    1;
+
+  const {
+    data: edition,
+    error: editionError,
+  } = await supabase
     .from('editions')
     .select('*')
-    .eq('number', number)
-    .single();
+    .eq(
+      'number',
+      number
+    )
+    .maybeSingle();
 
-  if (!edition) throw { status: 404, message: 'Edición no encontrada' };
+  if (editionError) {
+    throw editionError;
+  }
 
-  const { data, error, count } = await supabase
+  if (!edition) {
+    throw {
+      status: 404,
+      message:
+        'Edición no encontrada',
+    };
+  }
+
+  const {
+    data,
+    error,
+    count,
+  } = await supabase
     .from('articles')
-    .select(BASE_SELECT, { count: 'exact' })
-    .eq('edition_id', edition.id)
-    .eq('status', 'published')
-    .order('published_at', { ascending: false })
-    .range(from, to);
+    .select(
+      BASE_SELECT,
+      {
+        count: 'exact',
+      }
+    )
+    .eq(
+      'edition_id',
+      edition.id
+    )
+    .eq(
+      'status',
+      'published'
+    )
+    .order(
+      'edition_order',
+      {
+        ascending: true,
+        nullsFirst: false,
+      }
+    )
+    .order(
+      'published_at',
+      {
+        ascending: false,
+        nullsFirst: false,
+      }
+    )
+    .range(
+      from,
+      to
+    );
 
-  if (error) throw error;
-  return { edition, data, total: count, page: Number(page), limit: Number(limit) };
+  if (error) {
+    throw error;
+  }
+
+  return {
+    edition,
+    data: data || [],
+    total: count || 0,
+    page: normalizedPage,
+    limit: normalizedLimit,
+  };
 };
 
 const getFeatured = async () => {
@@ -745,6 +876,7 @@ const getHome = async () => {
     cover_image_url,
     collaborator_id,
     edition_id,
+    edition_order,
     status,
     views,
     is_featured,
@@ -990,7 +1122,7 @@ const getHome = async () => {
       : [];
 
   const editionContents =
-    sortContentsByDate([
+    sortContentsByEditionOrder([
       ...latestArticles,
       ...latestGalleries,
     ]);
@@ -1124,6 +1256,7 @@ const create = async (body) => {
     social_image_url,
     collaborator_id,
     edition_id,
+    edition_order,
     is_featured,
     featured_order,
     category_ids = [],
@@ -1218,7 +1351,24 @@ const create = async (body) => {
 
       collaborator_id,
       edition_id,
-      is_featured: is_featured || false,
+
+      edition_order:
+        Number.isInteger(
+          Number(
+            edition_order
+          )
+        ) &&
+        Number(
+          edition_order
+        ) > 0
+          ? Number(
+              edition_order
+            )
+          : null,
+
+      is_featured:
+        is_featured || false,
+
       featured_order,
       reading_time,
       status: 'draft'

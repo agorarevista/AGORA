@@ -1036,6 +1036,21 @@
   clear: both;
 }
 
+/*
+ * Conserva espacios consecutivos y saltos
+ * dentro de los párrafos publicados.
+ *
+ * La regla se aplica solamente al texto;
+ * no modifica imágenes, videos, embeds,
+ * tablas ni los elementos flotantes.
+ */
+.body p {
+  white-space: break-spaces;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  tab-size: 4;
+}
+
 /* Respeta fuentes, tamaños, colores y alineaciones inline */
 .body span {
   max-width: 100%;
@@ -1151,6 +1166,19 @@
 
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 768px) {
+  /*
+   * En móvil se siguen conservando los
+   * espacios, pero una composición demasiado
+   * ancha puede ajustarse para no provocar
+   * scroll horizontal en toda la página.
+   */
+  .body p {
+    max-width: 100%;
+    white-space: break-spaces;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
   .body :global(.article-image-node[data-float='left']),
   .body :global(.article-image-node[data-float='right']) {
     float: none;

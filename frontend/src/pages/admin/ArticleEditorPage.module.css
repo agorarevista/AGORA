@@ -990,6 +990,31 @@
 
 .editorArea p {
   margin-bottom: 16px;
+
+  /*
+   * Conserva los espacios consecutivos
+   * y los saltos utilizados en poemas,
+   * textos experimentales y composiciones
+   * visuales.
+   *
+   * El texto continúa ajustándose al ancho
+   * disponible y alrededor de imágenes
+   * flotantes.
+   */
+  white-space: break-spaces;
+
+  /*
+   * Permite que una línea muy larga pueda
+   * romperse antes de salirse del editor.
+   */
+  overflow-wrap: anywhere;
+  word-break: normal;
+
+  /*
+   * También permite utilizar tabulaciones
+   * manteniendo una separación consistente.
+   */
+  tab-size: 4;
 }
 
 .editorArea blockquote {
@@ -1508,7 +1533,16 @@
 }
 
 .previewBody p {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+
+  /*
+   * Muestra en la vista previa exactamente
+   * los espacios escritos dentro del editor.
+   */
+  white-space: break-spaces;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  tab-size: 4;
 }
 
 .previewBody blockquote {

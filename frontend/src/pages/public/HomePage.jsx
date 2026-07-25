@@ -1977,7 +1977,7 @@ function EdicionCarousel({ articles }) {
                   styles.newBadgeText
                 }
               >
-                New
+                Nuevo
               </span>
 
               <span
@@ -2287,7 +2287,7 @@ function HighlightCard({
                 styles.newBadgeText
               }
             >
-              New
+              Nuevo
             </span>
 
             <span

@@ -1013,7 +1013,7 @@ function ArticleCard({ article }) {
         {isNew && (
           <span className={styles.newBadge}>
             <span className={styles.newBadgeText}>
-              New
+              Nuevo
             </span>
 
             <span

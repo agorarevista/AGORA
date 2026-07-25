@@ -103,6 +103,43 @@ useEffect(() => {
         ...editionGalleries,
       ].sort(
         (a, b) => {
+          const orderA =
+            Number.isInteger(
+              Number(
+                a.edition_order
+              )
+            ) &&
+            Number(
+              a.edition_order
+            ) > 0
+              ? Number(
+                  a.edition_order
+                )
+              : Number.MAX_SAFE_INTEGER;
+
+          const orderB =
+            Number.isInteger(
+              Number(
+                b.edition_order
+              )
+            ) &&
+            Number(
+              b.edition_order
+            ) > 0
+              ? Number(
+                  b.edition_order
+                )
+              : Number.MAX_SAFE_INTEGER;
+
+          if (
+            orderA !== orderB
+          ) {
+            return (
+              orderA -
+              orderB
+            );
+          }
+
           const dateA =
             new Date(
               a.published_at ||
@@ -184,9 +221,11 @@ if (error || !edition) return <NotFound />;
             transition={{ duration: 0.45 }}
           >
             <div className={styles.heroBadges}>
-              <span className={styles.editionBadge}>
-                Edición #{edition.number}
-              </span>
+              {!edition.is_special && (
+                <span className={styles.editionBadge}>
+                  Edición #{edition.number}
+                </span>
+              )}
 
               {edition.is_special && (
                 <span className={styles.specialBadge}>
@@ -222,7 +261,14 @@ if (error || !edition) return <NotFound />;
   ) : (
     <div className={styles.coverPlaceholder}>
       <BookOpen size={48} />
-      <span>Edición #{edition.number}</span>
+
+      <span>
+        {edition.is_special
+          ? edition.name ||
+            'Edición especial'
+          : `Edición #${edition.number}`
+        }
+      </span>
     </div>
   )}
 </div>
@@ -440,7 +486,7 @@ function EditionContentCard({
                 styles.newBadgeText
               }
             >
-              New
+              Nuevo
             </span>
 
             <span

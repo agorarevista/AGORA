@@ -529,6 +529,11 @@ const getOccasionalSections =
       setEditionId,
     ] = useState('');
 
+    const [
+      editionOrder,
+      setEditionOrder,
+    ] = useState('');
+
   const [
     categoryIds,
     setCategoryIds,
@@ -1049,6 +1054,11 @@ const hasGalleryCategorySelected =
             article.edition_id || ''
           );
 
+          setEditionOrder(
+            article.edition_order ??
+            ''
+          );
+
 const loadedCategoryIds =
   article.article_categories
     ?.map(
@@ -1145,6 +1155,21 @@ setCategoryIds(
 
         edition_id:
           editionId || null,
+
+        edition_order:
+          editionId &&
+          Number.isInteger(
+            Number(
+              editionOrder
+            )
+          ) &&
+          Number(
+            editionOrder
+          ) > 0
+            ? Number(
+                editionOrder
+              )
+            : null,
 
         category_ids:
           categoryIds,
@@ -3736,9 +3761,16 @@ const handlePublish = async () => {
               <select
                 value={editionId}
                 onChange={event => {
+                  const nextEditionId =
+                    event.target.value;
+
                   setEditionId(
-                    event.target.value
+                    nextEditionId
                   );
+
+                  if (!nextEditionId) {
+                    setEditionOrder('');
+                  }
                 }}
                 className={styles.sideSelect}
               >
@@ -3751,10 +3783,53 @@ const handlePublish = async () => {
                     key={edition.id}
                     value={edition.id}
                   >
-                    № {edition.number} — {edition.name}
+                    {edition.is_special
+                      ? 'Especial'
+                      : `№ ${edition.number}`
+                    } — {edition.name}
                   </option>
                 ))}
               </select>
+
+              {editionId && (
+                <div
+                  className={
+                    styles.featuredOrder
+                  }
+                >
+                  <label
+                    className={
+                      styles.featuredOrderLabel
+                    }
+                    htmlFor="article-edition-order"
+                  >
+                    Orden dentro de la edición
+                  </label>
+
+                  <input
+                    id="article-edition-order"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={editionOrder}
+                    onChange={event => {
+                      setEditionOrder(
+                        event.target.value
+                      );
+                    }}
+                    placeholder="Ej. 1"
+                    className={
+                      styles.sideInput
+                    }
+                  />
+
+                  <small>
+                    Usa 1 para la primera publicación,
+                    2 para la segunda y así sucesivamente.
+                    Este orden también se usa en el Home.
+                  </small>
+                </div>
+              )}
             </SidePanel>
 
 

@@ -306,6 +306,11 @@ export default function GalleryEditorPage() {
   ] = useState('');
 
   const [
+    editionOrder,
+    setEditionOrder,
+  ] = useState('');
+
+  const [
     maxPhotos,
     setMaxPhotos,
   ] = useState(30);
@@ -553,6 +558,11 @@ export default function GalleryEditorPage() {
             ''
           );
 
+          setEditionOrder(
+            gallery.edition_order ??
+            ''
+          );
+
           setMaxPhotos(
             Number(
               gallery.max_photos ||
@@ -696,6 +706,21 @@ export default function GalleryEditorPage() {
       edition_id:
         editionId ||
         null,
+
+      edition_order:
+        editionId &&
+        Number.isInteger(
+          Number(
+            editionOrder
+          )
+        ) &&
+        Number(
+          editionOrder
+        ) > 0
+          ? Number(
+              editionOrder
+            )
+          : null,
 
       max_photos:
         Number(maxPhotos),
@@ -2244,10 +2269,16 @@ export default function GalleryEditorPage() {
                     editionId
                   }
                   onChange={event => {
+                    const nextEditionId =
+                      event.target.value;
+
                     setEditionId(
-                      event.target
-                        .value
+                      nextEditionId
                     );
+
+                    if (!nextEditionId) {
+                      setEditionOrder('');
+                    }
                   }}
                 >
                   <option value="">
@@ -2264,10 +2295,11 @@ export default function GalleryEditorPage() {
                           edition.id
                         }
                       >
-                        Edición{' '}
-                        {
-                          edition.number
+                        {edition.is_special
+                          ? 'Especial'
+                          : `Edición ${edition.number}`
                         }
+
                         {edition.name
                           ? ` · ${edition.name}`
                           : ''}
@@ -2276,6 +2308,34 @@ export default function GalleryEditorPage() {
                   )}
                 </select>
               </label>
+
+              {editionId && (
+                <label
+                  className={
+                    styles.field
+                  }
+                >
+                  <span>
+                    Orden dentro de la edición
+                  </span>
+
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={
+                      editionOrder
+                    }
+                    onChange={event => {
+                      setEditionOrder(
+                        event.target
+                          .value
+                      );
+                    }}
+                    placeholder="Ej. 1"
+                  />
+                </label>
+              )}
 
               <label
                 className={
