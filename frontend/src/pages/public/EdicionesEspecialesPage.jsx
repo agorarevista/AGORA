@@ -45,20 +45,42 @@ export default function EdicionesEspecialesPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.06 }}
               >
-                <Link to={`/edicion/${ed.number}`} className={styles.card}>
-                  <div className={styles.cover}>
-                    {ed.cover_image_url
-                      ? <img src={ed.cover_image_url} alt={ed.name} />
-                      : <div className={styles.coverEmpty}><Star size={28} /></div>
-                    }
-                  </div>
-                  <div className={styles.info}>
-                    <span className={styles.number}>Especial № {ed.number}</span>
-                    <h3 className={styles.name}>{ed.name}</h3>
-                    {ed.description && <p className={styles.desc}>{ed.description}</p>}
-                    {ed.published_at && <span className={styles.date}>{formatDate(ed.published_at)}</span>}
-                  </div>
-                </Link>
+<Link to={`/edicion/${ed.number}`} className={styles.card}>
+  <div className={styles.cover}>
+    {ed.cover_image_url ? (
+      <img
+        src={ed.cover_image_url}
+        alt={ed.name}
+      />
+    ) : (
+      <div className={styles.coverEmpty}>
+        <Star size={28} />
+      </div>
+    )}
+  </div>
+
+  <div className={styles.info}>
+    <span className={styles.number}>
+      Edición especial
+    </span>
+
+    <h3 className={styles.name}>
+      {ed.name}
+    </h3>
+
+    {ed.description && (
+      <p className={styles.desc}>
+        {ed.description}
+      </p>
+    )}
+
+    {ed.published_at && (
+      <span className={styles.date}>
+        {formatDate(ed.published_at)}
+      </span>
+    )}
+  </div>
+</Link>
               </motion.div>
             ))}
           </div>

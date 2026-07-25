@@ -220,25 +220,25 @@ if (error || !edition) return <NotFound />;
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45 }}
           >
-            <div className={styles.heroBadges}>
-              {!edition.is_special && (
-                <span className={styles.editionBadge}>
-                  Edición #{edition.number}
-                </span>
-              )}
+<div className={styles.heroBadges}>
+  {!edition.is_special && (
+    <span className={styles.editionBadge}>
+      Edición #{edition.number}
+    </span>
+  )}
 
-              {edition.is_special && (
-                <span className={styles.specialBadge}>
-                  Edición especial
-                </span>
-              )}
+  {edition.is_special && (
+    <span className={styles.specialBadge}>
+      Edición especial
+    </span>
+  )}
 
-              {edition.is_current && (
-                <span className={styles.currentBadge}>
-                  Edición actual
-                </span>
-              )}
-            </div>
+  {edition.is_current && (
+    <span className={styles.currentBadge}>
+      Edición actual
+    </span>
+  )}
+</div>
 
             <h1 className={styles.heroTitle}>
               {edition.name}
@@ -246,28 +246,26 @@ if (error || !edition) return <NotFound />;
 
 <div className={styles.coverWrap}>
   {edition.cover_image_url ? (
-<button
-  type="button"
-  className={styles.coverButton}
-  onClick={handleOpenCover}
-  aria-label={`Abrir portada de ${edition.name}`}
->
-  <img
-    src={edition.cover_image_url}
-    alt={edition.name}
-    className={styles.cover}
-  />
-</button>
+    <button
+      type="button"
+      className={styles.coverButton}
+      onClick={handleOpenCover}
+      aria-label={`Abrir portada de ${edition.name}`}
+    >
+      <img
+        src={edition.cover_image_url}
+        alt={edition.name}
+        className={styles.cover}
+      />
+    </button>
   ) : (
     <div className={styles.coverPlaceholder}>
       <BookOpen size={48} />
 
       <span>
         {edition.is_special
-          ? edition.name ||
-            'Edición especial'
-          : `Edición #${edition.number}`
-        }
+          ? edition.name || 'Edición especial'
+          : `Edición #${edition.number}`}
       </span>
     </div>
   )}
