@@ -1,5 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
+
+import {
+  createPortal,
+} from 'react-dom';
+
+import {
+  AnimatePresence,
+  motion,
+} from 'framer-motion';
 import { registerShare, getShares } from '../../../api/shares.api';
 import useAlertStore from '../../../store/alertStore';
 import styles from './ShareButtons.module.css';
@@ -59,32 +71,162 @@ const PLATFORMS = [
   },
 ];
 
-export default function ShareButtons({ article }) {
-  const [open, setOpen]        = useState(false);
-  const [copied, setCopied]    = useState(false);
-  const [spinning, setSpinning] = useState(false);
-  const [shares, setShares]    = useState(0);
-  const showAlert = useAlertStore((state) => state.showAlert);
+export default function ShareButtons({
+  article = null,
+  content = null,
+  contentType = 'article',
+}) {
+  const [
+    open,
+    setOpen,
+  ] = useState(false);
 
-  const url   = typeof window !== 'undefined' ? window.location.href : '';
-  const title = article?.title || '';
-  const loadShares = useCallback(async () => {
-    try {
-      const data = await getShares(article.id);
-      setShares(data?.total || 0);
-    } catch {
-    }
-  }, [article.id]);
+  const [
+    copied,
+    setCopied,
+  ] = useState(false);
+
+  const [
+    spinning,
+    setSpinning,
+  ] = useState(false);
+
+  const [
+    shares,
+    setShares,
+  ] = useState(0);
+
+  const showAlert =
+    useAlertStore(
+      state =>
+        state.showAlert
+    );
+
+  /*
+   * Mantiene compatibilidad con el uso actual:
+   *
+   * <ShareButtons article={article} />
+   *
+   * Y permite:
+   *
+   * <ShareButtons
+   *   content={gallery}
+   *   contentType="gallery"
+   * />
+   */
+  const item =
+    content ||
+    article ||
+    null;
+
+  const isArticle =
+    contentType ===
+    'article';
+
+  const contentLabel =
+    contentType ===
+    'gallery'
+      ? 'galería'
+      : 'publicación';
+
+  const canonicalPath =
+    contentType ===
+    'gallery'
+      ? `/galeria/${item?.slug || ''}`
+      : `/articulos/${item?.slug || ''}`;
+
+  /*
+   * No usamos window.location.href.
+   *
+   * Así nunca se vuelve a compartir:
+   * agora-frontend.onrender.com
+   */
+  const url =
+    item?.slug
+      ? `https://agorarevista.mx${canonicalPath}`
+      : typeof window !==
+          'undefined'
+        ? window.location.href
+        : '';
+
+  const title =
+    item?.social_title ||
+    item?.title ||
+    '';
+
+  const description =
+    item?.social_description ||
+    item?.excerpt ||
+    item?.subtitle ||
+    '';
+
+  const previewImage =
+    item?.social_image_url ||
+    item?.cover_image_url ||
+    '';
+
+  const loadShares =
+    useCallback(
+      async () => {
+        /*
+         * La API actual de shares solamente
+         * registra article_id.
+         *
+         * Las galerías pueden compartirse,
+         * pero por ahora no muestran contador.
+         */
+        if (
+          !isArticle ||
+          !item?.id
+        ) {
+          setShares(0);
+          return;
+        }
+
+        try {
+          const data =
+            await getShares(
+              item.id
+            );
+
+          setShares(
+            data?.total ||
+            0
+          );
+        } catch {
+          // No bloqueamos el contenido.
+        }
+      },
+      [
+        isArticle,
+        item?.id,
+      ]
+    );
 
   useEffect(() => {
+    if (!isArticle) {
+      return undefined;
+    }
+
     loadShares();
 
-    const interval = setInterval(() => {
-      loadShares();
-    }, 2500);
+    const interval =
+      window.setInterval(
+        () => {
+          loadShares();
+        },
+        2500
+      );
 
-    return () => clearInterval(interval);
-  }, [loadShares]);
+    return () => {
+      window.clearInterval(
+        interval
+      );
+    };
+  }, [
+    isArticle,
+    loadShares,
+  ]);
 
   const handleOpen = () => {
     setSpinning(true);
@@ -92,15 +234,41 @@ export default function ShareButtons({ article }) {
     setOpen(true);
   };
 
-  const share = async (platform) => {
-    registerShare(article.id, platform)
-      .then(res => {
-        if (typeof res?.total === 'number') setShares(res.total);
-        else loadShares();
-      })
-      .catch(() => {});
+  const share =
+    async platform => {
+      /*
+       * El backend actual de shares recibe
+       * article_id, por eso solamente
+       * registramos los artículos.
+       */
+      if (
+        isArticle &&
+        item?.id
+      ) {
+        registerShare(
+          item.id,
+          platform
+        )
+          .then(response => {
+            if (
+              typeof response
+                ?.total ===
+              'number'
+            ) {
+              setShares(
+                response.total
+              );
+            } else {
+              loadShares();
+            }
+          })
+          .catch(() => {
+            // Compartir debe funcionar aunque
+            // falle el contador.
+          });
+      }
 
-    const urls = {
+      const urls = {
       whatsapp: `https://wa.me/?text=${encodeURIComponent(title + ' — ' + url)}`,
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
       twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
@@ -113,10 +281,17 @@ export default function ShareButtons({ article }) {
         setTimeout(() => setCopied(false), 2500);
 
         showAlert({
-          type: 'success',
-          title: 'Enlace copiado',
-          message: 'El enlace del artículo se copió al portapapeles.',
-          duration: 3000,
+          type:
+            'success',
+
+          title:
+            'Enlace copiado',
+
+          message:
+            `El enlace de la ${contentLabel} se copió al portapapeles.`,
+
+          duration:
+            3000,
         });
       } catch {
         showAlert({
@@ -177,12 +352,23 @@ export default function ShareButtons({ article }) {
             <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
           </svg>
         </span>
-        <span className={styles.shareCount}>{shares}</span>
+        {isArticle && (
+          <span
+            className={
+              styles.shareCount
+            }
+          >
+            {shares}
+          </span>
+        )}
       </button>
 
-      {/* Modal */}
-      <AnimatePresence>
-        {open && (
+      {/* Modal montado directamente en document.body */}
+      {typeof document !==
+        'undefined' &&
+        createPortal(
+          <AnimatePresence>
+            {open && (
           <>
             {/* Backdrop */}
             <motion.div
@@ -203,17 +389,77 @@ export default function ShareButtons({ article }) {
                 transition={{ duration: 0.22, ease: 'easeOut' }}
               >
                 <div className={styles.modalHeader}>
-                  <span className={styles.modalTitle}>Compartir artículo</span>
+<span
+  className={
+    styles.modalTitle
+  }
+>
+  Compartir{' '}
+  {contentType ===
+  'gallery'
+    ? 'galería'
+    : 'artículo'}
+</span>
                   <button className={styles.modalClose} onClick={() => setOpen(false)}>✕</button>
                 </div>
 
-                {/* Preview del artículo */}
-                {article?.cover_image_url && (
-                  <div className={styles.preview}>
-                    <img src={article.cover_image_url} alt="" className={styles.previewImg} />
-                    <div className={styles.previewInfo}>
-                      <span className={styles.previewSite}>agorarevista.com</span>
-                      <span className={styles.previewTitle}>{article.title}</span>
+                {/* Preview del contenido */}
+                {previewImage && (
+                  <div
+                    className={
+                      styles.preview
+                    }
+                  >
+                    <img
+                      src={
+                        previewImage
+                      }
+                      alt={
+                        title
+                      }
+                      className={
+                        styles.previewImg
+                      }
+                    />
+
+                    <div
+                      className={
+                        styles.previewInfo
+                      }
+                    >
+                      <span
+                        className={
+                          styles.previewSite
+                        }
+                      >
+                        agorarevista.mx
+                      </span>
+
+                      <span
+                        className={
+                          styles.previewTitle
+                        }
+                      >
+                        {title}
+                      </span>
+
+                      {description && (
+                        <span
+                          className={
+                            styles.previewDescription
+                          }
+                        >
+                          {description}
+                        </span>
+                      )}
+
+                      <span
+                        className={
+                          styles.previewUrl
+                        }
+                      >
+                        {url}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -255,8 +501,10 @@ export default function ShareButtons({ article }) {
               </motion.div>
             </div>
           </>
+            )}
+          </AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
     </>
   );
 }

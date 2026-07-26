@@ -44,6 +44,8 @@ import {
 
 import GalleryMuseum from '../../components/gallery/GalleryMuseum/GalleryMuseum';
 
+import ShareButtons from '../../components/common/ShareButtons/ShareButtons';
+
 import styles from './GalleryPage.module.css';
 
 const normalizeSocialUrl = value => {
@@ -882,6 +884,19 @@ const openMuseumPhoto =
               ? 'fotografía'
               : 'fotografías'}
           </span>
+        </div>
+
+        <div
+          className={
+            styles.galleryShare
+          }
+        >
+          <ShareButtons
+            content={
+              gallery
+            }
+            contentType="gallery"
+          />
         </div>
       </header>
 
