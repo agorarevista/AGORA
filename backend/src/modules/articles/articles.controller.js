@@ -55,26 +55,91 @@ const getFeatured = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-const getHome = async (req, res, next) => {
+const getHome = async (
+  req,
+  res,
+  next
+) => {
   try {
-    const payload = await service.getHome();
+    const payload =
+      await service.getHome();
 
     return res.json({
-      featured: Array.isArray(payload?.featured) ? payload.featured : [],
-      latest: Array.isArray(payload?.latest) ? payload.latest : [],
-      edition: payload?.edition || null,
-      convocatoria: payload?.convocatoria || null,
-      collaborators: Array.isArray(payload?.collaborators) ? payload.collaborators : [],
+      featured:
+        Array.isArray(
+          payload?.featured
+        )
+          ? payload.featured
+          : [],
+
+      latest:
+        Array.isArray(
+          payload?.latest
+        )
+          ? payload.latest
+          : [],
+
+      mostRead:
+        Array.isArray(
+          payload?.mostRead
+        )
+          ? payload.mostRead
+          : [],
+
+      edition:
+        payload?.edition ||
+        null,
+
+      convocatoria:
+        payload?.convocatoria ||
+        null,
+
+      collaborators:
+        Array.isArray(
+          payload?.collaborators
+        )
+          ? payload.collaborators
+          : [],
     });
   } catch (err) {
-    console.error('================ HOME ERROR ================');
-    console.error('message:', err?.message);
-    console.error('code:', err?.code);
-    console.error('details:', err?.details);
-    console.error('hint:', err?.hint);
-    console.error('stack:', err?.stack);
-    console.error('full error:', err);
-    console.error('============================================');
+    console.error(
+      '================ HOME ERROR ================'
+    );
+
+    console.error(
+      'message:',
+      err?.message
+    );
+
+    console.error(
+      'code:',
+      err?.code
+    );
+
+    console.error(
+      'details:',
+      err?.details
+    );
+
+    console.error(
+      'hint:',
+      err?.hint
+    );
+
+    console.error(
+      'stack:',
+      err?.stack
+    );
+
+    console.error(
+      'full error:',
+      err
+    );
+
+    console.error(
+      '============================================'
+    );
+
     return next(err);
   }
 };

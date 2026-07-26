@@ -1211,6 +1211,74 @@ const getHome = async () => {
       .limit(12),
   ]);
 
+  if (
+    featuredArticlesResult.status ===
+      'rejected'
+  ) {
+    console.error(
+      'HOME featuredArticles rejected:',
+      featuredArticlesResult.reason
+    );
+  } else if (
+    featuredArticlesResult.value?.error
+  ) {
+    console.error(
+      'HOME featuredArticles error:',
+      featuredArticlesResult.value.error
+    );
+  }
+
+  if (
+    latestArticlesResult.status ===
+      'rejected'
+  ) {
+    console.error(
+      'HOME latestArticles rejected:',
+      latestArticlesResult.reason
+    );
+  } else if (
+    latestArticlesResult.value?.error
+  ) {
+    console.error(
+      'HOME latestArticles error:',
+      latestArticlesResult.value.error
+    );
+  }
+
+  if (
+    featuredGalleriesResult.status ===
+      'rejected'
+  ) {
+    console.error(
+      'HOME featuredGalleries rejected:',
+      featuredGalleriesResult.reason
+    );
+  } else if (
+    featuredGalleriesResult.value?.error
+  ) {
+    console.error(
+      'HOME featuredGalleries error:',
+      featuredGalleriesResult.value.error
+    );
+  }
+
+  if (
+    latestGalleriesResult.status ===
+      'rejected'
+  ) {
+    console.error(
+      'HOME latestGalleries rejected:',
+      latestGalleriesResult.reason
+    );
+  } else if (
+    latestGalleriesResult.value?.error
+  ) {
+    console.error(
+      'HOME latestGalleries error:',
+      latestGalleriesResult.value.error
+    );
+  }
+
   const featuredArticles =
     featuredArticlesResult.status ===
       'fulfilled' &&
