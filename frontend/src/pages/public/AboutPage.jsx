@@ -1,5 +1,13 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Mail } from 'lucide-react';
+
+import {
+  ArrowRight,
+  Mail,
+} from 'lucide-react';
+
+import ikarisLogoBlack from '../../assets/IKARISTECHBLACK.png';
+import ikarisLogoWhite from '../../assets/IKARISTECHWHITE.png';
+
 import styles from './AboutPage.module.css';
 
 export default function AboutPage() {
@@ -100,53 +108,125 @@ export default function AboutPage() {
 
         <div className={styles.directoryGrid}>
           <article className={styles.personCard}>
-            <span className={styles.role}>Dirección editorial</span>
+            <span className={styles.role}>
+              Dirección editorial
+            </span>
 
-            <h3>Francisco Bojórquez</h3>
+            <h3>
+              Francisco Bojórquez
+            </h3>
 
             <p>
-              Poeta, columnista, editor multimedia y gestor cultural. Licenciado
-              en Ciencias de la Comunicación por la Universidad Autónoma de
-              Occidente, con especialización en Medios Masivos. Desde 2021 escribe
-              la columna Desde aquí en El Debate, donde reflexiona sobre cultura,
-              arte, filosofía y la condición humana.
+              Poeta, columnista, editor multimedia y gestor cultural.
+              Licenciado en Ciencias de la Comunicación por la
+              Universidad Autónoma de Occidente, con especialización
+              en Medios Masivos. Desde 2021 escribe la columna Desde
+              aquí en El Debate, donde reflexiona sobre cultura, arte,
+              filosofía y la condición humana.
             </p>
 
             <p>
-              Sus poemas han sido publicados en Timonel, revista del Instituto
-              Sinaloense de Cultura, y en la plana poética independiente Sol
-              Filamento. Ha colaborado con reseñas y textos en revistas digitales
-              como Cronopios y Divergencias.
+              Sus poemas han sido publicados en Timonel, revista del
+              Instituto Sinaloense de Cultura, y en la plana poética
+              independiente Sol Filamento. Ha colaborado con reseñas
+              y textos en revistas digitales como Cronopios y
+              Divergencias.
             </p>
 
             <p>
-              Forma parte del colectivo poético Nadie nos lee y del colectivo
-              creativo Amorfo, donde impulsa actividades que cruzan lo literario
-              con lo escénico y audiovisual.
+              Forma parte del colectivo poético Nadie nos lee y del
+              colectivo creativo Amorfo, donde impulsa actividades
+              que cruzan lo literario con lo escénico y audiovisual.
             </p>
           </article>
 
           <article className={styles.personCard}>
-            <span className={styles.role}>Coordinación de contenido</span>
+            <span className={styles.role}>
+              Coordinación de contenido
+            </span>
 
-            <h3>Issac Cordero</h3>
+            <h3>
+              Issac Cordero
+            </h3>
 
             <p>
-              Poeta, productor audiovisual, fotógrafo y gestor cultural.
-              Licenciado en Ciencias de la Comunicación por la Universidad
-              Autónoma de Occidente.
+              Poeta, productor audiovisual, fotógrafo y gestor
+              cultural. Licenciado en Ciencias de la Comunicación
+              por la Universidad Autónoma de Occidente.
             </p>
 
             <p>
-              Ha sido miembro de diversos programas de fomento y promoción
-              literaria como Yo soy lector y el colectivo poético Nadie nos lee.
+              Ha sido miembro de diversos programas de fomento y
+              promoción literaria como Yo soy lector y el colectivo
+              poético Nadie nos lee.
             </p>
 
             <p>
-              Fundador de Amorfo, una productora y estudio creativo en la que
-              desarrolla proyectos audiovisuales y cortometrajes. Siempre en busca
-              de dar forma a las ideas.
+              Fundador de Amorfo, una productora y estudio creativo
+              en la que desarrolla proyectos audiovisuales y
+              cortometrajes. Siempre en busca de dar forma a las
+              ideas.
             </p>
+          </article>
+
+          <article
+            className={`${styles.personCard} ${styles.developmentCard}`}
+          >
+            <div className={styles.ikarisLogoWrap}>
+              <img
+                src={ikarisLogoBlack}
+                alt="IKARIS TECH"
+                className={`${styles.ikarisLogo} ${styles.ikarisLogoLight}`}
+              />
+
+              <img
+                src={ikarisLogoWhite}
+                alt=""
+                aria-hidden="true"
+                className={`${styles.ikarisLogo} ${styles.ikarisLogoDark}`}
+              />
+            </div>
+
+            <span className={styles.role}>
+              Dirección de desarrollo
+            </span>
+
+            <h3>
+              Saúl Eduardo Calderón Bojórquez
+            </h3>
+
+            <p>
+              Fundador y director de desarrollo de IKARIS Tech,
+              empresa especializada en el desarrollo de software y
+              soluciones tecnológicas a medida.
+            </p>
+
+            <p>
+              Con experiencia en el diseño y construcción de
+              plataformas digitales, aplicaciones web y móviles,
+              así como sistemas empresariales, dirige cada proyecto
+              bajo una visión orientada a la calidad, la
+              escalabilidad y la mejora continua.
+            </p>
+
+            <p>
+              Su filosofía combina ingeniería, innovación y diseño
+              para desarrollar tecnología que genere valor real,
+              convencido de que el mejor software es aquel que
+              evoluciona junto con las necesidades de quienes lo
+              utilizan.
+            </p>
+
+            <a
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=ikaristech%40outlook.es&su=Contacto%20desde%20Agor%C3%A1%20Revista&body=Hola%20IKARIS%20Tech%2C%0A%0AMe%20gustar%C3%ADa%20ponerme%20en%20contacto%20con%20ustedes.%0A%0A"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.ikarisContactButton}
+            >
+              <Mail size={16} />
+
+              Contactar a IKARIS TECH
+            </a>
           </article>
         </div>
       </section>
