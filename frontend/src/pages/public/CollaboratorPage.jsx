@@ -603,24 +603,44 @@ export default function CollaboratorPage() {
         )}
 
         {contents.length === 0 ? (
-          <div className={styles.empty}>
-            <span>Λ</span>
+          <div className={styles.emptyResults}>
+            <span
+              className={styles.emptyResultsSymbol}
+              aria-hidden="true"
+            >
+              Λ
+            </span>
 
-            <p>
-              Aún no hay publicaciones.
+            <h2 className={styles.emptyResultsTitle}>
+              Aún no hay publicaciones
+            </h2>
+
+            <p className={styles.emptyResultsText}>
+              Las publicaciones de este colaborador
+              aparecerán aquí próximamente.
             </p>
           </div>
         ) : groupedContents.length === 0 ? (
-          <div className={styles.empty}>
-            <span>Λ</span>
+          <div className={styles.emptyResults}>
+            <span
+              className={styles.emptyResultsSymbol}
+              aria-hidden="true"
+            >
+              Λ
+            </span>
 
-            <p>
-              No encontramos publicaciones con esos filtros.
+            <h2 className={styles.emptyResultsTitle}>
+              No encontramos publicaciones
+            </h2>
+
+            <p className={styles.emptyResultsText}>
+              No encontramos publicaciones con
+              esos filtros.
             </p>
 
             <button
               type="button"
-              className={styles.emptyFilterButton}
+              className={styles.emptyResultsButton}
               onClick={clearContentFilters}
             >
               Limpiar filtros

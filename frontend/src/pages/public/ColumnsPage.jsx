@@ -523,21 +523,26 @@ export default function ColumnsPage() {
             </p>
           </div>
         ) : filteredColumns.length === 0 ? (
-          <div className={styles.noResults}>
-            <span className={styles.messageSymbol}>
+          <div className={styles.emptyResults}>
+            <span
+              className={styles.emptyResultsSymbol}
+              aria-hidden="true"
+            >
               Λ
             </span>
 
-            <h2>No encontramos coincidencias</h2>
+            <h2 className={styles.emptyResultsTitle}>
+              No encontramos coincidencias
+            </h2>
 
-            <p>
-              Prueba con otro nombre de columna, autor o elimina
-              alguno de los filtros.
+            <p className={styles.emptyResultsText}>
+              Prueba con otro nombre de columna,
+              autor o elimina alguno de los filtros.
             </p>
 
             <button
               type="button"
-              className={styles.noResultsButton}
+              className={styles.emptyResultsButton}
               onClick={clearFilters}
             >
               Limpiar filtros

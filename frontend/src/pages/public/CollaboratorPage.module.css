@@ -765,24 +765,139 @@
   color: rgba(255, 255, 255, 0.92);
 }
 
-.empty {
-  padding: 72px 24px;
-  text-align: center;
-  color: var(--nav-text-muted);
-  font-family: var(--font-sans);
-  font-size: 14px;
+/* ── Estado unificado sin resultados ────────────────── */
+.emptyResults {
+  min-height: 330px;
+
+  padding:
+    60px 24px;
+
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  border: 1px dashed var(--nav-border);
+  justify-content: center;
+
+  text-align: center;
 }
 
-.empty span {
-  font-family: var(--font-display);
-  font-size: 40px;
-  color: var(--nav-text-muted);
-  opacity: 0.45;
+.emptyResultsSymbol {
+  position: relative;
+
+  display: inline-block;
+
+  color:
+    var(--nav-text-muted);
+
+  font-family:
+    var(--font-display);
+
+  font-size: 58px;
+  line-height: 1;
+
+  opacity: 0.42;
+}
+
+/* Punto superior del símbolo de Agorá */
+.emptyResultsSymbol::after {
+  content: "";
+
+  position: absolute;
+
+  top: -3px;
+  left: 50%;
+
+  width: 5px;
+  height: 5px;
+
+  border-radius: 50%;
+
+  background:
+    currentColor;
+
+  transform:
+    translateX(-50%);
+}
+
+.emptyResultsTitle {
+  margin:
+    22px 0 0;
+
+  color:
+    var(--nav-text);
+
+  font-family:
+    var(--font-display);
+
+  font-size:
+    clamp(
+      28px,
+      3vw,
+      40px
+    );
+
+  line-height: 1.08;
+  font-weight: 500;
+}
+
+.emptyResultsText {
+  max-width: 600px;
+
+  margin:
+    12px auto 0;
+
+  color:
+    var(--nav-text-muted);
+
+  font-family:
+    var(--font-body);
+
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.emptyResultsButton {
+  min-height: 52px;
+
+  margin-top: 26px;
+
+  padding:
+    0 24px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+
+  background:
+    var(--color-accent);
+
+  border: none;
+  border-radius: 2px;
+
+  cursor: pointer;
+
+  font-family:
+    var(--font-sans);
+
+  font-size: 11px;
+  font-weight: 900;
+
+  letter-spacing: 1.1px;
+
+  text-transform: uppercase;
+
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
+}
+
+.emptyResultsButton:hover {
+  transform:
+    translateY(-2px);
+
+  filter:
+    brightness(1.06);
 }
 
 @media (max-width: 1280px) {
@@ -1022,6 +1137,20 @@
   color: var(--nav-text-muted);
 }
 
+/* Oculta la X nativa de los input type="search" */
+.publicationSearchInput::-webkit-search-cancel-button,
+.publicationSearchInput::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.publicationSearchInput::-ms-clear,
+.publicationSearchInput::-ms-reveal {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .publicationSearchInput:focus {
   border-color: var(--color-accent);
   box-shadow:
@@ -1205,20 +1334,7 @@
   opacity: 0.5;
 }
 
-.emptyFilterButton {
-  min-height: 42px;
-  padding: 0 16px;
-  color: white;
-  background: var(--color-accent);
-  border: none;
-  border-radius: 2px;
-  cursor: pointer;
-  font-family: var(--font-sans);
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
+ 
 
 @media (max-width: 1050px) {
   .publicationFilters {

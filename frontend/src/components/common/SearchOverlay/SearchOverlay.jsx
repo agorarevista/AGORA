@@ -275,12 +275,12 @@ export default function SearchOverlay({ open, onClose }) {
               }
             }}
           />
-          {query && (
-            <button className={styles.clearBtn} onClick={() => setQuery('')}>
-              <X size={14} />
-            </button>
-          )}
-          <button className={styles.closeBtn} onClick={onClose}>
+          <button
+            type="button"
+            className={styles.closeBtn}
+            onClick={onClose}
+            aria-label="Cerrar búsqueda"
+          >
             <X size={18} />
           </button>
         </div>

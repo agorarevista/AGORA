@@ -1085,19 +1085,30 @@ return (
             </div>
 
             {articleGroups.length === 0 ? (
-              <div className={styles.empty}>
-                <span>Λ</span>
+              <div className={styles.emptyResults}>
+                <span
+                  className={styles.emptyResultsSymbol}
+                  aria-hidden="true"
+                >
+                  Λ
+                </span>
 
-                <p>
+                <h2
+                  className={styles.emptyResultsTitle}
+                >
                   No encontramos publicaciones
-                  con esos filtros.
+                </h2>
+
+                <p
+                  className={styles.emptyResultsText}
+                >
+                  No encontramos publicaciones con
+                  esos filtros.
                 </p>
 
                 <button
                   type="button"
-                  className={
-                    styles.emptyFilterButton
-                  }
+                  className={styles.emptyResultsButton}
                   onClick={clearFilters}
                 >
                   Limpiar filtros
@@ -1622,11 +1633,29 @@ function GridSkeleton() {
 
 function EmptyState({ name }) {
   return (
-    <div className={styles.empty}>
-      <span className={styles.emptySymbol}>Λ</span>
-      <h3>No hay artículos en {name} todavía</h3>
-      <p>Vuelve pronto, estamos trabajando en nuevo contenido.</p>
-      <Link to="/" className={styles.emptyLink}>← Volver al inicio</Link>
+    <div className={styles.emptyResults}>
+      <span
+        className={styles.emptyResultsSymbol}
+        aria-hidden="true"
+      >
+        Λ
+      </span>
+
+      <h2 className={styles.emptyResultsTitle}>
+        Aún no hay publicaciones
+      </h2>
+
+      <p className={styles.emptyResultsText}>
+        Las publicaciones de {name} aparecerán
+        aquí próximamente.
+      </p>
+
+      <Link
+        to="/"
+        className={styles.emptyResultsLink}
+      >
+        Volver al inicio
+      </Link>
     </div>
   );
 }

@@ -1251,39 +1251,145 @@
 }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 
-/* ── Empty ───────────────────────────────────────────── */
-.empty {
-  padding: 80px 24px;
-  text-align: center;
+/* ── Estado unificado sin resultados ────────────────── */
+.emptyResults {
+  min-height: 330px;
+
+  padding:
+    60px 24px;
+
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-}
-.emptySymbol {
-  font-family: var(--font-display);
-  font-size: 56px;
-  color: var(--color-gray-300);
-  line-height: 1;
-}
-.empty h3 {
-  font-family: var(--font-display);
-  font-size: 24px;
-  color: var(--nav-text);
+  justify-content: center;
+
+  text-align: center;
 }
 
-.empty p {
-  font-family: var(--font-body);
-  font-size: 15px;
-  color: var(--nav-text-muted);
+.emptyResultsSymbol {
+  position: relative;
+
+  display: inline-block;
+
+  color:
+    var(--nav-text-muted);
+
+  font-family:
+    var(--font-display);
+
+  font-size: 58px;
+  line-height: 1;
+
+  opacity: 0.42;
 }
-.emptyLink {
-  color: var(--color-accent);
+
+/* Punto superior del símbolo de Agorá */
+.emptyResultsSymbol::after {
+  content: "";
+
+  position: absolute;
+
+  top: -3px;
+  left: 50%;
+
+  width: 5px;
+  height: 5px;
+
+  border-radius: 50%;
+
+  background:
+    currentColor;
+
+  transform:
+    translateX(-50%);
+}
+
+.emptyResultsTitle {
+  margin:
+    22px 0 0;
+
+  color:
+    var(--nav-text);
+
+  font-family:
+    var(--font-display);
+
+  font-size:
+    clamp(
+      28px,
+      3vw,
+      40px
+    );
+
+  line-height: 1.08;
+  font-weight: 500;
+}
+
+.emptyResultsText {
+  max-width: 600px;
+
+  margin:
+    12px auto 0;
+
+  color:
+    var(--nav-text-muted);
+
+  font-family:
+    var(--font-body);
+
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.emptyResultsButton,
+.emptyResultsLink {
+  min-height: 52px;
+
+  margin-top: 26px;
+
+  padding:
+    0 24px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+
+  background:
+    var(--color-accent);
+
+  border: none;
+  border-radius: 2px;
+
+  cursor: pointer;
+
   text-decoration: none;
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 600;
+
+  font-family:
+    var(--font-sans);
+
+  font-size: 11px;
+  font-weight: 900;
+
+  letter-spacing: 1.1px;
+
+  text-transform: uppercase;
+
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
 }
+
+.emptyResultsButton:hover,
+.emptyResultsLink:hover {
+  transform:
+    translateY(-2px);
+
+  filter:
+    brightness(1.06);
+}
+
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 1280px) {
   .grid {
@@ -1742,6 +1848,20 @@
     var(--nav-text-muted);
 }
 
+/* Oculta la X nativa de los input type="search" */
+.publicationSearchInput::-webkit-search-cancel-button,
+.publicationSearchInput::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.publicationSearchInput::-ms-clear,
+.publicationSearchInput::-ms-reveal {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .publicationSearchInput:focus {
   border-color:
     var(--color-accent);
@@ -2049,38 +2169,7 @@
   width: 100%;
 }
 
-.emptyFilterButton {
-  min-height: 42px;
-
-  padding:
-    0 16px;
-
-  color: white;
-
-  background:
-    var(--color-accent);
-
-  border: none;
-  border-radius: 2px;
-
-  cursor: pointer;
-
-  font-family:
-    var(--font-sans);
-
-  font-size: 10px;
-  font-weight: 900;
-
-  letter-spacing: 1px;
-
-  text-transform:
-    uppercase;
-}
-
-.emptyFilterButton:hover {
-  filter:
-    brightness(1.06);
-}
+ 
 
 /* ══════════════════════════════════════════════════════
    RESPONSIVE DE PUBLICACIONES

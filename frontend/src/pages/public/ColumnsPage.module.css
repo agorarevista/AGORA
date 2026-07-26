@@ -178,6 +178,21 @@
   color: var(--nav-text-muted);
 }
 
+/* Oculta la X automática de Chrome, Edge y Safari */
+.searchInput::-webkit-search-cancel-button,
+.searchInput::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Oculta la X automática de navegadores antiguos de Microsoft */
+.searchInput::-ms-clear,
+.searchInput::-ms-reveal {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .searchInput:focus {
   border-color: var(--color-accent);
   box-shadow:
@@ -793,6 +808,149 @@
   font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.7;
+}
+
+/* ── Estado unificado sin resultados ────────────────── */
+.emptyResults {
+  width: min(
+    calc(100% - 48px),
+    1420px
+  );
+
+  min-height: 330px;
+
+  margin:
+    20px auto 0;
+
+  padding:
+    60px 24px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+}
+
+.emptyResultsSymbol {
+  position: relative;
+
+  display: inline-block;
+
+  color:
+    var(--nav-text-muted);
+
+  font-family:
+    var(--font-display);
+
+  font-size: 58px;
+  line-height: 1;
+
+  opacity: 0.42;
+}
+
+/* Punto superior del símbolo de Agorá */
+.emptyResultsSymbol::after {
+  content: "";
+
+  position: absolute;
+
+  top: -3px;
+  left: 50%;
+
+  width: 5px;
+  height: 5px;
+
+  border-radius: 50%;
+
+  background:
+    currentColor;
+
+  transform:
+    translateX(-50%);
+}
+
+.emptyResultsTitle {
+  margin:
+    22px 0 0;
+
+  color:
+    var(--nav-text);
+
+  font-family:
+    var(--font-display);
+
+  font-size:
+    clamp(
+      28px,
+      3vw,
+      40px
+    );
+
+  line-height: 1.08;
+  font-weight: 500;
+}
+
+.emptyResultsText {
+  max-width: 600px;
+
+  margin:
+    12px auto 0;
+
+  color:
+    var(--nav-text-muted);
+
+  font-family:
+    var(--font-body);
+
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.emptyResultsButton {
+  min-height: 52px;
+
+  margin-top: 26px;
+
+  padding:
+    0 24px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+
+  background:
+    var(--color-accent);
+
+  border: none;
+  border-radius: 2px;
+
+  cursor: pointer;
+
+  font-family:
+    var(--font-sans);
+
+  font-size: 11px;
+  font-weight: 900;
+
+  letter-spacing: 1.1px;
+
+  text-transform: uppercase;
+
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
+}
+
+.emptyResultsButton:hover {
+  transform:
+    translateY(-2px);
+
+  filter:
+    brightness(1.06);
 }
 
 .skeletonBanner {

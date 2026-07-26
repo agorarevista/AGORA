@@ -272,6 +272,21 @@
     var(--nav-text-muted);
 }
 
+/* Oculta la X automática de Chrome, Edge y Safari */
+.searchInput::-webkit-search-cancel-button,
+.searchInput::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Oculta la X automática de navegadores antiguos de Microsoft */
+.searchInput::-ms-clear,
+.searchInput::-ms-reveal {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .searchInput:focus {
   border-color:
     var(--color-accent);
