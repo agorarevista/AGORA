@@ -697,7 +697,6 @@
 
   letter-spacing: 1px;
 }
-
 .authorsCarousel {
   position: relative;
 
@@ -705,9 +704,17 @@
 
   padding:
     0 39px;
+
+  /*
+   * Permite que la fotografía agrandada
+   * sobresalga del carrusel.
+   */
+  overflow: visible;
 }
 
 .authorsCollage {
+  position: relative;
+
   width: 100%;
 
   display: grid;
@@ -724,13 +731,20 @@
       1fr
     );
 
-  gap: 7px;
+  gap: 10px;
 
   align-items: stretch;
+
+  /*
+   * La tarjeta agrandada podrá salir
+   * de su celda sin ser cortada.
+   */
+  overflow: visible;
 }
 
 .authorPortrait {
   position: relative;
+  z-index: 1;
 
   width: 100%;
   min-width: 0;
@@ -761,28 +775,43 @@
       0.09
     );
 
+  transform:
+    translateZ(0)
+    scale(1);
+
+  transform-origin:
+    center center;
+
   transition:
-    transform 0.24s ease,
-    box-shadow 0.24s ease,
+    transform 0.28s
+      cubic-bezier(
+        0.22,
+        1,
+        0.36,
+        1
+      ),
+    box-shadow 0.28s ease,
     border-color 0.24s ease;
 }
 
-.authorPortrait:hover {
-  z-index: 4;
+.authorPortrait:hover,
+.authorPortrait:focus-within {
+  z-index: 30;
 
   transform:
-    translateY(-4px);
+    translateY(-8px)
+    scale(1.65);
 
   border-color:
     var(--color-accent);
 
   box-shadow:
-    0 15px 30px
+    0 24px 52px
     rgba(
       0,
       0,
       0,
-      0.2
+      0.3
     );
 }
 
@@ -808,18 +837,30 @@
   object-fit: cover;
   object-position: center 20%;
 
+  transform:
+    scale(1);
+
   transition:
-    transform 0.32s ease,
-    filter 0.32s ease;
+    transform 0.38s
+      cubic-bezier(
+        0.22,
+        1,
+        0.36,
+        1
+      ),
+    filter 0.3s ease;
 }
 
 .authorPortrait:hover
+.authorPortraitImage,
+.authorPortrait:focus-within
 .authorPortraitImage {
   transform:
-    scale(1.06);
+    scale(1.05);
 
   filter:
-    brightness(0.68);
+    brightness(0.66)
+    saturate(0.9);
 }
 
 .authorPortraitPlaceholder {
@@ -855,53 +896,71 @@
   align-items: center;
   justify-content: flex-end;
 
-  gap: 7px;
+  gap: 8px;
 
   padding:
-    18px 7px
-    10px;
+    26px 10px
+    14px;
 
   background:
     linear-gradient(
       to top,
-      rgba(0, 0, 0, 0.92) 0%,
-      rgba(0, 0, 0, 0.55) 55%,
-      transparent 84%
+      rgba(0, 0, 0, 0.96) 0%,
+      rgba(0, 0, 0, 0.74) 42%,
+      rgba(0, 0, 0, 0.25) 72%,
+      transparent 100%
     );
 
   opacity: 0;
 
   pointer-events: none;
 
+  transform:
+    translateY(10px);
+
   transition:
-    opacity 0.22s ease;
+    opacity 0.22s ease,
+    transform 0.28s
+      cubic-bezier(
+        0.22,
+        1,
+        0.36,
+        1
+      );
 }
 
 .authorPortrait:hover
+.authorPortraitOverlay,
+.authorPortrait:focus-within
 .authorPortraitOverlay {
   opacity: 1;
 
   pointer-events: auto;
+
+  transform:
+    translateY(0);
 }
 
 .authorPortraitName {
   width: 100%;
 
-  overflow: hidden;
-
   color: white;
 
   text-align: center;
   text-decoration: none;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 
   font-family:
     var(--font-display);
 
-  font-size: 13px;
-  line-height: 1;
+  font-size: 12px;
+  line-height: 1.08;
   font-weight: 700;
+
+  /*
+   * Ya no corta el nombre con puntos suspensivos.
+   */
+  white-space: normal;
+  overflow-wrap: anywhere;
 
   text-shadow:
     0 4px 14px
@@ -909,8 +968,11 @@
       0,
       0,
       0,
-      0.9
+      0.92
     );
+
+  transition:
+    color 0.18s ease;
 }
 
 .authorPortraitName:hover {
@@ -929,8 +991,8 @@
 }
 
 .authorPortraitSocial {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
 
   display: inline-flex;
   align-items: center;
@@ -943,7 +1005,7 @@
       0,
       0,
       0,
-      0.3
+      0.42
     );
 
   border:
@@ -952,20 +1014,26 @@
       255,
       255,
       255,
-      0.65
+      0.72
     );
 
   border-radius: 50%;
 
   text-decoration: none;
 
+  backdrop-filter:
+    blur(4px);
+
   transition:
+    color 0.18s ease,
     background-color 0.18s ease,
     border-color 0.18s ease,
     transform 0.18s ease;
 }
 
 .authorPortraitSocial:hover {
+  color: white;
+
   background:
     var(--color-accent);
 
@@ -973,12 +1041,13 @@
     var(--color-accent);
 
   transform:
-    translateY(-2px);
+    translateY(-2px)
+    scale(1.08);
 }
 
 .authorPortraitSocial svg {
-  width: 11px;
-  height: 11px;
+  width: 12px;
+  height: 12px;
 
   display: block;
 }
@@ -1881,12 +1950,19 @@
     padding: 0;
   }
 
-  .authorPortrait:hover {
+  /*
+   * En dispositivos táctiles no agrandamos
+   * excesivamente la tarjeta porque podría
+   * cubrir toda la cuadrícula.
+   */
+  .authorPortrait:hover,
+  .authorPortrait:focus-within {
     width: 100%;
     height: auto;
 
     transform:
-      translateY(-3px);
+      translateY(-3px)
+      scale(1.12);
   }
 
   .authorsArrow {
@@ -2495,5 +2571,35 @@
 
   .editionsList {
     gap: 60px;
+  }
+}
+
+/* ── Comportamiento táctil del mosaico de autores ───── */
+@media (hover: none) {
+  .authorPortrait:hover {
+    transform:
+      none;
+  }
+
+  .authorPortraitOverlay {
+    opacity: 0;
+    pointer-events: none;
+    transform:
+      translateY(10px);
+  }
+
+  .authorPortrait:focus-within {
+    z-index: 30;
+
+    transform:
+      scale(1.12);
+  }
+
+  .authorPortrait:focus-within
+  .authorPortraitOverlay {
+    opacity: 1;
+    pointer-events: auto;
+    transform:
+      translateY(0);
   }
 }
