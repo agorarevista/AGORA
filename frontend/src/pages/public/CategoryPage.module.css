@@ -105,11 +105,15 @@
 }
 .headerTopRow {
   display: grid;
+
   grid-template-columns:
-    minmax(0, 1fr)
-    minmax(360px, 430px);
-  gap: 42px;
+    minmax(280px, 0.72fr)
+    minmax(620px, 1.28fr);
+
+  gap: 48px;
+
   align-items: center;
+
   margin-bottom: 0;
 }
 
@@ -599,93 +603,196 @@
   height: 14px;
   display: block;
 }
-/* ── Collage de autores de secciones generales ───────── */
+/* ── Carrusel de colaboradores de secciones generales ── */
 .authorsPanel {
-  width: min(100%, 500px);
-  padding: 4px 0 4px 22px;
-  border-left: 1px solid var(--nav-border);
-  transition: border-color 0.35s ease;
+  width: 100%;
+  min-width: 0;
+
+  padding:
+    4px 0
+    4px 26px;
+
+  border-left:
+    1px solid
+    var(--nav-border);
+
+  transition:
+    border-color 0.35s ease;
 }
 
 .authorsPanelHeader {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
+
+  gap: 18px;
+
+  margin-bottom: 18px;
 }
 
 .authorsPanelEyebrow {
   display: block;
-  margin-bottom: 4px;
-  color: var(--color-accent);
-  font-family: var(--font-sans);
+
+  margin-bottom: 5px;
+
+  color:
+    var(--color-accent);
+
+  font-family:
+    var(--font-sans);
+
   font-size: 8px;
   font-weight: 800;
+
   letter-spacing: 1.7px;
-  text-transform: uppercase;
+
+  text-transform:
+    uppercase;
 }
 
 .authorsPanelTitle {
   margin: 0;
-  color: var(--nav-text);
-  font-family: var(--font-display);
-  font-size: 24px;
+
+  color:
+    var(--nav-text);
+
+  font-family:
+    var(--font-display);
+
+  font-size: 27px;
   line-height: 1;
-  transition: color 0.35s ease;
+  font-weight: 700;
+
+  transition:
+    color 0.35s ease;
+}
+
+.authorsPanelMeta {
+  display: flex;
+  align-items: baseline;
+
+  gap: 10px;
 }
 
 .authorsPanelCount {
-  color: var(--color-accent);
-  font-family: var(--font-display);
-  font-size: 24px;
+  color:
+    var(--color-accent);
+
+  font-family:
+    var(--font-display);
+
+  font-size: 25px;
   line-height: 1;
 }
 
+.authorsPageCount {
+  color:
+    var(--nav-text-muted);
+
+  font-family:
+    var(--font-sans);
+
+  font-size: 8px;
+  font-weight: 900;
+
+  letter-spacing: 1px;
+}
+
+.authorsCarousel {
+  position: relative;
+
+  min-width: 0;
+
+  padding:
+    0 39px;
+}
+
 .authorsCollage {
-  display: flex;
-  align-items: center;
-  min-height: 94px;
-  padding: 4px 12px 4px 0;
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      6,
+      minmax(0, 1fr)
+    );
+
+  grid-auto-rows:
+    minmax(
+      82px,
+      1fr
+    );
+
+  gap: 7px;
+
+  align-items: stretch;
 }
 
 .authorPortrait {
   position: relative;
-  width: 84px;
-  height: 84px;
-  margin-left: -12px;
-  flex-shrink: 0;
-  overflow: hidden;
-  border: 2px solid var(--nav-bg);
-  border-radius: 2px;
-  background: var(--color-gray-100);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-  transition:
-    width 0.26s ease,
-    height 0.26s ease,
-    transform 0.26s ease,
-    box-shadow 0.26s ease,
-    border-color 0.35s ease;
-}
 
-.authorPortrait:first-child {
-  margin-left: 0;
+  width: 100%;
+  min-width: 0;
+
+  aspect-ratio: 1 / 1;
+
+  overflow: hidden;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--nav-border) 86%,
+      transparent
+    );
+
+  border-radius: 2px;
+
+  background:
+    var(--color-gray-100);
+
+  box-shadow:
+    0 6px 16px
+    rgba(
+      0,
+      0,
+      0,
+      0.09
+    );
+
+  transition:
+    transform 0.24s ease,
+    box-shadow 0.24s ease,
+    border-color 0.24s ease;
 }
 
 .authorPortrait:hover {
-  width: 142px;
-  height: 142px;
-  z-index: 20;
-  transform: translateY(-7px);
+  z-index: 4;
+
+  transform:
+    translateY(-4px);
+
+  border-color:
+    var(--color-accent);
+
   box-shadow:
-    0 18px 36px rgba(0, 0, 0, 0.2);
+    0 15px 30px
+    rgba(
+      0,
+      0,
+      0,
+      0.2
+    );
 }
 
 .authorPortraitLink {
   position: absolute;
   inset: 0;
   z-index: 1;
+
   display: block;
+
   text-decoration: none;
 }
 
@@ -697,26 +804,44 @@
 
 .authorPortraitImage {
   display: block;
+
   object-fit: cover;
   object-position: center 20%;
+
   transition:
     transform 0.32s ease,
     filter 0.32s ease;
 }
 
-.authorPortrait:hover .authorPortraitImage {
-  transform: scale(1.05);
-  filter: brightness(0.74);
+.authorPortrait:hover
+.authorPortraitImage {
+  transform:
+    scale(1.06);
+
+  filter:
+    brightness(0.68);
 }
 
 .authorPortraitPlaceholder {
   display: flex;
   align-items: center;
   justify-content: center;
+
   color: white;
-  background: var(--color-accent);
-  font-family: var(--font-display);
-  font-size: 27px;
+
+  background:
+    var(--color-accent);
+
+  font-family:
+    var(--font-display);
+
+  font-size:
+    clamp(
+      25px,
+      2.7vw,
+      40px
+    );
+
   font-weight: 700;
 }
 
@@ -724,114 +849,190 @@
   position: absolute;
   inset: 0;
   z-index: 3;
+
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
   align-items: center;
-  gap: 8px;
-  padding: 16px 9px 11px;
+  justify-content: flex-end;
+
+  gap: 7px;
+
+  padding:
+    18px 7px
+    10px;
+
   background:
     linear-gradient(
       to top,
-      rgba(0, 0, 0, 0.9) 0%,
-      rgba(0, 0, 0, 0.48) 52%,
-      transparent 82%
+      rgba(0, 0, 0, 0.92) 0%,
+      rgba(0, 0, 0, 0.55) 55%,
+      transparent 84%
     );
+
   opacity: 0;
+
   pointer-events: none;
-  transition: opacity 0.22s ease;
+
+  transition:
+    opacity 0.22s ease;
 }
 
-.authorPortrait:hover .authorPortraitOverlay {
+.authorPortrait:hover
+.authorPortraitOverlay {
   opacity: 1;
+
   pointer-events: auto;
 }
 
 .authorPortraitName {
-  max-width: 100%;
+  width: 100%;
+
+  overflow: hidden;
+
   color: white;
-  text-decoration: none;
+
   text-align: center;
-  font-family: var(--font-display);
-  font-size: 16px;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-family:
+    var(--font-display);
+
+  font-size: 13px;
   line-height: 1;
   font-weight: 700;
+
   text-shadow:
-    0 4px 14px rgba(0, 0, 0, 0.8);
+    0 4px 14px
+    rgba(
+      0,
+      0,
+      0,
+      0.9
+    );
 }
 
 .authorPortraitName:hover {
-  color: #D274BC;
+  color:
+    #D274BC;
 }
 
 .authorPortraitSocials {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+
+  gap: 4px;
+
   flex-wrap: wrap;
 }
 
 .authorPortraitSocial {
-  width: 25px;
-  height: 25px;
-  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
   color: white;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.65);
+
+  background:
+    rgba(
+      0,
+      0,
+      0,
+      0.3
+    );
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.65
+    );
+
+  border-radius: 50%;
+
   text-decoration: none;
+
   transition:
-    background 0.18s ease,
+    background-color 0.18s ease,
     border-color 0.18s ease,
     transform 0.18s ease;
 }
 
 .authorPortraitSocial:hover {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  transform: translateY(-2px);
+  background:
+    var(--color-accent);
+
+  border-color:
+    var(--color-accent);
+
+  transform:
+    translateY(-2px);
 }
 
 .authorPortraitSocial svg {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
+
   display: block;
 }
 
-.authorsMore {
-  width: 84px;
-  height: 84px;
-  margin-left: -12px;
-  border: 2px solid var(--nav-bg);
-  border-radius: 2px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
+/* Flechas sin círculo, fondo ni contenedor visible */
+.authorsArrow {
+  position: absolute;
+
+  top: 50%;
+  z-index: 8;
+
+  width: 34px;
+  height: 50px;
+
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  background: var(--color-accent);
-  transition: border-color 0.35s ease;
+
+  padding: 0;
+
+  color:
+    var(--nav-text-muted);
+
+  background:
+    transparent;
+
+  border: none;
+  outline: none;
+
+  cursor: pointer;
+
+  transform:
+    translateY(-50%);
+
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
-.authorsMore strong {
-  font-family: var(--font-display);
-  font-size: 22px;
-  line-height: 1;
+.authorsArrow:hover {
+  color:
+    var(--color-accent);
+
+  transform:
+    translateY(-50%)
+    scale(1.12);
 }
 
-.authorsMore span {
-  margin-top: 4px;
-  padding: 0 5px;
-  text-align: center;
-  font-family: var(--font-sans);
-  font-size: 7px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+.authorsArrowPrevious {
+  left: 0;
+}
+
+.authorsArrowNext {
+  right: 0;
 }
 .meander {
   height: 3px;
@@ -1399,9 +1600,20 @@
 
   .headerTopRow {
     grid-template-columns:
-      minmax(0, 1fr)
-      minmax(340px, 400px);
+      minmax(250px, 0.68fr)
+      minmax(560px, 1.32fr);
+
     gap: 32px;
+  }
+
+  .authorsCollage {
+    grid-template-columns:
+      repeat(
+        6,
+        minmax(0, 1fr)
+      );
+
+    gap: 6px;
   }
 }
 
@@ -1474,8 +1686,7 @@
     margin-top: 0;
   }
 
-  .ownerPanel,
-  .authorsPanel {
+  .ownerPanel {
     width:
       min(
         100%,
@@ -1484,6 +1695,28 @@
 
     padding-left:
       18px;
+  }
+
+  .authorsPanel {
+    width: 100%;
+
+    padding:
+      22px 0 0;
+
+    border-left:
+      none;
+
+    border-top:
+      1px solid
+      var(--nav-border);
+  }
+
+  .authorsCollage {
+    grid-template-columns:
+      repeat(
+        6,
+        minmax(0, 1fr)
+      );
   }
 }
 
@@ -1629,22 +1862,43 @@
   font-size: 10px;
 }
 
-.authorsCollage {
-    overflow-x: auto;
-    overflow-y: visible;
-    min-height: 126px;
-    padding-top: 14px;
-    padding-bottom: 18px;
-    scrollbar-width: none;
+  .authorsCarousel {
+    padding:
+      0 30px;
   }
 
-  .authorsCollage::-webkit-scrollbar {
-    display: none;
+  .authorsCollage {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0, 1fr)
+      );
+
+    gap: 6px;
+
+    overflow: visible;
+
+    padding: 0;
   }
 
   .authorPortrait:hover {
-    width: 130px;
-    height: 130px;
+    width: 100%;
+    height: auto;
+
+    transform:
+      translateY(-3px);
+  }
+
+  .authorsArrow {
+    width: 26px;
+  }
+
+  .authorsArrowPrevious {
+    left: -2px;
+  }
+
+  .authorsArrowNext {
+    right: -2px;
   }
 }
 
@@ -1703,14 +1957,31 @@
     height: 30px;
   }
 
+  .authorsPanelHeader {
+    align-items:
+      flex-start;
+  }
+
+  .authorsPanelTitle {
+    font-size: 24px;
+  }
+
+  .authorsCollage {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
   .authorPortrait {
-    width: 76px;
-    height: 76px;
+    width: 100%;
+    height: auto;
   }
 
   .authorPortrait:hover {
-    width: 118px;
-    height: 118px;
+    width: 100%;
+    height: auto;
   }
 }
 .ownerLink {

@@ -5,6 +5,8 @@ import { getByCategory as getArticlesByCategory } from '../../api/articles.api';
 import { getCategories } from '../../api/categories.api';
 import {
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   Globe,
   Mail,
   ExternalLink,
@@ -1241,8 +1243,70 @@ return (
 }
 
 function AuthorsCollage({ collaborators }) {
+  const COLLABORATORS_PER_PAGE = 18;
+
+  const [
+    currentPage,
+    setCurrentPage,
+  ] = useState(0);
+
+  const totalPages =
+    Math.max(
+      Math.ceil(
+        collaborators.length /
+        COLLABORATORS_PER_PAGE
+      ),
+      1
+    );
+
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [collaborators]);
+
+  useEffect(() => {
+    setCurrentPage(current => {
+      return Math.min(
+        current,
+        totalPages - 1
+      );
+    });
+  }, [totalPages]);
+
+  const startIndex =
+    currentPage *
+    COLLABORATORS_PER_PAGE;
+
   const visibleCollaborators =
-    collaborators.slice(0, 10);
+    collaborators.slice(
+      startIndex,
+      startIndex +
+        COLLABORATORS_PER_PAGE
+    );
+
+  const hasPreviousPage =
+    currentPage > 0;
+
+  const hasNextPage =
+    currentPage <
+    totalPages - 1;
+
+  const goToPreviousPage = () => {
+    setCurrentPage(current =>
+      Math.max(
+        current - 1,
+        0
+      )
+    );
+  };
+
+  const goToNextPage = () => {
+    setCurrentPage(current =>
+      Math.min(
+        current + 1,
+        totalPages - 1
+      )
+    );
+  };
 
   return (
     <aside className={styles.authorsPanel}>
@@ -1257,151 +1321,237 @@ function AuthorsCollage({ collaborators }) {
           </h2>
         </div>
 
-        <span className={styles.authorsPanelCount}>
-          {collaborators.length}
-        </span>
+        <div className={styles.authorsPanelMeta}>
+          <span className={styles.authorsPanelCount}>
+            {collaborators.length}
+          </span>
+
+          {totalPages > 1 && (
+            <span className={styles.authorsPageCount}>
+              {currentPage + 1} / {totalPages}
+            </span>
+          )}
+        </div>
       </div>
 
-      <div className={styles.authorsCollage}>
-        {visibleCollaborators.map(collaborator => (
-          <article
-            key={collaborator.id}
-            className={styles.authorPortrait}
+      <div className={styles.authorsCarousel}>
+        {hasPreviousPage && (
+          <button
+            type="button"
+            className={`${styles.authorsArrow} ${styles.authorsArrowPrevious}`}
+            onClick={goToPreviousPage}
+            aria-label="Ver colaboradores anteriores"
+            title="Colaboradores anteriores"
           >
-            {collaborator.slug ? (
-              <Link
-                to={`/colaborador/${collaborator.slug}`}
-                className={styles.authorPortraitLink}
-                aria-label={`Ver perfil de ${collaborator.name}`}
+            <ChevronLeft size={32} />
+          </button>
+        )}
+
+        <motion.div
+          key={currentPage}
+          className={styles.authorsCollage}
+          initial={{
+            opacity: 0,
+            x: 16,
+          }}
+          animate={{
+            opacity: 1,
+            x: 0,
+          }}
+          transition={{
+            duration: 0.24,
+          }}
+        >
+          {visibleCollaborators.map(
+            collaborator => (
+              <article
+                key={collaborator.id}
+                className={styles.authorPortrait}
               >
-                <AuthorPortraitImage
-                  collaborator={collaborator}
-                />
-              </Link>
-            ) : (
-              <AuthorPortraitImage
-                collaborator={collaborator}
-              />
-            )}
+                {collaborator.slug ? (
+                  <Link
+                    to={`/colaborador/${collaborator.slug}`}
+                    className={styles.authorPortraitLink}
+                    aria-label={`Ver perfil de ${collaborator.name}`}
+                  >
+                    <AuthorPortraitImage
+                      collaborator={collaborator}
+                    />
+                  </Link>
+                ) : (
+                  <AuthorPortraitImage
+                    collaborator={collaborator}
+                  />
+                )}
 
-            <div className={styles.authorPortraitOverlay}>
-              {collaborator.slug ? (
-                <Link
-                  to={`/colaborador/${collaborator.slug}`}
-                  className={styles.authorPortraitName}
+                <div
+                  className={
+                    styles.authorPortraitOverlay
+                  }
                 >
-                  {collaborator.name}
-                </Link>
-              ) : (
-                <span className={styles.authorPortraitName}>
-                  {collaborator.name}
-                </span>
-              )}
+                  {collaborator.slug ? (
+                    <Link
+                      to={`/colaborador/${collaborator.slug}`}
+                      className={
+                        styles.authorPortraitName
+                      }
+                    >
+                      {collaborator.name}
+                    </Link>
+                  ) : (
+                    <span
+                      className={
+                        styles.authorPortraitName
+                      }
+                    >
+                      {collaborator.name}
+                    </span>
+                  )}
 
-              <div className={styles.authorPortraitSocials}>
-                {collaborator.socials.instagram && (
-                  <a
-                    href={collaborator.socials.instagram}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.authorPortraitSocial}
-                    aria-label={`Instagram de ${collaborator.name}`}
-                    title="Instagram"
+                  <div
+                    className={
+                      styles.authorPortraitSocials
+                    }
                   >
-                    <InstagramIcon />
-                  </a>
-                )}
+                    {collaborator.socials.instagram && (
+                      <a
+                        href={
+                          collaborator.socials
+                            .instagram
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={
+                          styles.authorPortraitSocial
+                        }
+                        aria-label={`Instagram de ${collaborator.name}`}
+                        title="Instagram"
+                      >
+                        <InstagramIcon />
+                      </a>
+                    )}
 
-                {collaborator.socials.facebook && (
-                  <a
-                    href={collaborator.socials.facebook}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.authorPortraitSocial}
-                    aria-label={`Facebook de ${collaborator.name}`}
-                    title="Facebook"
-                  >
-                    <FacebookIcon />
-                  </a>
-                )}
+                    {collaborator.socials.facebook && (
+                      <a
+                        href={
+                          collaborator.socials
+                            .facebook
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={
+                          styles.authorPortraitSocial
+                        }
+                        aria-label={`Facebook de ${collaborator.name}`}
+                        title="Facebook"
+                      >
+                        <FacebookIcon />
+                      </a>
+                    )}
 
-                {collaborator.socials.x && (
-                  <a
-                    href={collaborator.socials.x}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.authorPortraitSocial}
-                    aria-label={`X de ${collaborator.name}`}
-                    title="X"
-                  >
-                    <XIcon />
-                  </a>
-                )}
+                    {collaborator.socials.x && (
+                      <a
+                        href={
+                          collaborator.socials.x
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={
+                          styles.authorPortraitSocial
+                        }
+                        aria-label={`X de ${collaborator.name}`}
+                        title="X"
+                      >
+                        <XIcon />
+                      </a>
+                    )}
 
-                {collaborator.socials.tiktok && (
-                  <a
-                    href={collaborator.socials.tiktok}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.authorPortraitSocial}
-                    aria-label={`TikTok de ${collaborator.name}`}
-                    title="TikTok"
-                  >
-                    <TikTokIcon />
-                  </a>
-                )}
+                    {collaborator.socials.tiktok && (
+                      <a
+                        href={
+                          collaborator.socials
+                            .tiktok
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={
+                          styles.authorPortraitSocial
+                        }
+                        aria-label={`TikTok de ${collaborator.name}`}
+                        title="TikTok"
+                      >
+                        <TikTokIcon />
+                      </a>
+                    )}
 
-                {collaborator.socials.youtube && (
-                  <a
-                    href={collaborator.socials.youtube}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.authorPortraitSocial}
-                    aria-label={`YouTube de ${collaborator.name}`}
-                    title="YouTube"
-                  >
-                    <YouTubeIcon />
-                  </a>
-                )}
+                    {collaborator.socials.youtube && (
+                      <a
+                        href={
+                          collaborator.socials
+                            .youtube
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={
+                          styles.authorPortraitSocial
+                        }
+                        aria-label={`YouTube de ${collaborator.name}`}
+                        title="YouTube"
+                      >
+                        <YouTubeIcon />
+                      </a>
+                    )}
 
-                {collaborator.socials.website && (
-                  <a
-                    href={collaborator.socials.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.authorPortraitSocial}
-                    aria-label={`Sitio de ${collaborator.name}`}
-                    title="Sitio web"
-                  >
-                    <Globe size={14} />
-                  </a>
-                )}
+                    {collaborator.socials.website && (
+                      <a
+                        href={
+                          collaborator.socials
+                            .website
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={
+                          styles.authorPortraitSocial
+                        }
+                        aria-label={`Sitio de ${collaborator.name}`}
+                        title="Sitio web"
+                      >
+                        <Globe size={14} />
+                      </a>
+                    )}
 
-                {collaborator.socials.email && (
-                  <a
-                    href={collaborator.socials.email}
-                    className={styles.authorPortraitSocial}
-                    aria-label={`Correo de ${collaborator.name}`}
-                    title="Correo"
-                  >
-                    <Mail size={14} />
-                  </a>
-                )}
-              </div>
-            </div>
-          </article>
-        ))}
+                    {collaborator.socials.email && (
+                      <a
+                        href={
+                          collaborator.socials
+                            .email
+                        }
+                        className={
+                          styles.authorPortraitSocial
+                        }
+                        aria-label={`Correo de ${collaborator.name}`}
+                        title="Correo"
+                      >
+                        <Mail size={14} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </article>
+            )
+          )}
+        </motion.div>
 
-        {collaborators.length > 10 && (
-          <div className={styles.authorsMore}>
-            <strong>
-              +{collaborators.length - 10}
-            </strong>
-
-            <span>
-              colaboradores
-            </span>
-          </div>
+        {hasNextPage && (
+          <button
+            type="button"
+            className={`${styles.authorsArrow} ${styles.authorsArrowNext}`}
+            onClick={goToNextPage}
+            aria-label="Ver más colaboradores"
+            title="Siguientes colaboradores"
+          >
+            <ChevronRight size={32} />
+          </button>
         )}
       </div>
     </aside>
