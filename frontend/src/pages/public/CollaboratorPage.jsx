@@ -11,7 +11,13 @@ import {
   getGalleriesByCollaborator,
 } from '../../api/galleries.api';
 
-import { ArrowLeft, Globe, Mail } from 'lucide-react';
+import {
+  ArrowLeft,
+  Globe,
+  Mail,
+  Search,
+  X,
+} from 'lucide-react';
 
 import {
   FaInstagram,
@@ -104,8 +110,12 @@ export default function CollaboratorPage() {
     contents,
     setContents,
   ] = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedEdition, setSelectedEdition] =
+    useState('all');
 
   useEffect(() => {
     let mounted = true;
@@ -130,14 +140,14 @@ export default function CollaboratorPage() {
           getArticlesByCollaborator(
             collaboratorSlug,
             {
-              limit: 50,
+              limit: 100,
             }
           ),
 
           getGalleriesByCollaborator(
             collaboratorSlug,
             {
-              limit: 50,
+              limit: 100,
             }
           ),
         ]);
@@ -207,7 +217,163 @@ export default function CollaboratorPage() {
     };
   }, [slug]);
 
-  const socialEntries = useMemo(() => getSocialEntries(collab), [collab]);
+  const socialEntries = useMemo(
+    () => getSocialEntries(collab),
+    [collab]
+  );
+
+  const editions = useMemo(() => {
+    const editionMap = new Map();
+
+    contents.forEach(content => {
+      const edition =
+        content.editions || null;
+
+      if (!edition?.id) {
+        return;
+      }
+
+      editionMap.set(
+        edition.id,
+        edition
+      );
+    });
+
+    return Array
+      .from(editionMap.values())
+      .sort(
+        (
+          firstEdition,
+          secondEdition
+        ) =>
+          Number(
+            secondEdition.number || 0
+          ) -
+          Number(
+            firstEdition.number || 0
+          )
+      );
+  }, [contents]);
+
+  const filteredContents = useMemo(() => {
+    const normalizedSearch =
+      searchTerm
+        .trim()
+        .toLocaleLowerCase('es');
+
+    return contents.filter(content => {
+      const title =
+        String(content.title || '')
+          .toLocaleLowerCase('es');
+
+      const subtitle =
+        String(content.subtitle || '')
+          .toLocaleLowerCase('es');
+
+      const excerpt =
+        String(content.excerpt || '')
+          .toLocaleLowerCase('es');
+
+      const matchesSearch =
+        !normalizedSearch ||
+        title.includes(normalizedSearch) ||
+        subtitle.includes(normalizedSearch) ||
+        excerpt.includes(normalizedSearch);
+
+      const editionId =
+        content.editions?.id ||
+        content.edition_id ||
+        'without-edition';
+
+      const matchesEdition =
+        selectedEdition === 'all' ||
+        selectedEdition === editionId;
+
+      return (
+        matchesSearch &&
+        matchesEdition
+      );
+    });
+  }, [
+    contents,
+    searchTerm,
+    selectedEdition,
+  ]);
+
+  const groupedContents = useMemo(() => {
+    const groupMap = new Map();
+
+    filteredContents.forEach(content => {
+      const edition =
+        content.editions || null;
+
+      const groupId =
+        edition?.id ||
+        'without-edition';
+
+      if (!groupMap.has(groupId)) {
+        groupMap.set(groupId, {
+          id: groupId,
+
+          edition,
+
+          contents: [],
+        });
+      }
+
+      groupMap
+        .get(groupId)
+        .contents
+        .push(content);
+    });
+
+    return Array
+      .from(groupMap.values())
+      .map(group => ({
+        ...group,
+
+        contents: [
+          ...group.contents,
+        ].sort(
+          (firstContent, secondContent) =>
+            getContentDate(secondContent) -
+            getContentDate(firstContent)
+        ),
+      }))
+      .sort((firstGroup, secondGroup) => {
+        if (
+          firstGroup.id ===
+          'without-edition'
+        ) {
+          return 1;
+        }
+
+        if (
+          secondGroup.id ===
+          'without-edition'
+        ) {
+          return -1;
+        }
+
+        return (
+          Number(
+            secondGroup.edition?.number || 0
+          ) -
+          Number(
+            firstGroup.edition?.number || 0
+          )
+        );
+      });
+  }, [filteredContents]);
+
+  const clearContentFilters = () => {
+    setSearchTerm('');
+    setSelectedEdition('all');
+  };
+
+  const hasActiveContentFilters =
+    searchTerm.trim() !== '' ||
+    selectedEdition !== 'all';
 
   if (loading) return <CollabSkeleton />;
   if (error || !collab) return <NotFound />;
@@ -328,104 +494,215 @@ export default function CollaboratorPage() {
       <div className={styles.meander} />
 
       <div className={styles.body}>
-      <div
-        className={
-          styles.body
-        }
-      >
-        <div
-          className={
-            styles.bodyHeader
-          }
-        >
-          <h2
-            className={
-              styles.bodyTitle
-            }
-          >
-            Publicaciones de{' '}
-            {collab.name}
+        <div className={styles.bodyHeader}>
+          <h2 className={styles.bodyTitle}>
+            Publicaciones de {collab.name}
 
-            <span
-              className={
-                styles.bodyCount
-              }
-            >
+            <span className={styles.bodyCount}>
               {contents.length}
             </span>
           </h2>
-
-          {contents.length > 0 && (
-            <Link
-              to="/buscar"
-              className={
-                styles.bodyMore
-              }
-            >
-              Ver todos →
-            </Link>
-          )}
         </div>
 
+        {contents.length > 0 && (
+          <div className={styles.publicationFilters}>
+            <div className={styles.publicationSearch}>
+              <Search
+                size={18}
+                className={styles.publicationSearchIcon}
+              />
+
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={event =>
+                  setSearchTerm(
+                    event.target.value
+                  )
+                }
+                placeholder="Buscar publicaciones..."
+                aria-label="Buscar publicaciones"
+                className={styles.publicationSearchInput}
+              />
+
+              {searchTerm && (
+                <button
+                  type="button"
+                  className={styles.publicationClearSearch}
+                  onClick={() =>
+                    setSearchTerm('')
+                  }
+                  aria-label="Limpiar búsqueda"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+
+            <div className={styles.publicationSelectControl}>
+              <label htmlFor="collaborator-edition-filter">
+                Edición
+              </label>
+
+              <select
+                id="collaborator-edition-filter"
+                value={selectedEdition}
+                onChange={event =>
+                  setSelectedEdition(
+                    event.target.value
+                  )
+                }
+                className={styles.publicationSelect}
+              >
+                <option value="all">
+                  Todas las ediciones
+                </option>
+
+                {editions.map(edition => (
+                  <option
+                    key={edition.id}
+                    value={edition.id}
+                  >
+                    Edición {edition.number}
+                    {edition.name
+                      ? ` — ${edition.name}`
+                      : ''}
+                  </option>
+                ))}
+
+                {contents.some(
+                  content =>
+                    !content.editions?.id &&
+                    !content.edition_id
+                ) && (
+                  <option value="without-edition">
+                    Sin edición
+                  </option>
+                )}
+              </select>
+            </div>
+
+            <span className={styles.filteredResults}>
+              {filteredContents.length}{' '}
+              {filteredContents.length === 1
+                ? 'publicación'
+                : 'publicaciones'}
+            </span>
+
+            {hasActiveContentFilters && (
+              <button
+                type="button"
+                className={styles.publicationClearFilters}
+                onClick={clearContentFilters}
+              >
+                <X size={15} />
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+        )}
+
         {contents.length === 0 ? (
-          <div
-            className={
-              styles.empty
-            }
-          >
+          <div className={styles.empty}>
             <span>Λ</span>
 
             <p>
               Aún no hay publicaciones.
             </p>
           </div>
+        ) : groupedContents.length === 0 ? (
+          <div className={styles.empty}>
+            <span>Λ</span>
+
+            <p>
+              No encontramos publicaciones con esos filtros.
+            </p>
+
+            <button
+              type="button"
+              className={styles.emptyFilterButton}
+              onClick={clearContentFilters}
+            >
+              Limpiar filtros
+            </button>
+          </div>
         ) : (
-          <div
-            className={
-              styles.grid
-            }
-          >
-            {contents.map(
-              (
-                content,
-                index
-              ) => (
-                <motion.div
-                  key={`${content.content_type}-${content.id}`}
-                  className={
-                    styles.cardWrapper
-                  }
-                  initial={{
-                    opacity: 0,
-                    y: 16,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  transition={{
-                    delay:
-                      Math.min(
-                        index % 5,
-                        4
-                      ) *
-                      0.06,
-                  }}
-                >
-                  <CollaboratorContentCard
-                    content={
-                      content
-                    }
-                    authorName={
-                      collab.name
-                    }
-                  />
-                </motion.div>
-              )
-            )}
+          <div className={styles.editionsList}>
+            {groupedContents.map(group => (
+              <section
+                key={group.id}
+                className={styles.editionGroup}
+              >
+                <header className={styles.editionHeader}>
+                  <div>
+                    <span className={styles.editionEyebrow}>
+                      Archivo editorial
+                    </span>
+
+                    <h3 className={styles.editionTitle}>
+                      {group.edition
+                        ? `Edición ${group.edition.number}`
+                        : 'Sin edición'}
+                    </h3>
+
+                    {group.edition?.name && (
+                      <p className={styles.editionName}>
+                        {group.edition.name}
+                      </p>
+                    )}
+                  </div>
+
+                  <span className={styles.editionCount}>
+                    {group.contents.length}{' '}
+                    {group.contents.length === 1
+                      ? 'publicación'
+                      : 'publicaciones'}
+                  </span>
+                </header>
+
+                <div className={styles.editionDivider} />
+
+                <div className={styles.grid}>
+                  {group.contents.map(
+                    (
+                      content,
+                      index
+                    ) => (
+                      <motion.div
+                        key={`${content.content_type}-${content.id}`}
+                        className={styles.cardWrapper}
+                        initial={{
+                          opacity: 0,
+                          y: 16,
+                        }}
+                        whileInView={{
+                          opacity: 1,
+                          y: 0,
+                        }}
+                        viewport={{
+                          once: true,
+                          amount: 0.12,
+                        }}
+                        transition={{
+                          delay:
+                            Math.min(
+                              index % 5,
+                              4
+                            ) * 0.06,
+                        }}
+                      >
+                        <CollaboratorContentCard
+                          content={content}
+                          authorName={collab.name}
+                        />
+                      </motion.div>
+                    )
+                  )}
+                </div>
+              </section>
+            ))}
           </div>
         )}
-      </div>
       </div>
     </div>
   );

@@ -8,6 +8,8 @@ import {
   Globe,
   Mail,
   ExternalLink,
+  Search,
+  X,
 } from 'lucide-react';
 import styles from './CategoryPage.module.css';
 function flattenCategories(categoryTree = []) {
@@ -30,56 +32,145 @@ export default function CategoryPage() {
   const { slug } = useParams();
   const [articles, setArticles] = useState([]);
   const [category, setCategory] = useState(null);
-  const [subcats, setSubcats]   = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [page, setPage]         = useState(1);
-  const [total, setTotal]       = useState(0);
-  const LIMIT = 15;
+  const [subcats, setSubcats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+
+  const [search, setSearch] = useState('');
+  const [selectedEdition, setSelectedEdition] =
+    useState('all');
+
+  const ARTICLES_PAGE_SIZE = 15;
 
   useEffect(() => {
-    setPage(1);
-    setArticles([]);
-    window.scrollTo(0, 0);
+    let cancelled = false;
+
+    async function loadCategoryPage() {
+      setLoading(true);
+      setArticles([]);
+      setTotal(0);
+      setSearch('');
+      setSelectedEdition('all');
+
+      window.scrollTo(0, 0);
+
+      try {
+        const cats = await getCategories();
+
+        if (cancelled) {
+          return;
+        }
+
+        const tree = Array.isArray(cats)
+          ? cats
+          : [];
+
+        const allCategories =
+          flattenCategories(tree);
+
+        const currentCategory =
+          allCategories.find(
+            item => item.slug === slug
+          );
+
+        setCategory(
+          currentCategory || null
+        );
+
+        if (
+          currentCategory &&
+          !currentCategory.parent_id
+        ) {
+          const children = Array.isArray(
+            currentCategory.subcategories
+          )
+            ? currentCategory.subcategories
+            : allCategories.filter(
+                item =>
+                  item.parent_id ===
+                  currentCategory.id
+              );
+
+          setSubcats(children);
+        } else {
+          setSubcats([]);
+        }
+
+        let currentPage = 1;
+        let loadedArticles = [];
+        let articlesTotal = 0;
+        let shouldContinue = true;
+
+        while (shouldContinue) {
+          const response =
+            await getArticlesByCategory(
+              slug,
+              {
+                page: currentPage,
+                limit: ARTICLES_PAGE_SIZE,
+              }
+            );
+
+          if (cancelled) {
+            return;
+          }
+
+          const pageArticles =
+            Array.isArray(response?.data)
+              ? response.data
+              : [];
+
+          articlesTotal =
+            Number(response?.total) || 0;
+
+          loadedArticles = [
+            ...loadedArticles,
+            ...pageArticles,
+          ];
+
+          shouldContinue =
+            pageArticles.length >
+              0 &&
+            loadedArticles.length <
+              articlesTotal;
+
+          currentPage += 1;
+        }
+
+        const uniqueArticles =
+          Array.from(
+            new Map(
+              loadedArticles.map(
+                article => [
+                  article.id,
+                  article,
+                ]
+              )
+            ).values()
+          );
+
+        setArticles(uniqueArticles);
+        setTotal(uniqueArticles.length);
+      } catch (error) {
+        console.error(error);
+
+        if (!cancelled) {
+          setArticles([]);
+          setTotal(0);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadCategoryPage();
+
+    return () => {
+      cancelled = true;
+    };
   }, [slug]);
-
-  useEffect(() => {
-    setLoading(true);
-    Promise.all([
-      getArticlesByCategory(slug, { page, limit: LIMIT }),
-      getCategories(),
-    ]).then(([res, cats]) => {
-      setArticles(prev => page === 1 ? (res.data || []) : [...prev, ...(res.data || [])]);
-      setTotal(res.total || 0);
-const tree = Array.isArray(cats)
-  ? cats
-  : [];
-
-const allCategories = flattenCategories(tree);
-
-const currentCategory = allCategories.find(
-  item => item.slug === slug
-);
-
-setCategory(currentCategory || null);
-
-if (currentCategory && !currentCategory.parent_id) {
-  const children = Array.isArray(
-    currentCategory.subcategories
-  )
-    ? currentCategory.subcategories
-    : allCategories.filter(
-        item => item.parent_id === currentCategory.id
-      );
-
-  setSubcats(children);
-} else {
-  setSubcats([]);
-}
-    }).catch(console.error)
-      .finally(() => setLoading(false));
-  }, [slug, page]);
-
-  const hasMore = articles.length < total;
 const owner = useMemo(() => {
   const collaborator = category?.fixed_collaborator;
 
@@ -275,6 +366,203 @@ const sectionCollaborators = useMemo(() => {
 
   return Array.from(collaboratorMap.values());
 }, [articles, owner]);
+
+const availableEditions = useMemo(() => {
+  const editionsMap = new Map();
+
+  articles.forEach(article => {
+    const edition = article?.editions;
+
+    if (!edition?.id) {
+      return;
+    }
+
+    if (!editionsMap.has(edition.id)) {
+      editionsMap.set(
+        edition.id,
+        edition
+      );
+    }
+  });
+
+  return Array.from(
+    editionsMap.values()
+  ).sort(
+    (
+      firstEdition,
+      secondEdition
+    ) => {
+      const firstNumber =
+        Number(firstEdition.number) || 0;
+
+      const secondNumber =
+        Number(secondEdition.number) || 0;
+
+      if (
+        firstNumber !==
+        secondNumber
+      ) {
+        return (
+          secondNumber -
+          firstNumber
+        );
+      }
+
+      return String(
+        firstEdition.name || ''
+      ).localeCompare(
+        String(
+          secondEdition.name || ''
+        ),
+        'es',
+        {
+          sensitivity: 'base',
+        }
+      );
+    }
+  );
+}, [articles]);
+
+const filteredArticles = useMemo(() => {
+  const normalizedSearch =
+    search
+      .trim()
+      .toLocaleLowerCase('es');
+
+  return articles.filter(article => {
+    const articleEditionId =
+      article?.edition_id ||
+      article?.editions?.id ||
+      null;
+
+    const matchesEdition =
+      selectedEdition === 'all' ||
+      (
+        selectedEdition ===
+          'without-edition' &&
+        !articleEditionId
+      ) ||
+      String(articleEditionId) ===
+        String(selectedEdition);
+
+    if (!matchesEdition) {
+      return false;
+    }
+
+    if (!normalizedSearch) {
+      return true;
+    }
+
+    const searchableText = [
+      article?.title,
+      article?.subtitle,
+      article?.excerpt,
+      article?.collaborators?.name,
+      article?.author_name,
+      article?.editions?.name,
+      article?.editions?.number,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLocaleLowerCase('es');
+
+    return searchableText.includes(
+      normalizedSearch
+    );
+  });
+}, [
+  articles,
+  search,
+  selectedEdition,
+]);
+
+const articleGroups = useMemo(() => {
+  const groups = availableEditions
+    .filter(edition => {
+      if (
+        selectedEdition === 'all'
+      ) {
+        return true;
+      }
+
+      return (
+        String(edition.id) ===
+        String(selectedEdition)
+      );
+    })
+    .map(edition => {
+      const editionArticles =
+        filteredArticles.filter(
+          article =>
+            String(
+              article?.edition_id ||
+              article?.editions?.id ||
+              ''
+            ) ===
+            String(edition.id)
+        );
+
+      return {
+        key: String(edition.id),
+        edition,
+        articles: editionArticles,
+      };
+    })
+    .filter(
+      group =>
+        group.articles.length > 0
+    );
+
+  const articlesWithoutEdition =
+    filteredArticles.filter(
+      article =>
+        !article?.edition_id &&
+        !article?.editions?.id
+    );
+
+  const shouldShowWithoutEdition =
+    selectedEdition === 'all' ||
+    selectedEdition ===
+      'without-edition';
+
+  if (
+    shouldShowWithoutEdition &&
+    articlesWithoutEdition.length > 0
+  ) {
+    groups.push({
+      key: 'without-edition',
+      edition: null,
+      articles:
+        articlesWithoutEdition,
+    });
+  }
+
+  return groups;
+}, [
+  availableEditions,
+  filteredArticles,
+  selectedEdition,
+]);
+
+const hasArticlesWithoutEdition =
+  useMemo(
+    () =>
+      articles.some(
+        article =>
+          !article?.edition_id &&
+          !article?.editions?.id
+      ),
+    [articles]
+  );
+
+const clearFilters = () => {
+  setSearch('');
+  setSelectedEdition('all');
+};
+
+const hasActiveFilters =
+  search.trim() !== '' ||
+  selectedEdition !== 'all';
 
 return (
     <div className={styles.page}>
@@ -649,38 +937,289 @@ return (
 
       {/* ── Contenido ─────────────────────────────────────── */}
       <div className={styles.body}>
-
-        {loading && page === 1 ? (
+        {loading ? (
           <GridSkeleton />
         ) : articles.length === 0 ? (
-          <EmptyState name={category?.name || slug} />
+          <EmptyState
+            name={
+              owner?.name ||
+              category?.name ||
+              slug
+            }
+          />
         ) : (
           <>
-            <div className={styles.grid}>
-              {articles.map((art, i) => (
-                <motion.div
-                  key={art.id}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(i, 5) * 0.06 }}
-                >
-                  <ArticleCard article={art} />
-                </motion.div>
-              ))}
+            <div className={styles.bodyHeader}>
+              <h2 className={styles.bodyTitle}>
+                Publicaciones de{' '}
+                {owner?.name ||
+                  category?.name}
+
+                <span className={styles.bodyCount}>
+                  {articles.length}
+                </span>
+              </h2>
             </div>
 
-            {hasMore && (
-              <div className={styles.loadMore}>
-                <button
-                  className={styles.loadMoreBtn}
-                  onClick={() => setPage(p => p + 1)}
-                  disabled={loading}
+            <div
+              className={
+                styles.publicationFilters
+              }
+            >
+              <div
+                className={
+                  styles.publicationSearch
+                }
+              >
+                <Search
+                  size={18}
+                  className={
+                    styles.publicationSearchIcon
+                  }
+                />
+
+                <input
+                  type="search"
+                  value={search}
+                  onChange={event =>
+                    setSearch(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Buscar publicaciones..."
+                  aria-label="Buscar publicaciones"
+                  className={
+                    styles.publicationSearchInput
+                  }
+                />
+
+                {search && (
+                  <button
+                    type="button"
+                    className={
+                      styles.publicationClearSearch
+                    }
+                    onClick={() =>
+                      setSearch('')
+                    }
+                    aria-label="Limpiar búsqueda"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+
+              <div
+                className={
+                  styles.publicationSelectControl
+                }
+              >
+                <label htmlFor="category-edition-filter">
+                  Edición
+                </label>
+
+                <select
+                  id="category-edition-filter"
+                  value={selectedEdition}
+                  onChange={event =>
+                    setSelectedEdition(
+                      event.target.value
+                    )
+                  }
+                  className={
+                    styles.publicationSelect
+                  }
                 >
-                  {loading ? 'Cargando...' : 'Cargar más artículos'}
+                  <option value="all">
+                    Todas las ediciones
+                  </option>
+
+                  {availableEditions.map(
+                    edition => (
+                      <option
+                        key={edition.id}
+                        value={edition.id}
+                      >
+                        Edición{' '}
+                        {edition.number}
+
+                        {edition.name
+                          ? ` — ${edition.name}`
+                          : ''}
+                      </option>
+                    )
+                  )}
+
+                  {hasArticlesWithoutEdition && (
+                    <option value="without-edition">
+                      Sin edición
+                    </option>
+                  )}
+                </select>
+              </div>
+
+              <span
+                className={
+                  styles.filteredResults
+                }
+              >
+                {filteredArticles.length}{' '}
+                {filteredArticles.length === 1
+                  ? 'publicación'
+                  : 'publicaciones'}
+              </span>
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  className={
+                    styles.publicationClearFilters
+                  }
+                  onClick={clearFilters}
+                >
+                  <X size={15} />
+
+                  Limpiar filtros
                 </button>
-                <div className={styles.loadMoreCount}>
-                  {articles.length} de {total} artículos
-                </div>
+              )}
+            </div>
+
+            {articleGroups.length === 0 ? (
+              <div className={styles.empty}>
+                <span>Λ</span>
+
+                <p>
+                  No encontramos publicaciones
+                  con esos filtros.
+                </p>
+
+                <button
+                  type="button"
+                  className={
+                    styles.emptyFilterButton
+                  }
+                  onClick={clearFilters}
+                >
+                  Limpiar filtros
+                </button>
+              </div>
+            ) : (
+              <div
+                className={
+                  styles.editionsList
+                }
+              >
+                {articleGroups.map(group => (
+                  <section
+                    key={group.key}
+                    className={
+                      styles.editionGroup
+                    }
+                  >
+                    <header
+                      className={
+                        styles.editionHeader
+                      }
+                    >
+                      <div>
+                        <span
+                          className={
+                            styles.editionEyebrow
+                          }
+                        >
+                          Archivo editorial
+                        </span>
+
+                        <h3
+                          className={
+                            styles.editionTitle
+                          }
+                        >
+                          {group.edition
+                            ? `Edición ${group.edition.number}`
+                            : 'Sin edición'}
+                        </h3>
+
+                        {group.edition?.name && (
+                          <p
+                            className={
+                              styles.editionName
+                            }
+                          >
+                            {
+                              group.edition
+                                .name
+                            }
+                          </p>
+                        )}
+                      </div>
+
+                      <span
+                        className={
+                          styles.editionCount
+                        }
+                      >
+                        {group.articles.length}{' '}
+
+                        {group.articles.length ===
+                        1
+                          ? 'publicación'
+                          : 'publicaciones'}
+                      </span>
+                    </header>
+
+                    <div
+                      className={
+                        styles.editionDivider
+                      }
+                    />
+
+                    <div
+                      className={
+                        styles.grid
+                      }
+                    >
+                      {group.articles.map(
+                        (
+                          article,
+                          index
+                        ) => (
+                          <motion.div
+                            key={article.id}
+                            className={
+                              styles.cardWrapper
+                            }
+                            initial={{
+                              opacity: 0,
+                              y: 16,
+                            }}
+                            whileInView={{
+                              opacity: 1,
+                              y: 0,
+                            }}
+                            viewport={{
+                              once: true,
+                              amount: 0.12,
+                            }}
+                            transition={{
+                              delay:
+                                Math.min(
+                                  index % 5,
+                                  4
+                                ) * 0.06,
+                            }}
+                          >
+                            <ArticleCard
+                              article={
+                                article
+                              }
+                            />
+                          </motion.div>
+                        )
+                      )}
+                    </div>
+                  </section>
+                ))}
               </div>
             )}
           </>
@@ -940,7 +1479,27 @@ function YouTubeIcon(props) {
     </svg>
   );
 }
+function getEditionTitle(edition) {
+  if (!edition) {
+    return 'Sin edición';
+  }
 
+  if (
+    edition.is_special &&
+    edition.name
+  ) {
+    return edition.name;
+  }
+
+  if (edition.number) {
+    return `Edición ${edition.number}`;
+  }
+
+  return (
+    edition.name ||
+    'Edición'
+  );
+}
 function formatArticleDate(dateValue) {
   if (!dateValue) {
     return '';

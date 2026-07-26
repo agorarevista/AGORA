@@ -629,39 +629,193 @@ const getById = async (id) => {
 
   return data;
 };
-const getByCategory = async (slug, { page = 1, limit = 12 } = {}) => {
-  const from = (page - 1) * limit;
-  const to = from + limit - 1;
+const getByCategory = async (
+  slug,
+  {
+    page = 1,
+    limit = 12,
+  } = {}
+) => {
+  const normalizedPage =
+    Math.max(
+      Number.parseInt(
+        page,
+        10
+      ) || 1,
+      1
+    );
 
-  // Primero obtener el id de la categoría
-  const { data: cat } = await supabase
+  const normalizedLimit =
+    Math.min(
+      Math.max(
+        Number.parseInt(
+          limit,
+          10
+        ) || 12,
+        1
+      ),
+      100
+    );
+
+  const from =
+    (
+      normalizedPage -
+      1
+    ) *
+    normalizedLimit;
+
+  const to =
+    from +
+    normalizedLimit -
+    1;
+
+  const {
+    data: category,
+    error: categoryError,
+  } = await supabase
     .from('categories')
-    .select('id, name, slug, description, cover_image_url')
-    .eq('slug', slug)
-    .single();
+    .select(
+      `
+        id,
+        name,
+        slug,
+        description,
+        cover_image_url
+      `
+    )
+    .eq(
+      'slug',
+      slug
+    )
+    .maybeSingle();
 
-  if (!cat) throw { status: 404, message: 'Categoría no encontrada' };
+  if (categoryError) {
+    throw categoryError;
+  }
 
-  // Obtener artículos de esa categoría
-  const { data, error, count } = await supabase
+  if (!category) {
+    throw {
+      status: 404,
+      message:
+        'Categoría no encontrada',
+    };
+  }
+
+  const {
+    data: categoryRelations,
+    error: relationsError,
+  } = await supabase
     .from('article_categories')
-    .select(`
-      articles (
-        ${BASE_SELECT}
+    .select('article_id')
+    .eq(
+      'category_id',
+      category.id
+    );
+
+  if (relationsError) {
+    throw relationsError;
+  }
+
+  const articleIds =
+    Array.from(
+      new Set(
+        (
+          categoryRelations ||
+          []
+        )
+          .map(
+            relation =>
+              relation.article_id
+          )
+          .filter(Boolean)
       )
-    `, { count: 'exact' })
-    .eq('category_id', cat.id)
-    .eq('articles.status', 'published')
-    .order('articles(published_at)', { ascending: false })
-    .range(from, to);
+    );
 
-  if (error) throw error;
+  if (
+    articleIds.length === 0
+  ) {
+    return {
+      category,
 
-  const articles = data
-    .map(r => r.articles)
-    .filter(Boolean);
+      data: [],
 
-  return { category: cat, data: articles, total: count, page: Number(page), limit: Number(limit) };
+      total: 0,
+
+      page:
+        normalizedPage,
+
+      limit:
+        normalizedLimit,
+    };
+  }
+
+  const {
+    data,
+    error,
+    count,
+  } = await supabase
+    .from('articles')
+    .select(
+      BASE_SELECT,
+      {
+        count: 'exact',
+      }
+    )
+    .in(
+      'id',
+      articleIds
+    )
+    .eq(
+      'status',
+      'published'
+    )
+    .order(
+      'published_at',
+      {
+        ascending: false,
+        nullsFirst: false,
+      }
+    )
+    .order(
+      'created_at',
+      {
+        ascending: false,
+      }
+    )
+    .range(
+      from,
+      to
+    );
+
+  if (error) {
+    console.error(
+      '===== CATEGORY ARTICLES ERROR ====='
+    );
+
+    console.error(error);
+
+    console.error(
+      '===================================='
+    );
+
+    throw error;
+  }
+
+  return {
+    category,
+
+    data:
+      data || [],
+
+    total:
+      count || 0,
+
+    page:
+      normalizedPage,
+
+    limit:
+      normalizedLimit,
+  };
 };
 
 const getByCollaborator = async (slug, { page = 1, limit = 12 } = {}) => {
