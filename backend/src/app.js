@@ -13,10 +13,17 @@ const morgan = require('morgan');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const fs = require('fs');
+const cron = require('node-cron');
 
 const corsMiddleware = require('./config/cors');
 const supabase = require('./config/supabase');
 const errorHandler = require('./middleware/errorHandler');
+
+const {
+  cleanupNotificationLogs,
+} = require(
+  './modules/notifications/notifications.service'
+);
 
 const app = express();
 
@@ -225,7 +232,37 @@ app.use(
   require('./modules/articleTransfer/articleTransfer.routes')
 );
 
- 
+app.use(
+  '/api/notifications',
+  require('./modules/notifications/notifications.routes')
+);
+
+/* ══════════════════════════════════════════════════════
+   LIMPIEZA DEL HISTORIAL DE NOTIFICACIONES
+
+   Se ejecuta todos los días a las 03:00.
+   Elimina registros con más de 24 horas.
+
+   No elimina las suscripciones de los dispositivos.
+══════════════════════════════════════════════════════ */
+
+cron.schedule(
+  '0 3 * * *',
+  async () => {
+    try {
+      await cleanupNotificationLogs();
+    } catch (error) {
+      console.error(
+        '❌ Error limpiando el historial Push:',
+        error
+      );
+    }
+  },
+  {
+    timezone:
+      'America/Mazatlan',
+  }
+);
 
 /* ══════════════════════════════════════════════════════
    KEEP ALIVE

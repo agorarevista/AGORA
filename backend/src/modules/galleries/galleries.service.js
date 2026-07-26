@@ -7,6 +7,10 @@ const {
   slugify,
 } = require('../../utils/slugify');
 
+const {
+  sendContentNotificationSafely,
+} = require('../notifications/notifications.service');
+
 const GALLERY_BASE_SELECT = `
   id,
   title,
@@ -1208,19 +1212,29 @@ const publish = async id => {
     );
   }
 
+  const wasAlreadyPublished =
+    gallery.status ===
+    'published';
+
+  const publishPayload = {
+    status:
+      'published',
+  };
+
+  if (!wasAlreadyPublished) {
+    publishPayload.published_at =
+      new Date()
+        .toISOString();
+  }
+
   const {
     data,
     error,
   } = await supabase
     .from('galleries')
-    .update({
-      status:
-        'published',
-
-      published_at:
-        new Date()
-          .toISOString(),
-    })
+    .update(
+      publishPayload
+    )
     .eq(
       'id',
       id
@@ -1230,6 +1244,20 @@ const publish = async id => {
 
   if (error) {
     throw error;
+  }
+
+  /*
+   * Solo notificamos cuando la galería
+   * pasa por primera vez a publicada.
+   */
+  if (!wasAlreadyPublished) {
+    sendContentNotificationSafely({
+      contentType:
+        'gallery',
+
+      content:
+        data,
+    });
   }
 
   return data;

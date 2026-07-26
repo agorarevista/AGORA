@@ -6,6 +6,9 @@ import Navbar from '../components/common/Navbar/Navbar';
 import Footer from '../components/common/Footer/Footer';
 import PageTransition from '../components/common/PageTransition/PageTransition';
 import ScrollToTopButton from '../components/common/ScrollToTopButton/ScrollToTopButton';
+
+import NotificationPrompt from '../components/common/NotificationPrompt/NotificationPrompt';
+
 import { trackView } from '../api/analytics.api';
 
 export default function PublicLayout() {
@@ -43,7 +46,16 @@ export default function PublicLayout() {
       </div>
 
       {createPortal(
-        <ScrollToTopButton visible={showScrollTop} />,
+        <ScrollToTopButton
+          visible={
+            showScrollTop
+          }
+        />,
+        document.body
+      )}
+
+      {createPortal(
+        <NotificationPrompt />,
         document.body
       )}
     </>

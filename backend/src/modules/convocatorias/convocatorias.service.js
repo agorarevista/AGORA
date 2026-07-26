@@ -1,5 +1,9 @@
 const supabase = require('../../config/supabase');
 
+const {
+  sendContentNotificationSafely,
+} = require('../notifications/notifications.service');
+
 const DEFAULT_EMAIL =
   'contactoagorarevista@gmail.com';
 
@@ -478,9 +482,10 @@ const getById = async id => {
 };
 
 const create = async body => {
-  const payload = normalizePayload(
-    body
-  );
+  const payload =
+    normalizePayload(
+      body
+    );
 
   if (!payload.title) {
     throw {
@@ -498,7 +503,8 @@ const create = async body => {
     payload.categories || [];
 
   payload.email_rubrics =
-    payload.email_rubrics?.length
+    payload.email_rubrics
+      ?.length
       ? payload.email_rubrics
       : DEFAULT_RUBRICS;
 
@@ -506,12 +512,17 @@ const create = async body => {
     payload.filled_slots || 0;
 
   payload.max_file_size_mb =
-    payload.max_file_size_mb || 10;
+    payload.max_file_size_mb ||
+    10;
 
   payload.is_active =
-    payload.is_active ?? true;
+    payload.is_active ??
+    true;
 
-  const { data, error } = await supabase
+  const {
+    data,
+    error,
+  } = await supabase
     .from('convocatorias')
     .insert(payload)
     .select()
@@ -521,9 +532,32 @@ const create = async body => {
     throw error;
   }
 
-  return attachRuntimeFields(data);
-};
+  const convocatoria =
+    attachRuntimeFields(
+      data
+    );
 
+  /*
+   * Si se creó ya abierta, notificamos.
+   * Si se creó programada o cerrada,
+   * no se notifica todavía.
+   */
+  if (
+    convocatoria
+      .runtime_status ===
+    'open'
+  ) {
+    sendContentNotificationSafely({
+      contentType:
+        'convocatoria',
+
+      content:
+        convocatoria,
+    });
+  }
+
+  return convocatoria;
+};
 const update = async (
   id,
   body
@@ -555,7 +589,8 @@ const open = async id => {
   const current =
     await getById(id);
 
-  const now = new Date();
+  const now =
+    new Date();
 
   const closesAt =
     current.closes_at
@@ -579,7 +614,8 @@ const open = async id => {
     current.max_submissions !==
       null &&
     Number(
-      current.filled_slots || 0
+      current.filled_slots ||
+      0
     ) >=
       Number(
         current.max_submissions
@@ -593,14 +629,26 @@ const open = async id => {
     };
   }
 
-  const { data, error } = await supabase
+  const wasAlreadyOpen =
+    current.runtime_status ===
+    'open';
+
+  const {
+    data,
+    error,
+  } = await supabase
     .from('convocatorias')
     .update({
-      is_active: true,
+      is_active:
+        true,
+
       opens_at:
         now.toISOString(),
     })
-    .eq('id', id)
+    .eq(
+      'id',
+      id
+    )
     .select()
     .single();
 
@@ -608,7 +656,27 @@ const open = async id => {
     throw error;
   }
 
-  return attachRuntimeFields(data);
+  const convocatoria =
+    attachRuntimeFields(
+      data
+    );
+
+  if (
+    !wasAlreadyOpen &&
+    convocatoria
+      .runtime_status ===
+      'open'
+  ) {
+    sendContentNotificationSafely({
+      contentType:
+        'convocatoria',
+
+      content:
+        convocatoria,
+    });
+  }
+
+  return convocatoria;
 };
 
 const close = async id => {

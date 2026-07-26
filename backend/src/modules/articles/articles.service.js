@@ -2,7 +2,13 @@ const supabase = require('../../config/supabase');
 const { slugify } = require('../../utils/slugify');
 const { readingTime } = require('../../utils/readingTime');
 const { publishToSubstack } = require('../substack/substack.service');
+
+const {
+  sendContentNotificationSafely,
+} = require('../notifications/notifications.service');
+
 const { getCache, setCache } = require('../../middleware/cache');
+
 const CACHE_KEYS = {
   HOME_PAYLOAD: 'home_payload'
 };
@@ -1880,32 +1886,121 @@ const update = async (
   return article;
 };
 
-const publish = async (id) => {
-  const { data: article, error } = await supabase
+const publish = async id => {
+  /*
+   * Consultamos primero el estado actual.
+   * Así evitamos mandar dos notificaciones
+   * si alguien presiona publicar otra vez.
+   */
+  const {
+    data: currentArticle,
+    error: currentError,
+  } = await supabase
     .from('articles')
-    .update({
-      status: 'published',
-      published_at: new Date().toISOString()
-    })
-    .eq('id', id)
+    .select(
+      `
+        id,
+        status
+      `
+    )
+    .eq(
+      'id',
+      id
+    )
+    .maybeSingle();
+
+  if (currentError) {
+    throw currentError;
+  }
+
+  if (!currentArticle) {
+    throw {
+      status: 404,
+      message:
+        'Artículo no encontrado',
+    };
+  }
+
+  const wasAlreadyPublished =
+    currentArticle.status ===
+    'published';
+
+  const publishPayload = {
+    status:
+      'published',
+  };
+
+  if (!wasAlreadyPublished) {
+    publishPayload.published_at =
+      new Date()
+        .toISOString();
+  }
+
+  const {
+    data: article,
+    error,
+  } = await supabase
+    .from('articles')
+    .update(
+      publishPayload
+    )
+    .eq(
+      'id',
+      id
+    )
     .select('*')
     .single();
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
-  // Intentar crosspost a Substack (no falla si no está configurado)
-  if (process.env.SUBSTACK_URL && process.env.SUBSTACK_COOKIE) {
-    const substackUrl = await publishToSubstack(article);
+  /*
+   * Intentar crosspost a Substack.
+   * Una falla de Substack no afecta
+   * las notificaciones Push.
+   */
+  if (
+    process.env
+      .SUBSTACK_URL &&
+    process.env
+      .SUBSTACK_COOKIE
+  ) {
+    const substackUrl =
+      await publishToSubstack(
+        article
+      );
 
     if (substackUrl) {
       await supabase
         .from('articles')
-        .update({ substack_url: substackUrl })
-        .eq('id', id);
+        .update({
+          substack_url:
+            substackUrl,
+        })
+        .eq(
+          'id',
+          id
+        );
     }
   }
 
-    invalidateHomeCache();
+  invalidateHomeCache();
+
+  /*
+   * Solo notificamos en la transición:
+   *
+   * draft/archived → published
+   */
+  if (!wasAlreadyPublished) {
+    sendContentNotificationSafely({
+      contentType:
+        'article',
+
+      content:
+        article,
+    });
+  }
 
   return article;
 };
