@@ -87,12 +87,51 @@ self.addEventListener(
     };
 
     event.waitUntil(
-      self.registration
-        .showNotification(
-          payload.title ||
-          'Agorá Revista',
-          options
-        )
+      Promise.all([
+        self.registration
+          .showNotification(
+            payload.title ||
+            'Agorá Revista',
+            options
+          ),
+
+        clients
+          .matchAll({
+            type:
+              'window',
+
+            includeUncontrolled:
+              true,
+          })
+          .then(
+            windowClients => {
+              windowClients.forEach(
+                client => {
+                  client.postMessage({
+                    type:
+                      'AGORA_PUSH_RECEIVED',
+
+                    notification: {
+                      title:
+                        payload.title ||
+                        'Agorá Revista',
+
+                      body:
+                        payload.body ||
+                        '',
+
+                      url:
+                        payload.url ||
+                        payload.data
+                          ?.url ||
+                        '/',
+                    },
+                  });
+                }
+              );
+            }
+          ),
+      ])
     );
   }
 );

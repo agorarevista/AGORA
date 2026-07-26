@@ -184,7 +184,189 @@
   border-radius: 50%;
   transition: color 0.2s, background 0.2s;
 }
-.searchBtn:hover { color: var(--nav-text); background: rgba(139,26,74,0.08); }
+
+.searchBtn:hover {
+  color: var(--nav-text);
+  background: rgba(139,26,74,0.08);
+}
+
+/* ── Campana de notificaciones ───────────────────────── */
+.notificationBtn {
+  position: relative;
+
+  width: 36px;
+  height: 36px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  padding: 0;
+
+  color:
+    var(--nav-text-muted);
+
+  background:
+    transparent;
+
+  border: none;
+  border-radius: 50%;
+
+  cursor: pointer;
+
+  transform-origin:
+    50% 12%;
+
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.notificationBtn:hover {
+  color:
+    var(--color-accent);
+
+  background:
+    rgba(
+      139,
+      26,
+      74,
+      0.08
+    );
+}
+
+.notificationBtn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.notificationEnabled {
+  color:
+    var(--nav-text-muted);
+}
+
+.notificationMuted {
+  color:
+    color-mix(
+      in srgb,
+      var(--nav-text-muted) 65%,
+      transparent
+    );
+}
+
+.notificationIcon {
+  display: block;
+}
+
+.notificationStatusDot {
+  position: absolute;
+
+  top: 6px;
+  right: 6px;
+
+  width: 6px;
+  height: 6px;
+
+  background:
+    var(--color-accent);
+
+  border:
+    1.5px solid
+    var(--nav-bg);
+
+  border-radius: 50%;
+
+  pointer-events: none;
+}
+
+/*
+ * Se aplica cuando push-sw.js avisa que
+ * acaba de llegar una notificación.
+ */
+.notificationRinging {
+  color:
+    var(--color-accent);
+
+  animation:
+    agoraBellRing
+    0.72s
+    ease-in-out
+    2;
+}
+
+.notificationRinging
+.notificationStatusDot {
+  animation:
+    agoraBellPulse
+    0.72s
+    ease-in-out
+    2;
+}
+
+@keyframes agoraBellRing {
+  0% {
+    transform:
+      rotate(0deg)
+      scale(1);
+  }
+
+  15% {
+    transform:
+      rotate(18deg)
+      scale(1.08);
+  }
+
+  30% {
+    transform:
+      rotate(-16deg)
+      scale(1.08);
+  }
+
+  45% {
+    transform:
+      rotate(13deg)
+      scale(1.06);
+  }
+
+  60% {
+    transform:
+      rotate(-10deg)
+      scale(1.04);
+  }
+
+  75% {
+    transform:
+      rotate(6deg)
+      scale(1.02);
+  }
+
+  100% {
+    transform:
+      rotate(0deg)
+      scale(1);
+  }
+}
+
+@keyframes agoraBellPulse {
+  0%,
+  100% {
+    opacity: 1;
+
+    transform:
+      scale(1);
+  }
+
+  50% {
+    opacity: 0.45;
+
+    transform:
+      scale(1.7);
+  }
+}
 
 .editionBadge {
   display: inline-flex;

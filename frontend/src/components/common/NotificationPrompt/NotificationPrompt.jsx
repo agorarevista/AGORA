@@ -27,6 +27,12 @@ const ENABLED_KEY =
 const DISMISS_DAYS =
   7;
 
+const OPEN_PROMPT_EVENT =
+  'agora-open-notification-prompt';
+
+const PUSH_STATUS_EVENT =
+  'agora-push-status-changed';
+
 const urlBase64ToUint8Array =
   base64String => {
     const padding =
@@ -153,12 +159,22 @@ export default function NotificationPrompt() {
       return undefined;
     }
 
-    if (
-      Notification.permission ===
-      'denied'
-    ) {
-      return undefined;
-    }
+    const handleOpenPrompt =
+      () => {
+        setErrorMessage('');
+
+        /*
+         * Aunque previamente haya pulsado
+         * "Ahora no", la campana puede volver
+         * a abrir manualmente este aviso.
+         */
+        setVisible(true);
+      };
+
+    window.addEventListener(
+      OPEN_PROMPT_EVENT,
+      handleOpenPrompt
+    );
 
     let cancelled =
       false;
@@ -243,6 +259,11 @@ export default function NotificationPrompt() {
     return () => {
       cancelled =
         true;
+
+      window.removeEventListener(
+        OPEN_PROMPT_EVENT,
+        handleOpenPrompt
+      );
     };
   }, [
     supported,
@@ -274,6 +295,17 @@ export default function NotificationPrompt() {
       setErrorMessage('');
 
       try {
+        if (
+          Notification.permission ===
+          'denied'
+        ) {
+          setErrorMessage(
+            'Las notificaciones están bloqueadas en este navegador. Abre los permisos del sitio y cambia Notificaciones a Permitir.'
+          );
+
+          return;
+        }
+
         const permission =
           await Notification
             .requestPermission();
@@ -360,6 +392,18 @@ export default function NotificationPrompt() {
 
         setEnabled(true);
         setVisible(false);
+
+        window.dispatchEvent(
+          new CustomEvent(
+            PUSH_STATUS_EVENT,
+            {
+              detail: {
+                enabled:
+                  true,
+              },
+            }
+          )
+        );
       } catch (error) {
         console.error(
           'No se pudieron activar las notificaciones:',
