@@ -119,10 +119,6 @@ export default function ShareButtons({
     article ||
     null;
 
-  const isArticle =
-    contentType ===
-    'article';
-
   const contentLabel =
     contentType ===
     'gallery'
@@ -168,17 +164,7 @@ export default function ShareButtons({
   const loadShares =
     useCallback(
       async () => {
-        /*
-         * La API actual de shares solamente
-         * registra article_id.
-         *
-         * Las galerías pueden compartirse,
-         * pero por ahora no muestran contador.
-         */
-        if (
-          !isArticle ||
-          !item?.id
-        ) {
+        if (!item?.id) {
           setShares(0);
           return;
         }
@@ -186,6 +172,7 @@ export default function ShareButtons({
         try {
           const data =
             await getShares(
+              contentType,
               item.id
             );
 
@@ -194,17 +181,18 @@ export default function ShareButtons({
             0
           );
         } catch {
-          // No bloqueamos el contenido.
+          // Compartir debe seguir funcionando
+          // aunque falle el contador.
         }
       },
       [
-        isArticle,
+        contentType,
         item?.id,
       ]
     );
 
   useEffect(() => {
-    if (!isArticle) {
+    if (!item?.id) {
       return undefined;
     }
 
@@ -212,9 +200,7 @@ export default function ShareButtons({
 
     const interval =
       window.setInterval(
-        () => {
-          loadShares();
-        },
+        loadShares,
         2500
       );
 
@@ -224,7 +210,7 @@ export default function ShareButtons({
       );
     };
   }, [
-    isArticle,
+    item?.id,
     loadShares,
   ]);
 
@@ -236,16 +222,9 @@ export default function ShareButtons({
 
   const share =
     async platform => {
-      /*
-       * El backend actual de shares recibe
-       * article_id, por eso solamente
-       * registramos los artículos.
-       */
-      if (
-        isArticle &&
-        item?.id
-      ) {
+      if (item?.id) {
         registerShare(
+          contentType,
           item.id,
           platform
         )
@@ -352,15 +331,13 @@ export default function ShareButtons({
             <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
           </svg>
         </span>
-        {isArticle && (
-          <span
-            className={
-              styles.shareCount
-            }
-          >
-            {shares}
-          </span>
-        )}
+        <span
+          className={
+            styles.shareCount
+          }
+        >
+          {shares}
+        </span>
       </button>
 
       {/* Modal montado directamente en document.body */}

@@ -1,7 +1,69 @@
 import api from './axios';
 
-export const getComments = (article_id) => api.get(`/comments/article/${article_id}`).then(r => r.data);
-export const getAllComments = (params) => api.get('/comments', { params }).then(r => r.data);
-export const createComment = (data) => api.post('/comments', data).then(r => r.data);
-export const updateCommentStatus = (id, status) => api.patch(`/comments/${id}/status`, { status }).then(r => r.data);
-export const deleteComment = (id) => api.delete(`/comments/${id}`).then(r => r.data);
+export const getComments = (
+  contentType,
+  contentId
+) => {
+  return api
+    .get(
+      `/comments/content/${contentType}/${contentId}`
+    )
+    .then(
+      response =>
+        response.data
+    );
+};
+
+export const getAllComments = params => {
+  return api
+    .get(
+      '/comments',
+      {
+        params,
+      }
+    )
+    .then(
+      response =>
+        response.data
+    );
+};
+
+export const createComment = data => {
+  return api
+    .post(
+      '/comments',
+      data
+    )
+    .then(
+      response =>
+        response.data
+    );
+};
+
+export const updateCommentStatus = (
+  id,
+  status
+) => {
+  return api
+    .patch(
+      `/comments/${id}/status`,
+      {
+        status,
+      }
+    )
+    .then(
+      response =>
+        response.data
+    );
+};
+
+export const deleteComment = id => {
+  return api
+    .delete(
+      `/comments/${id}`
+    )
+    .then(
+      response =>
+        response.data
+    );
+};

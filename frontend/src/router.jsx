@@ -15,6 +15,7 @@ import HomePage from './pages/public/HomePage';
 import ArticlePage from './pages/public/ArticlePage';
 import CategoryPage from './pages/public/CategoryPage';
 import CollaboratorPage from './pages/public/CollaboratorPage';
+import PublicCollaboratorsPage from './pages/public/CollaboratorsPage';
 import EditionPage from './pages/public/EditionPage';
 import SearchPage from './pages/public/SearchPage';
 import CollaborationsPage from './pages/public/CollaborationsPage';
@@ -35,7 +36,7 @@ import ArticleEditorPage from './pages/admin/ArticleEditorPage';
 import GalleriesPage from './pages/admin/GalleriesPage';
 import GalleryEditorPage from './pages/admin/GalleryEditorPage';
 import CategoriesPage from './pages/admin/CategoriesPage';
-import CollaboratorsPage from './pages/admin/CollaboratorsPage';
+import AdminCollaboratorsPage from './pages/admin/CollaboratorsPage';
 import EditionsPage from './pages/admin/EditionsPage';
 import ConvocatoriasPage from './pages/admin/ConvocatoriasPage';
 import CommentsPage from './pages/admin/CommentsPage';
@@ -127,6 +128,12 @@ const router =
     'colaborador/:slug',
   element:
     <CollaboratorPage />,
+},
+{
+  path:
+    'colaboradores',
+  element:
+    <PublicCollaboratorsPage />,
 },
             {
               path:
@@ -265,7 +272,7 @@ const router =
               path:
                 'colaboradores',
               element:
-                <CollaboratorsPage />,
+                <AdminCollaboratorsPage />,
             },
             {
               path: 'ediciones',

@@ -1,5 +1,79 @@
 import api from './axios';
 
-export const getLikes = (article_id) => api.get(`/likes/${article_id}`).then(r => r.data);
-export const toggleLike = (article_id) => api.post(`/likes/${article_id}/toggle`).then(r => r.data);
-export const checkLike = (article_id) => api.get(`/likes/${article_id}/check`).then(r => r.data);
+const buildHeaders = options => {
+  const visitorId =
+    options?.visitorId;
+
+  if (!visitorId) {
+    return {};
+  }
+
+  return {
+    'x-visitor-id':
+      visitorId,
+  };
+};
+
+export const getLikes = (
+  contentType,
+  contentId,
+  options = {}
+) => {
+  return api
+    .get(
+      `/likes/${contentType}/${contentId}`,
+      {
+        headers:
+          buildHeaders(
+            options
+          ),
+      }
+    )
+    .then(
+      response =>
+        response.data
+    );
+};
+
+export const toggleLike = (
+  contentType,
+  contentId,
+  options = {}
+) => {
+  return api
+    .post(
+      `/likes/${contentType}/${contentId}/toggle`,
+      {},
+      {
+        headers:
+          buildHeaders(
+            options
+          ),
+      }
+    )
+    .then(
+      response =>
+        response.data
+    );
+};
+
+export const checkLike = (
+  contentType,
+  contentId,
+  options = {}
+) => {
+  return api
+    .get(
+      `/likes/${contentType}/${contentId}/check`,
+      {
+        headers:
+          buildHeaders(
+            options
+          ),
+      }
+    )
+    .then(
+      response =>
+        response.data
+    );
+};

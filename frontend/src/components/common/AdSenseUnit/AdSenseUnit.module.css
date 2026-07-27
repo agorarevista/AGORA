@@ -1,0 +1,186 @@
+.wrapper {
+  width:
+    min(
+      970px,
+      calc(
+        100% -
+        32px
+      )
+    );
+
+  margin-right:
+    auto;
+
+  margin-left:
+    auto;
+
+  overflow: hidden;
+
+  border-top:
+    1px solid
+    var(--nav-border);
+
+  border-bottom:
+    1px solid
+    var(--nav-border);
+
+  background:
+    transparent;
+
+  text-align:
+    center;
+}
+
+.content {
+  margin-top:
+    32px;
+
+  margin-bottom:
+    32px;
+
+  padding:
+    13px 0
+    14px;
+}
+
+.footer {
+  margin-top:
+    28px;
+
+  margin-bottom:
+    12px;
+
+  padding:
+    13px 0
+    14px;
+}
+
+.label {
+  display: block;
+
+  margin-bottom:
+    8px;
+
+  color:
+    var(--nav-text-muted);
+
+  font-family:
+    var(--font-sans);
+
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 1.7px;
+
+  line-height: 1;
+
+  text-transform:
+    uppercase;
+
+  opacity: 0.62;
+}
+
+.ad {
+  width: 100%;
+
+  min-height:
+    90px;
+}
+
+.developmentPlaceholder {
+  width: 100%;
+
+  min-height:
+    90px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+
+  border:
+    1px dashed
+    var(--nav-border);
+
+  color:
+    var(--nav-text-muted);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--nav-bg) 94%,
+      var(--color-accent) 6%
+    );
+
+  font-family:
+    var(--font-sans);
+}
+
+.developmentPlaceholder span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.3px;
+
+  text-transform:
+    uppercase;
+}
+
+.developmentPlaceholder small {
+  font-size: 9px;
+
+  opacity: 0.65;
+}
+
+:global(html.dark)
+.wrapper {
+  border-top-color:
+    rgba(
+      255,
+      255,
+      255,
+      0.09
+    );
+
+  border-bottom-color:
+    rgba(
+      255,
+      255,
+      255,
+      0.09
+    );
+}
+
+@media (
+  max-width: 640px
+) {
+  .wrapper {
+    width:
+      calc(
+        100% -
+        18px
+      );
+  }
+
+  .content,
+  .footer {
+    margin-top:
+      22px;
+
+    margin-bottom:
+      22px;
+
+    padding:
+      11px 0
+      12px;
+  }
+
+  .ad,
+  .developmentPlaceholder {
+    min-height:
+      70px;
+  }
+
+  .developmentPlaceholder small {
+    display: none;
+  }
+}

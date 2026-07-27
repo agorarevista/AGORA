@@ -16,6 +16,11 @@ import {
 } from 'react-dom';
 
 import {
+  AnimatePresence,
+  motion,
+} from 'framer-motion';
+
+import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
@@ -24,6 +29,7 @@ import {
   Landmark,
   Mail,
   Maximize2,
+  MessageCircle,
   X,
 } from 'lucide-react';
 
@@ -44,7 +50,15 @@ import {
 
 import GalleryMuseum from '../../components/gallery/GalleryMuseum/GalleryMuseum';
 
+import LikeButton from '../../components/common/LikeButton/LikeButton';
 import ShareButtons from '../../components/common/ShareButtons/ShareButtons';
+import Comments from '../../components/common/Comments/Comments';
+import AdSenseUnit from '../../components/common/AdSenseUnit/AdSenseUnit';
+import AdBlockNotice from '../../components/common/AdBlockNotice/AdBlockNotice';
+
+import {
+  getComments,
+} from '../../api/comments.api';
 
 import styles from './GalleryPage.module.css';
 
@@ -149,6 +163,16 @@ const [
   setViewMode,
 ] = useState('album');
 
+const [
+  showComments,
+  setShowComments,
+] = useState(false);
+
+const [
+  commentCount,
+  setCommentCount,
+] = useState(0);
+
   const [
     isDragging,
     setIsDragging,
@@ -232,6 +256,78 @@ const museumRef =
       behavior: 'auto',
     });
   }, [slug]);
+
+  const loadCommentCount =
+    useCallback(
+      async () => {
+        if (!gallery?.id) {
+          return;
+        }
+
+        try {
+          const data =
+            await getComments(
+              'gallery',
+              gallery.id
+            );
+
+          const totalCount =
+            (
+              Array.isArray(data)
+                ? data
+                : []
+            ).reduce(
+              (
+                accumulator,
+                item
+              ) => {
+                return (
+                  accumulator +
+                  1 +
+                  (
+                    item.replies
+                      ?.length ||
+                    0
+                  )
+                );
+              },
+              0
+            );
+
+          setCommentCount(
+            totalCount
+          );
+        } catch {
+          // No bloqueamos la galería.
+        }
+      },
+      [
+        gallery?.id,
+      ]
+    );
+
+  useEffect(() => {
+    if (!gallery?.id) {
+      return undefined;
+    }
+
+    loadCommentCount();
+
+    const interval =
+      window.setInterval(
+        loadCommentCount,
+        2500
+      );
+
+    return () => {
+      window.clearInterval(
+        interval
+      );
+    };
+  }, [
+    gallery?.id,
+    loadCommentCount,
+  ]);
 
   const author =
     gallery?.collaborators ||
@@ -885,19 +981,7 @@ const openMuseumPhoto =
               : 'fotografías'}
           </span>
         </div>
-
-        <div
-          className={
-            styles.galleryShare
-          }
-        >
-          <ShareButtons
-            content={
-              gallery
-            }
-            contentType="gallery"
-          />
-        </div>
+ 
       </header>
 
       {gallery.excerpt && (
@@ -909,6 +993,13 @@ const openMuseumPhoto =
           {gallery.excerpt}
         </p>
       )}
+
+      {/* ── Anuncio superior ─────────────────────── */}
+      <AdSenseUnit
+        slot="9798353560"
+        placement="content"
+        label="Publicidad"
+      />
 
       <div
         className={
@@ -1310,6 +1401,118 @@ const openMuseumPhoto =
         author={author}
       />
 
+      <section
+        className={
+          styles.interactionsSection
+        }
+      >
+        <div
+          className={
+            styles.actionsBar
+          }
+        >
+          <LikeButton
+            contentType="gallery"
+            contentId={gallery.id}
+          />
+
+          <button
+            type="button"
+            className={`
+              ${styles.actionIcon}
+              ${
+                showComments
+                  ? styles.actionIconActive
+                  : ''
+              }
+            `}
+            onClick={() => {
+              setShowComments(
+                previous =>
+                  !previous
+              );
+            }}
+            title="Comentarios"
+            aria-label="Comentarios"
+            aria-expanded={
+              showComments
+            }
+          >
+            <span
+              className={
+                styles.actionIconWrap
+              }
+            >
+              <MessageCircle
+                size={22}
+              />
+            </span>
+
+            <span
+              className={
+                styles.actionCount
+              }
+            >
+              {commentCount}
+            </span>
+          </button>
+
+          <ShareButtons
+            content={
+              gallery
+            }
+            contentType="gallery"
+          />
+        </div>
+
+        <AnimatePresence
+          initial={false}
+        >
+          {showComments && (
+            <motion.div
+              initial={{
+                opacity: 0,
+                height: 0,
+              }}
+              animate={{
+                opacity: 1,
+                height: 'auto',
+              }}
+              exit={{
+                opacity: 0,
+                height: 0,
+              }}
+              transition={{
+                duration: 0.3,
+                ease:
+                  'easeInOut',
+              }}
+              style={{
+                overflow:
+                  'hidden',
+              }}
+            >
+              <Comments
+                contentType="gallery"
+                contentId={
+                  gallery.id
+                }
+                onCountChange={
+                  setCommentCount
+                }
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </section>
+
+      {/* ── Anuncio inferior ─────────────────────── */}
+      <AdSenseUnit
+        slot="8485271890"
+        placement="footer"
+        label="Publicidad"
+      />
+
 {expandedPhoto &&
   createPortal(
     <PhotoModal
@@ -1344,6 +1547,8 @@ const openMuseumPhoto =
     />,
     document.body
   )}
+
+      <AdBlockNotice />
     </main>
   );
 }

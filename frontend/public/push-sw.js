@@ -13,8 +13,12 @@ self.addEventListener(
       icon:
         '/android-chrome-192x192.png',
 
+      /*
+       * No usamos badge para evitar mostrar
+       * el logotipo dos veces en Android.
+       */
       badge:
-        '/android-chrome-192x192.png',
+        null,
 
       url:
         '/',
@@ -46,9 +50,13 @@ self.addEventListener(
         payload.icon ||
         '/android-chrome-192x192.png',
 
+      /*
+       * Si el backend no manda badge,
+       * no agregamos ningún icono secundario.
+       */
       badge:
         payload.badge ||
-        '/android-chrome-192x192.png',
+        undefined,
 
       image:
         payload.image ||

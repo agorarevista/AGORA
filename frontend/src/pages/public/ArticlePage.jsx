@@ -60,6 +60,8 @@ import LikeButton from '../../components/common/LikeButton/LikeButton';
 import ShareButtons from '../../components/common/ShareButtons/ShareButtons';
 import Comments from '../../components/common/Comments/Comments';
 import ImageViewer from '../../components/common/ImageViewer/ImageViewer';
+import AdSenseUnit from '../../components/common/AdSenseUnit/AdSenseUnit';
+import AdBlockNotice from '../../components/common/AdBlockNotice/AdBlockNotice';
 import agoraIcon from '../../assets/ICON.png';
 import styles from './ArticlePage.module.css';
 
@@ -231,8 +233,10 @@ export default function ArticlePage() {
 
       try {
         const data =
-          await getComments(article.id);
-
+          await getComments(
+            'article',
+            article.id
+          );
         const totalCount =
           (data || []).reduce(
             (accumulator, item) => {
@@ -1177,6 +1181,13 @@ export default function ArticlePage() {
 
       <div className={styles.meander} />
 
+      {/* ── Anuncio superior ─────────────────────── */}
+      <AdSenseUnit
+        slot="9798353560"
+        placement="content"
+        label="Publicidad"
+      />
+
       {/* ── Portada ──────────────────────────────── */}
       {article.cover_image_url && (
         <motion.figure
@@ -1494,7 +1505,8 @@ export default function ArticlePage() {
         {/* ── Acciones ───────────────────────────── */}
         <div className={styles.actionsBar}>
           <LikeButton
-            articleId={article.id}
+            contentType="article"
+            contentId={article.id}
           />
 
           <button
@@ -1537,6 +1549,13 @@ export default function ArticlePage() {
           />
         </div>
 
+        {/* ── Anuncio inferior ───────────────────── */}
+        <AdSenseUnit
+          slot="8485271890"
+          placement="footer"
+          label="Publicidad"
+        />
+
         {/* ── Comentarios ────────────────────────── */}
         <AnimatePresence>
           {showComments && (
@@ -1562,7 +1581,8 @@ export default function ArticlePage() {
               }}
             >
               <Comments
-                articleId={article.id}
+                contentType="article"
+                contentId={article.id}
                 onCountChange={
                   setCommentCount
                 }
@@ -1582,6 +1602,8 @@ export default function ArticlePage() {
           }}
         />
       )}
+
+      <AdBlockNotice />
     </div>
   );
 }

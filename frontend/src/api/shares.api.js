@@ -1,6 +1,33 @@
 import api from './axios';
 
-export const registerShare = (article_id, platform) =>
-  api.post(`/shares/${article_id}`, { platform }).then(r => r.data);
-export const getShares = (article_id) =>
-  api.get(`/shares/${article_id}`).then(r => r.data);
+export const registerShare = (
+  contentType,
+  contentId,
+  platform
+) => {
+  return api
+    .post(
+      `/shares/${contentType}/${contentId}`,
+      {
+        platform,
+      }
+    )
+    .then(
+      response =>
+        response.data
+    );
+};
+
+export const getShares = (
+  contentType,
+  contentId
+) => {
+  return api
+    .get(
+      `/shares/${contentType}/${contentId}`
+    )
+    .then(
+      response =>
+        response.data
+    );
+};
