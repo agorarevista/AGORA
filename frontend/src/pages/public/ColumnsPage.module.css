@@ -48,7 +48,7 @@
     82px 28px
     76px;
 
-  text-align: center;
+  text-align: left;
 }
 
 .heroEyebrow {
@@ -117,7 +117,7 @@
     930px;
 
   margin:
-    32px auto 0;
+    32px 0 0;
 
   color:
     var(--nav-text-muted);
@@ -1153,7 +1153,7 @@
       );
 
     margin:
-      0 auto;
+      0;
 
     font-size:
       clamp(
