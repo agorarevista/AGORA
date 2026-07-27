@@ -127,63 +127,53 @@
     );
 }
 
-.symbol {
+.logoWrap {
   position: relative;
 
-  width: 70px;
-  height: 70px;
+  width:
+    min(
+      180px,
+      52%
+    );
+
+  height:
+    72px;
 
   margin:
-    0 auto 19px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border:
-    1px solid
-    color-mix(
-      in srgb,
-      var(--color-accent) 35%,
-      transparent
-    );
-
-  border-radius: 18px;
-
-  color:
-    var(--color-accent);
-
-  background:
-    color-mix(
-      in srgb,
-      var(--nav-bg) 90%,
-      var(--color-accent) 10%
-    );
+    0 auto 20px;
 }
 
-.symbol span {
-  font-family:
-    var(--font-display);
-
-  font-size: 45px;
-  line-height: 1;
-}
-
-.symbol i {
+.logo {
   position: absolute;
-  top: 11px;
-  left: 50%;
+  inset: 0;
 
-  width: 6px;
-  height: 6px;
+  width: 100%;
+  height: 100%;
 
-  border-radius: 50%;
+  display: block;
 
-  background:
-    currentColor;
+  object-fit: contain;
 
-  transform:
-    translateX(-50%);
+  transition:
+    opacity 0.25s ease;
+}
+
+.logoLight {
+  opacity: 1;
+}
+
+.logoDark {
+  opacity: 0;
+}
+
+:global(html.dark)
+.logoLight {
+  opacity: 0;
+}
+
+:global(html.dark)
+.logoDark {
+  opacity: 1;
 }
 
 .eyebrow {
@@ -479,16 +469,18 @@
       14px;
   }
 
-  .symbol {
-    width: 60px;
-    height: 60px;
+  .logoWrap {
+    width:
+      min(
+        150px,
+        56%
+      );
+
+    height:
+      60px;
 
     margin-bottom:
       15px;
-  }
-
-  .symbol span {
-    font-size: 38px;
   }
 
   .title {

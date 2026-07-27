@@ -81,6 +81,7 @@ app.use(
           'https://*.googleusercontent.com',
           'https://*.googlesyndication.com',
           'https://*.doubleclick.net',
+          'https://*.adtrafficquality.google',
         ],
 
         imgSrc: [

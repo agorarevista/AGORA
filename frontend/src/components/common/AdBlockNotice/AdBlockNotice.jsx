@@ -16,6 +16,9 @@ import {
   X,
 } from 'lucide-react';
 
+import agoraBlackLogo from '../../../assets/AGORABLACK.png';
+import agoraWhiteLogo from '../../../assets/AGORAWHITE.png';
+
 import styles from './AdBlockNotice.module.css';
 
 
@@ -61,8 +64,16 @@ const detectAdBlock =
     }
 
     /*
-     * Señuelo con nombres que suelen
-     * esconder los bloqueadores.
+     * Usamos únicamente un señuelo visual.
+     *
+     * No comprobamos window.adsbygoogle porque:
+     * - AdSense puede tardar en inicializar;
+     * - el sitio puede seguir en revisión;
+     * - un anuncio puede no tener inventario;
+     * - una CSP incompleta puede bloquear una conexión secundaria.
+     *
+     * Ninguno de esos casos significa necesariamente
+     * que exista un bloqueador de anuncios.
      */
     const bait =
       document.createElement(
@@ -70,7 +81,7 @@ const detectAdBlock =
       );
 
     bait.className =
-      'adsbox ad-banner advertisement adsbygoogle';
+      'ad-banner ad-unit ad-placement advertisement';
 
     bait.setAttribute(
       'aria-hidden',
@@ -90,13 +101,19 @@ const detectAdBlock =
           '-10000px',
 
         width:
-          '10px',
+          '12px',
 
         height:
-          '10px',
+          '12px',
 
         display:
           'block',
+
+        visibility:
+          'visible',
+
+        opacity:
+          '1',
 
         pointerEvents:
           'none',
@@ -107,7 +124,7 @@ const detectAdBlock =
       bait
     );
 
-    await wait(180);
+    await wait(250);
 
     const computedStyle =
       window.getComputedStyle(
@@ -115,11 +132,12 @@ const detectAdBlock =
       );
 
     const baitWasBlocked =
-      bait.offsetParent ===
-        null ||
-      bait.offsetHeight ===
-        0 ||
+      !document.body.contains(
+        bait
+      ) ||
       bait.offsetWidth ===
+        0 ||
+      bait.offsetHeight ===
         0 ||
       computedStyle.display ===
         'none' ||
@@ -128,19 +146,7 @@ const detectAdBlock =
 
     bait.remove();
 
-    /*
-     * Cuando el script de AdSense carga,
-     * crea el arreglo global adsbygoogle.
-     */
-    const scriptWasBlocked =
-      !Array.isArray(
-        window.adsbygoogle
-      );
-
-    return (
-      baitWasBlocked ||
-      scriptWasBlocked
-    );
+    return baitWasBlocked;
   };
 
 
@@ -164,10 +170,7 @@ export default function AdBlockNotice() {
   const runDetection =
     useCallback(
       async () => {
-        const blocked =
-          await detectAdBlock();
-
-        return blocked;
+        return detectAdBlock();
       },
       []
     );
@@ -191,6 +194,10 @@ export default function AdBlockNotice() {
       return undefined;
     }
 
+    /*
+     * Esperamos un poco para no lanzar la comprobación
+     * durante la carga inicial del artículo o galería.
+     */
     const timeout =
       window.setTimeout(
         async () => {
@@ -201,7 +208,7 @@ export default function AdBlockNotice() {
             setVisible(true);
           }
         },
-        2200
+        3200
       );
 
     return () => {
@@ -283,11 +290,7 @@ export default function AdBlockNotice() {
       setChecking(true);
       setMessage('');
 
-      /*
-       * Damos un momento a que la extensión
-       * aplique el cambio al sitio.
-       */
-      await wait(500);
+      await wait(700);
 
       const stillBlocked =
         await runDetection();
@@ -305,6 +308,11 @@ export default function AdBlockNotice() {
       setMessage(
         'Gracias. Recargando Agorá…'
       );
+
+      window.sessionStorage
+        .removeItem(
+          DISMISSED_KEY
+        );
 
       window.setTimeout(
         () => {
@@ -380,12 +388,25 @@ export default function AdBlockNotice() {
 
             <div
               className={
-                styles.symbol
+                styles.logoWrap
               }
-              aria-hidden="true"
             >
-              <span>Λ</span>
-              <i />
+              <img
+                src={
+                  agoraBlackLogo
+                }
+                alt="Agorá Revista"
+                className={`${styles.logo} ${styles.logoLight}`}
+              />
+
+              <img
+                src={
+                  agoraWhiteLogo
+                }
+                alt=""
+                aria-hidden="true"
+                className={`${styles.logo} ${styles.logoDark}`}
+              />
             </div>
 
             <span
