@@ -95,6 +95,7 @@ app.use(
           'https://*.doubleclick.net',
           'https://*.googleusercontent.com',
           'https://*.google.com',
+          'https://*.adtrafficquality.google',
         ],
 
         mediaSrc: [
@@ -125,6 +126,7 @@ app.use(
           'https://*.googlesyndication.com',
           'https://*.doubleclick.net',
           'https://*.google.com',
+          'https://*.adtrafficquality.google',
         ],
 
         frameSrc: [
@@ -137,6 +139,7 @@ app.use(
           'https://*.doubleclick.net',
           'https://*.googlesyndication.com',
           'https://*.google.com',
+          'https://*.adtrafficquality.google',
         ],
 
         childSrc: [
@@ -145,6 +148,7 @@ app.use(
           'https://*.doubleclick.net',
           'https://*.googlesyndication.com',
           'https://*.google.com',
+          'https://*.adtrafficquality.google',
         ],
       },
     },
