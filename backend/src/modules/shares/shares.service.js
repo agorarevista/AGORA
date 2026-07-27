@@ -1,42 +1,186 @@
-const supabase = require('../../config/supabase');
+const supabase =
+  require('../../config/supabase');
 
-const PLATFORMS = ['whatsapp', 'facebook', 'instagram', 'copy', 'twitter'];
+const PLATFORMS = [
+  'whatsapp',
+  'facebook',
+  'instagram',
+  'copy',
+  'twitter',
+];
 
-const registerShare = async (article_id, platform) => {
-  if (!PLATFORMS.includes(platform)) {
-    throw { status: 400, message: 'Plataforma no válida' };
-  }
+const CONTENT_COLUMNS = {
+  article:
+    'article_id',
 
-  const { error: insertError } = await supabase
-    .from('article_shares')
-    .insert({ article_id, platform });
-
-  if (insertError) throw insertError;
-
-  const { count, error: countError } = await supabase
-    .from('article_shares')
-    .select('*', { count: 'exact', head: true })
-    .eq('article_id', article_id);
-
-  if (countError) throw countError;
-
-  return { ok: true, total: count || 0 };
+  gallery:
+    'gallery_id',
 };
 
-const getSharesByArticle = async (article_id) => {
-  const { data, error } = await supabase
-    .from('article_shares')
-    .select('platform')
-    .eq('article_id', article_id);
+const resolveContentColumn =
+  contentType => {
+    const normalizedType =
+      String(
+        contentType || ''
+      )
+        .trim()
+        .toLowerCase();
 
-  if (error) throw error;
+    const column =
+      CONTENT_COLUMNS[
+        normalizedType
+      ];
 
-  const summary = PLATFORMS.reduce((acc, p) => {
-    acc[p] = data.filter(s => s.platform === p).length;
-    return acc;
-  }, {});
+    if (!column) {
+      throw {
+        status: 400,
 
-  return { article_id, shares: summary, total: data.length };
+        message:
+          'Tipo de contenido no válido',
+      };
+    }
+
+    return {
+      contentType:
+        normalizedType,
+
+      column,
+    };
+  };
+
+const getShares =
+  async ({
+    contentType,
+    contentId,
+  }) => {
+    const {
+      contentType:
+        normalizedType,
+
+      column,
+    } =
+      resolveContentColumn(
+        contentType
+      );
+
+    const {
+      data,
+      error,
+    } = await supabase
+      .from('article_shares')
+      .select('platform')
+      .eq(
+        column,
+        contentId
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    const rows =
+      data || [];
+
+    const summary =
+      PLATFORMS.reduce(
+        (
+          accumulator,
+          platform
+        ) => {
+          accumulator[
+            platform
+          ] =
+            rows.filter(
+              share =>
+                share.platform ===
+                platform
+            ).length;
+
+          return accumulator;
+        },
+        {}
+      );
+
+    return {
+      content_type:
+        normalizedType,
+
+      content_id:
+        contentId,
+
+      shares:
+        summary,
+
+      total:
+        rows.length,
+    };
+  };
+
+const registerShare =
+  async ({
+    contentType,
+    contentId,
+    platform,
+  }) => {
+    if (
+      !PLATFORMS.includes(
+        platform
+      )
+    ) {
+      throw {
+        status: 400,
+
+        message:
+          'Plataforma no válida',
+      };
+    }
+
+    const {
+      contentType:
+        normalizedType,
+
+      column,
+    } =
+      resolveContentColumn(
+        contentType
+      );
+
+    const insertPayload = {
+      article_id: null,
+      gallery_id: null,
+      platform,
+    };
+
+    insertPayload[column] =
+      contentId;
+
+    const {
+      error,
+    } = await supabase
+      .from('article_shares')
+      .insert(
+        insertPayload
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    const result =
+      await getShares({
+        contentType:
+          normalizedType,
+
+        contentId,
+      });
+
+    return {
+      ok: true,
+      ...result,
+    };
+  };
+
+module.exports = {
+  registerShare,
+  getShares,
 };
-
-module.exports = { registerShare, getSharesByArticle };

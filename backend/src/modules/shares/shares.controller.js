@@ -1,14 +1,52 @@
-const service = require('./shares.service');
+const service =
+  require('./shares.service');
 
-const registerShare = async (req, res, next) => {
+const registerShare = async (
+  req,
+  res,
+  next
+) => {
   try {
-    res.json(await service.registerShare(req.params.article_id, req.body.platform));
-  } catch (err) { next(err); }
+    const result =
+      await service.registerShare({
+        contentType:
+          req.params.content_type,
+
+        contentId:
+          req.params.content_id,
+
+        platform:
+          req.body.platform,
+      });
+
+    return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
 };
 
-const getSharesByArticle = async (req, res, next) => {
-  try { res.json(await service.getSharesByArticle(req.params.article_id)); }
-  catch (err) { next(err); }
+const getShares = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const result =
+      await service.getShares({
+        contentType:
+          req.params.content_type,
+
+        contentId:
+          req.params.content_id,
+      });
+
+    return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
 };
 
-module.exports = { registerShare, getSharesByArticle };
+module.exports = {
+  registerShare,
+  getShares,
+};

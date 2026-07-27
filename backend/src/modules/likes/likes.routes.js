@@ -1,8 +1,29 @@
-const router = require('express').Router();
-const { getLikes, toggleLike, checkLike } = require('./likes.controller');
+const router =
+  require('express')
+    .Router();
 
-router.get('/:article_id', getLikes);
-router.get('/:article_id/check', checkLike);
-router.post('/:article_id/toggle', toggleLike);
+const {
+  getLikes,
+  toggleLike,
+  checkLike,
+} = require(
+  './likes.controller'
+);
 
-module.exports = router;
+router.get(
+  '/:content_type/:content_id/check',
+  checkLike
+);
+
+router.post(
+  '/:content_type/:content_id/toggle',
+  toggleLike
+);
+
+router.get(
+  '/:content_type/:content_id',
+  getLikes
+);
+
+module.exports =
+  router;

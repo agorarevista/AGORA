@@ -400,11 +400,18 @@ const buildNotification =
       secondaryBody:
         description,
 
+      /*
+       * Icono principal grande de la notificación.
+       */
       icon:
         `${SITE_URL}/android-chrome-192x192.png`,
 
+      /*
+       * No enviamos badge porque Android lo mostraba
+       * como un segundo icono en la esquina superior.
+       */
       badge:
-        `${SITE_URL}/android-chrome-192x192.png`,
+        null,
 
       image:
         imageUrl,

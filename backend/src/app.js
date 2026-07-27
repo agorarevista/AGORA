@@ -73,6 +73,14 @@ app.use(
           'wss://*.supabase.co',
           'http://localhost:3001',
           'http://localhost:5173',
+
+          /* Google AdSense */
+          'https://pagead2.googlesyndication.com',
+          'https://googleads.g.doubleclick.net',
+          'https://*.google.com',
+          'https://*.googleusercontent.com',
+          'https://*.googlesyndication.com',
+          'https://*.doubleclick.net',
         ],
 
         imgSrc: [
@@ -80,6 +88,12 @@ app.use(
           'data:',
           'blob:',
           'https:',
+
+          /* Google AdSense */
+          'https://*.googlesyndication.com',
+          'https://*.doubleclick.net',
+          'https://*.googleusercontent.com',
+          'https://*.google.com',
         ],
 
         mediaSrc: [
@@ -104,12 +118,32 @@ app.use(
           "'self'",
           'https://www.youtube.com',
           'https://www.youtube-nocookie.com',
+
+          /* Google AdSense */
+          'https://pagead2.googlesyndication.com',
+          'https://*.googlesyndication.com',
+          'https://*.doubleclick.net',
+          'https://*.google.com',
         ],
 
         frameSrc: [
           "'self'",
           'https://www.youtube.com',
           'https://www.youtube-nocookie.com',
+
+          /* Google AdSense */
+          'https://googleads.g.doubleclick.net',
+          'https://*.doubleclick.net',
+          'https://*.googlesyndication.com',
+          'https://*.google.com',
+        ],
+
+        childSrc: [
+          "'self'",
+          'https://googleads.g.doubleclick.net',
+          'https://*.doubleclick.net',
+          'https://*.googlesyndication.com',
+          'https://*.google.com',
         ],
       },
     },

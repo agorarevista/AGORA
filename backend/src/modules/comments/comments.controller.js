@@ -1,30 +1,105 @@
-const service = require('./comments.service');
+const service =
+  require('./comments.service');
 
-const getByArticle = async (req, res, next) => {
-  try { res.json(await service.getByArticle(req.params.article_id)); }
-  catch (err) { next(err); }
-};
-
-const getAll = async (req, res, next) => {
-  try { res.json(await service.getAll({ status: req.query.status })); }
-  catch (err) { next(err); }
-};
-
-const create = async (req, res, next) => {
-  try { res.status(201).json(await service.create(req.body)); }
-  catch (err) { next(err); }
-};
-
-const updateStatus = async (req, res, next) => {
-  try { res.json(await service.updateStatus(req.params.id, req.body.status)); }
-  catch (err) { next(err); }
-};
-
-const remove = async (req, res, next) => {
+const getByContent = async (
+  req,
+  res,
+  next
+) => {
   try {
-    await service.remove(req.params.id);
-    res.json({ message: 'Comentario eliminado' });
-  } catch (err) { next(err); }
+    const result =
+      await service.getByContent({
+        contentType:
+          req.params.content_type,
+
+        contentId:
+          req.params.content_id,
+      });
+
+    return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
 };
 
-module.exports = { getByArticle, getAll, create, updateStatus, remove };
+const getAll = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const result =
+      await service.getAll({
+        status:
+          req.query.status,
+      });
+
+    return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const create = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const result =
+      await service.create(
+        req.body
+      );
+
+    return res
+      .status(201)
+      .json(result);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const updateStatus = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const result =
+      await service.updateStatus(
+        req.params.id,
+        req.body.status
+      );
+
+    return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const remove = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    await service.remove(
+      req.params.id
+    );
+
+    return res.json({
+      message:
+        'Comentario eliminado',
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+module.exports = {
+  getByContent,
+  getAll,
+  create,
+  updateStatus,
+  remove,
+};

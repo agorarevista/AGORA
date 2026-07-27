@@ -1,6 +1,7 @@
 import {
   useEffect,
   useRef,
+  useState,
 } from 'react';
 
 import styles from './AdSenseUnit.module.css';
@@ -35,6 +36,12 @@ export default function AdSenseUnit({
   const adRef =
     useRef(null);
 
+  const [
+    isUnfilled,
+    setIsUnfilled,
+  ] = useState(false);
+
+
   useEffect(() => {
     if (
       !slot ||
@@ -50,49 +57,87 @@ export default function AdSenseUnit({
       return undefined;
     }
 
-    /*
-     * React StrictMode puede ejecutar efectos
-     * dos veces durante desarrollo.
-     *
-     * También evitamos volver a solicitar un
-     * anuncio que AdSense ya procesó.
-     */
+    setIsUnfilled(false);
+
+    const observer =
+      new MutationObserver(() => {
+        const status =
+          advertisement.getAttribute(
+            'data-ad-status'
+          );
+
+        if (
+          status ===
+          'unfilled'
+        ) {
+          setIsUnfilled(true);
+        }
+
+        if (
+          status ===
+          'filled'
+        ) {
+          setIsUnfilled(false);
+        }
+      });
+
+    observer.observe(
+      advertisement,
+      {
+        attributes: true,
+        attributeFilter: [
+          'data-ad-status',
+          'data-adsbygoogle-status',
+        ],
+      }
+    );
+
     if (
-      advertisement.dataset
+      !advertisement.dataset
         .adsbygoogleStatus
     ) {
-      return undefined;
+      const timeout =
+        window.setTimeout(
+          () => {
+            try {
+              window.adsbygoogle =
+                window.adsbygoogle ||
+                [];
+
+              window.adsbygoogle.push(
+                {}
+              );
+            } catch (error) {
+              console.warn(
+                'AdSense todavía no está disponible:',
+                error
+              );
+            }
+          },
+          120
+        );
+
+      return () => {
+        window.clearTimeout(
+          timeout
+        );
+
+        observer.disconnect();
+      };
     }
 
-    const timeout =
-      window.setTimeout(
-        () => {
-          try {
-            window.adsbygoogle =
-              window.adsbygoogle ||
-              [];
-
-            window.adsbygoogle.push(
-              {}
-            );
-          } catch (error) {
-            console.warn(
-              'AdSense todavía no está disponible:',
-              error
-            );
-          }
-        },
-        80
-      );
-
     return () => {
-      window.clearTimeout(
-        timeout
-      );
+      observer.disconnect();
     };
   }, [
     slot,
   ]);
+
+
+  if (isUnfilled) {
+    return null;
+  }
+
 
   return (
     <aside

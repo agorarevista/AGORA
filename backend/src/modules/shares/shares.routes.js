@@ -1,7 +1,23 @@
-const router = require('express').Router();
-const { registerShare, getSharesByArticle } = require('./shares.controller');
+const router =
+  require('express')
+    .Router();
 
-router.post('/:article_id', registerShare);
-router.get('/:article_id', getSharesByArticle);
+const {
+  registerShare,
+  getShares,
+} = require(
+  './shares.controller'
+);
 
-module.exports = router;
+router.post(
+  '/:content_type/:content_id',
+  registerShare
+);
+
+router.get(
+  '/:content_type/:content_id',
+  getShares
+);
+
+module.exports =
+  router;

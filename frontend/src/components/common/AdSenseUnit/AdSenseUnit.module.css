@@ -33,26 +33,24 @@
 
 .content {
   margin-top:
-    32px;
+    22px;
 
   margin-bottom:
-    32px;
+    22px;
 
   padding:
-    13px 0
-    14px;
+    10px 0;
 }
 
 .footer {
   margin-top:
-    28px;
+    20px;
 
   margin-bottom:
-    12px;
+    8px;
 
   padding:
-    13px 0
-    14px;
+    10px 0;
 }
 
 .label {
@@ -83,7 +81,7 @@
   width: 100%;
 
   min-height:
-    90px;
+    60px;
 }
 
 .developmentPlaceholder {

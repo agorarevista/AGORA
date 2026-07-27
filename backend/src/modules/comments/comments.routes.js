@@ -1,14 +1,63 @@
-const router = require('express').Router();
-const { getByArticle, getAll, create, updateStatus, remove } = require('./comments.controller');
-const { authMiddleware, requireRole } = require('../../middleware/auth');
+const router =
+  require('express')
+    .Router();
 
-// Públicas
-router.get('/article/:article_id', getByArticle);
-router.post('/', create);
+const {
+  getByContent,
+  getAll,
+  create,
+  updateStatus,
+  remove,
+} = require(
+  './comments.controller'
+);
 
-// Protegidas
-router.get('/', authMiddleware, requireRole('superadmin', 'editor'), getAll);
-router.patch('/:id/status', authMiddleware, requireRole('superadmin', 'editor'), updateStatus);
-router.delete('/:id', authMiddleware, requireRole('superadmin', 'editor'), remove);
+const {
+  authMiddleware,
+  requireRole,
+} = require(
+  '../../middleware/auth'
+);
 
-module.exports = router;
+router.get(
+  '/content/:content_type/:content_id',
+  getByContent
+);
+
+router.post(
+  '/',
+  create
+);
+
+router.get(
+  '/',
+  authMiddleware,
+  requireRole(
+    'superadmin',
+    'editor'
+  ),
+  getAll
+);
+
+router.patch(
+  '/:id/status',
+  authMiddleware,
+  requireRole(
+    'superadmin',
+    'editor'
+  ),
+  updateStatus
+);
+
+router.delete(
+  '/:id',
+  authMiddleware,
+  requireRole(
+    'superadmin',
+    'editor'
+  ),
+  remove
+);
+
+module.exports =
+  router;
