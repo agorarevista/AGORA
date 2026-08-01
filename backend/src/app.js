@@ -74,6 +74,22 @@ app.use(
           'http://localhost:3001',
           'http://localhost:5173',
 
+          /* YouTube */
+          'https://www.youtube.com',
+          'https://www.youtube-nocookie.com',
+
+          /* Instagram */
+          'https://www.instagram.com',
+
+          /* TikTok */
+          'https://www.tiktok.com',
+
+          /* Vimeo */
+          'https://player.vimeo.com',
+
+          /* Google Drive */
+          'https://drive.google.com',
+
           /* Google AdSense */
           'https://pagead2.googlesyndication.com',
           'https://googleads.g.doubleclick.net',
@@ -118,8 +134,22 @@ app.use(
 
         scriptSrc: [
           "'self'",
+
+          /* YouTube */
           'https://www.youtube.com',
           'https://www.youtube-nocookie.com',
+
+          /* Instagram */
+          'https://www.instagram.com',
+
+          /* TikTok */
+          'https://www.tiktok.com',
+
+          /* Vimeo */
+          'https://player.vimeo.com',
+
+          /* Google Drive */
+          'https://drive.google.com',
 
           /* Google AdSense */
           'https://pagead2.googlesyndication.com',
@@ -129,10 +159,33 @@ app.use(
           'https://*.adtrafficquality.google',
         ],
 
+        /*
+         * Permite los Web Workers Blob utilizados
+         * por Three.js y el museo 3D.
+         */
+        workerSrc: [
+          "'self'",
+          'blob:',
+        ],
+
         frameSrc: [
           "'self'",
+
+          /* YouTube */
           'https://www.youtube.com',
           'https://www.youtube-nocookie.com',
+
+          /* Instagram Reels y publicaciones */
+          'https://www.instagram.com',
+
+          /* TikTok */
+          'https://www.tiktok.com',
+
+          /* Vimeo */
+          'https://player.vimeo.com',
+
+          /* Google Drive */
+          'https://drive.google.com',
 
           /* Google AdSense */
           'https://googleads.g.doubleclick.net',
@@ -142,8 +195,23 @@ app.use(
           'https://*.adtrafficquality.google',
         ],
 
+        /*
+         * Respaldo para navegadores que utilizan
+         * child-src cuando worker-src no aplica.
+         */
         childSrc: [
           "'self'",
+          'blob:',
+
+          /* Contenido multimedia embebido */
+          'https://www.youtube.com',
+          'https://www.youtube-nocookie.com',
+          'https://www.instagram.com',
+          'https://www.tiktok.com',
+          'https://player.vimeo.com',
+          'https://drive.google.com',
+
+          /* Google AdSense */
           'https://googleads.g.doubleclick.net',
           'https://*.doubleclick.net',
           'https://*.googlesyndication.com',

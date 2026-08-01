@@ -26,6 +26,7 @@
 
   import ResizableImage from './editor/ResizableImage.js';
   import MediaEmbed from './editor/MediaEmbed.js';
+  import ArticleCarousel from './editor/ArticleCarousel.jsx';
 
   import {
     Bold,
@@ -43,6 +44,7 @@
     Link as LinkIcon,
     Unlink,
     Image as ImageIcon,
+    Images,
     Video,
     Undo,
     Redo,
@@ -250,65 +252,179 @@
       throw new Error('La URL está vacía');
     }
 
+    /*
+     * YOUTUBE
+     *
+     * Admite:
+     * - youtube.com/watch?v=
+     * - youtu.be/
+     * - youtube.com/shorts/
+     * - youtube.com/embed/
+     * - youtube.com/live/
+     */
     const youtubePatterns = [
       /youtube\.com\/watch\?.*v=([^&]+)/i,
       /youtu\.be\/([^?&/]+)/i,
       /youtube\.com\/shorts\/([^?&/]+)/i,
       /youtube\.com\/embed\/([^?&/]+)/i,
+      /youtube\.com\/live\/([^?&/]+)/i,
     ];
 
     for (const pattern of youtubePatterns) {
-      const match = originalUrl.match(pattern);
+      const match =
+        originalUrl.match(pattern);
 
       if (match?.[1]) {
         return {
           provider: 'youtube',
-          src: `https://www.youtube-nocookie.com/embed/${match[1]}`,
+
+          src:
+            `https://www.youtube-nocookie.com/embed/${match[1]}`,
+
           originalUrl,
-          title: 'Video de YouTube',
+
+          title:
+            'Video de YouTube',
         };
       }
     }
 
-    const tiktokMatch = originalUrl.match(
-      /tiktok\.com\/.*\/video\/(\d+)/i
-    );
+    /*
+     * TIKTOK
+     */
+    const tiktokMatch =
+      originalUrl.match(
+        /tiktok\.com\/.*\/video\/(\d+)/i
+      );
 
     if (tiktokMatch?.[1]) {
       return {
         provider: 'tiktok',
-        src: `https://www.tiktok.com/player/v1/${tiktokMatch[1]}?autoplay=0`,
+
+        src:
+          `https://www.tiktok.com/player/v1/${tiktokMatch[1]}?autoplay=0`,
+
         originalUrl,
-        title: 'Video de TikTok',
+
+        title:
+          'Video de TikTok',
       };
     }
 
-    const instagramMatch = originalUrl.match(
-      /instagram\.com\/(?:p|reel|tv)\/([^?/#]+)/i
-    );
+    /*
+     * INSTAGRAM
+     *
+     * Admite:
+     * - reels
+     * - publicaciones
+     * - videos IGTV
+     */
+    const instagramMatch =
+      originalUrl.match(
+        /instagram\.com\/(?:p|reel|reels|tv)\/([^?/#]+)/i
+      );
 
     if (instagramMatch?.[1]) {
       return {
         provider: 'instagram',
-        src: `https://www.instagram.com/p/${instagramMatch[1]}/embed/`,
+
+        src:
+          `https://www.instagram.com/p/${instagramMatch[1]}/embed/captioned/`,
+
         originalUrl,
-        title: 'Publicación de Instagram',
+
+        title:
+          'Contenido de Instagram',
       };
     }
 
+    /*
+     * VIMEO
+     *
+     * Admite:
+     * - vimeo.com/123456
+     * - player.vimeo.com/video/123456
+     */
+    const vimeoMatch =
+      originalUrl.match(
+        /(?:vimeo\.com\/(?:video\/)?|player\.vimeo\.com\/video\/)(\d+)/i
+      );
+
+    if (vimeoMatch?.[1]) {
+      return {
+        provider: 'vimeo',
+
+        src:
+          `https://player.vimeo.com/video/${vimeoMatch[1]}`,
+
+        originalUrl,
+
+        title:
+          'Video de Vimeo',
+      };
+    }
+
+    /*
+     * GOOGLE DRIVE
+     *
+     * Admite:
+     * - drive.google.com/file/d/ID/view
+     * - drive.google.com/file/d/ID/preview
+     * - drive.google.com/open?id=ID
+     * - drive.google.com/uc?id=ID
+     */
+    const googleDrivePathMatch =
+      originalUrl.match(
+        /drive\.google\.com\/file\/d\/([^/?#]+)/i
+      );
+
+    const googleDriveQueryMatch =
+      originalUrl.match(
+        /drive\.google\.com\/(?:open|uc)\?.*?[?&]?id=([^&#]+)/i
+      );
+
+    const googleDriveFileId =
+      googleDrivePathMatch?.[1] ||
+      googleDriveQueryMatch?.[1] ||
+      '';
+
+    if (googleDriveFileId) {
+      return {
+        provider: 'google-drive',
+
+        src:
+          `https://drive.google.com/file/d/${googleDriveFileId}/preview`,
+
+        originalUrl,
+
+        title:
+          'Video de Google Drive',
+      };
+    }
+
+    /*
+     * ARCHIVO DE VIDEO DIRECTO
+     */
     if (
-      /\.(mp4|webm|ogg|ogv|mov)(\?.*)?$/i.test(originalUrl)
+      /\.(mp4|webm|ogg|ogv|mov|m4v)(\?.*)?$/i.test(
+        originalUrl
+      )
     ) {
       return {
         provider: 'video',
-        src: originalUrl,
+
+        src:
+          originalUrl,
+
         originalUrl,
-        title: 'Video',
+
+        title:
+          'Video',
       };
     }
 
     throw new Error(
-      'URL no reconocida. Usa YouTube, TikTok, Instagram o un enlace directo a video.'
+      'URL no reconocida. Usa YouTube, Instagram, TikTok, Google Drive, Vimeo o un enlace directo a video.'
     );
   };
 
@@ -706,6 +822,8 @@ const hasGalleryCategorySelected =
       }),
 
       MediaEmbed,
+
+      ArticleCarousel,
 
       Link.configure({
         openOnClick: false,
@@ -1592,6 +1710,23 @@ const handlePublish = async () => {
       .run();
   };
 
+  const insertArticleCarousel = () => {
+    editor
+      ?.chain()
+      .focus()
+      .insertContent({
+        type:
+          'articleCarousel',
+
+        attrs: {
+          images: [],
+
+          generalCaption: '',
+        },
+      })
+      .run();
+  };
+
   const closeUrlDialog = () => {
     if (detectingUrl) {
       return;
@@ -1703,7 +1838,7 @@ const handlePublish = async () => {
 
       alert.warning(
         'URL no reconocida',
-        'Usa una imagen directa, YouTube, TikTok, Instagram o un enlace directo a video'
+        'Usa una imagen directa, YouTube, Instagram, TikTok, Google Drive, Vimeo o un enlace directo a video'
       );
     } catch (error) {
       alert.error(
@@ -3050,29 +3185,58 @@ const handlePublish = async () => {
                   <div className={styles.toolSep} />
 
   <ToolBtn
-    onClick={handleEditorImage}
+    onClick={
+      handleEditorImage
+    }
     title="Subir imagen"
   >
-    <ImageIcon size={15} />
+    <ImageIcon
+      size={15}
+    />
   </ToolBtn>
 
   <ToolBtn
-    onClick={handleMediaUpload}
-    disabled={uploadingMedia}
+    onClick={
+      insertArticleCarousel
+    }
+    title="Insertar carrusel de imágenes"
+  >
+    <Images
+      size={15}
+    />
+  </ToolBtn>
+
+  <ToolBtn
+    onClick={
+      handleMediaUpload
+    }
+    disabled={
+      uploadingMedia
+    }
     title="Subir video"
   >
-    <Video size={15} />
+    <Video
+      size={15}
+    />
   </ToolBtn>
 
   <button
     type="button"
-    className={styles.urlToolBtn}
-    onClick={openUrlDialog}
+    className={
+      styles.urlToolBtn
+    }
+    onClick={
+      openUrlDialog
+    }
     title="Insertar imagen o video mediante URL"
   >
-    <LinkIcon size={15} />
+    <LinkIcon
+      size={15}
+    />
 
-    <span>URL</span>
+    <span>
+      URL
+    </span>
   </button>
 
   {uploadingMedia && (

@@ -387,10 +387,276 @@ export default function ArticlePage() {
         );
       }
     );
+    const carousels =
+      Array.from(
+        bodyElement.querySelectorAll(
+          '.article-carousel-node'
+        )
+      );
+
+    carousels.forEach(
+      carousel => {
+        const slides =
+          Array.from(
+            carousel.querySelectorAll(
+              '.article-carousel-slide'
+            )
+          );
+
+        const dots =
+          Array.from(
+            carousel.querySelectorAll(
+              '.article-carousel-dot'
+            )
+          );
+
+        const previousButton =
+          carousel.querySelector(
+            '[data-carousel-previous]'
+          );
+
+        const nextButton =
+          carousel.querySelector(
+            '[data-carousel-next]'
+          );
+
+        if (
+          slides.length === 0
+        ) {
+          return;
+        }
+
+        let currentIndex =
+          Math.max(
+            0,
+            Math.min(
+              Number(
+                carousel.dataset
+                  .carouselActive ||
+                0
+              ),
+              slides.length - 1
+            )
+          );
+
+        const renderCarousel =
+          nextIndex => {
+            currentIndex =
+              (
+                nextIndex +
+                slides.length
+              ) %
+              slides.length;
+
+            carousel.dataset.carouselActive =
+              String(
+                currentIndex
+              );
+
+            slides.forEach(
+              (
+                slide,
+                index
+              ) => {
+                slide.dataset.active =
+                  index ===
+                  currentIndex
+                    ? 'true'
+                    : 'false';
+
+                slide.setAttribute(
+                  'aria-hidden',
+                  index ===
+                    currentIndex
+                    ? 'false'
+                    : 'true'
+                );
+              }
+            );
+
+            dots.forEach(
+              (
+                dot,
+                index
+              ) => {
+                const isActive =
+                  index ===
+                  currentIndex;
+
+                dot.dataset.active =
+                  isActive
+                    ? 'true'
+                    : 'false';
+
+                dot.setAttribute(
+                  'aria-current',
+                  isActive
+                    ? 'true'
+                    : 'false'
+                );
+              }
+            );
+          };
+
+        const goPrevious =
+          () => {
+            renderCarousel(
+              currentIndex -
+              1
+            );
+          };
+
+        const goNext =
+          () => {
+            renderCarousel(
+              currentIndex +
+              1
+            );
+          };
+
+        previousButton
+          ?.addEventListener(
+            'click',
+            goPrevious
+          );
+
+        nextButton
+          ?.addEventListener(
+            'click',
+            goNext
+          );
+
+        dots.forEach(
+          (
+            dot,
+            index
+          ) => {
+            const handleDotClick =
+              () => {
+                renderCarousel(
+                  index
+                );
+              };
+
+            dot.addEventListener(
+              'click',
+              handleDotClick
+            );
+
+            cleanupFunctions.push(
+              () => {
+                dot.removeEventListener(
+                  'click',
+                  handleDotClick
+                );
+              }
+            );
+          }
+        );
+
+        let touchStartX =
+          null;
+
+        const handleTouchStart =
+          event => {
+            touchStartX =
+              event.touches
+                ?.[0]
+                ?.clientX ??
+              null;
+          };
+
+        const handleTouchEnd =
+          event => {
+            if (
+              touchStartX ===
+              null
+            ) {
+              return;
+            }
+
+            const touchEndX =
+              event.changedTouches
+                ?.[0]
+                ?.clientX ??
+              touchStartX;
+
+            const distance =
+              touchEndX -
+              touchStartX;
+
+            touchStartX =
+              null;
+
+            if (
+              Math.abs(
+                distance
+              ) < 45
+            ) {
+              return;
+            }
+
+            if (
+              distance > 0
+            ) {
+              goPrevious();
+            } else {
+              goNext();
+            }
+          };
+
+        carousel.addEventListener(
+          'touchstart',
+          handleTouchStart,
+          {
+            passive: true,
+          }
+        );
+
+        carousel.addEventListener(
+          'touchend',
+          handleTouchEnd,
+          {
+            passive: true,
+          }
+        );
+
+        cleanupFunctions.push(
+          () => {
+            previousButton
+              ?.removeEventListener(
+                'click',
+                goPrevious
+              );
+
+            nextButton
+              ?.removeEventListener(
+                'click',
+                goNext
+              );
+
+            carousel.removeEventListener(
+              'touchstart',
+              handleTouchStart
+            );
+
+            carousel.removeEventListener(
+              'touchend',
+              handleTouchEnd
+            );
+          }
+        );
+
+        renderCarousel(
+          currentIndex
+        );
+      }
+    );
 
     return () => {
       cleanupFunctions.forEach(
-        cleanup => cleanup()
+        cleanup =>
+          cleanup()
       );
     };
   }, [article]);
