@@ -225,6 +225,37 @@ export default function ArticlePage() {
   }, [slug]);
 
 
+  /*
+   * Mantiene en el navegador el título editorial
+   * real del artículo.
+   *
+   * El HTML inicial ya llega desde el backend con
+   * SEO dinámico para Google y otros crawlers.
+   * Este efecto conserva el mismo título después
+   * de que React toma el control de la página.
+   */
+  useEffect(() => {
+    if (!article?.title) {
+      return undefined;
+    }
+
+    const pageTitle =
+      article.seo_title ||
+      article.title;
+
+    document.title =
+      `${pageTitle} | Agorá Revista`;
+
+    return () => {
+      document.title =
+        'Agorá Revista';
+    };
+  }, [
+    article?.title,
+    article?.seo_title,
+  ]);
+
+
   const loadCommentCount =
     useCallback(async () => {
       if (!article?.id) {

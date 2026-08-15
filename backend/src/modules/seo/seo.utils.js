@@ -174,9 +174,9 @@ const buildArticleMetadata =
       );
 
     const fallbackDescription =
-      firstParagraph ||
       article.excerpt ||
       article.subtitle ||
+      firstParagraph ||
       DEFAULT_DESCRIPTION;
 
     const seoTitle =
@@ -486,18 +486,40 @@ const injectSeoIntoHtml = (
   let result =
     String(html || '');
 
-  /*
-   * Elimina el título genérico de Vite.
-   */
   result =
     result.replace(
-      /<title>[\s\S]*?<\/title>/i,
+      /<title\b[^>]*>[\s\S]*?<\/title>/gi,
       ''
     );
 
-  /*
-   * Evita etiquetas SEO dinámicas duplicadas.
-   */
+
+  result =
+    result.replace(
+      /<meta\b(?=[^>]*\bname=["']description["'])[^>]*\/?>/gi,
+      ''
+    );
+
+
+  result =
+    result.replace(
+      /<link\b(?=[^>]*\brel=["']canonical["'])[^>]*\/?>/gi,
+      ''
+    );
+
+
+  result =
+    result.replace(
+      /<meta\b(?=[^>]*\bproperty=["']og:(?:locale|site_name|type|title|description|image|image:url|image:secure_url|image:type|image:width|image:height|image:alt|url)["'])[^>]*\/?>/gi,
+      ''
+    );
+
+
+  result =
+    result.replace(
+      /<meta\b(?=[^>]*\bname=["']twitter:(?:card|title|description|image|image:alt)["'])[^>]*\/?>/gi,
+      ''
+    );
+
   result =
     result.replace(
       /<!-- SEO_DYNAMIC_START -->[\s\S]*?<!-- SEO_DYNAMIC_END -->/gi,
@@ -514,7 +536,6 @@ const injectSeoIntoHtml = (
     `${seoTags}\n  </head>`
   );
 };
-
 module.exports = {
   buildArticleMetadata,
   buildGalleryMetadata,

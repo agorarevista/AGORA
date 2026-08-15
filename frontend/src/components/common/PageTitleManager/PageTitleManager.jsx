@@ -23,9 +23,7 @@ export default function PageTitleManager() {
     } else if (pathname.startsWith('/admin')) {
       title = 'Agorá Revista | Administración';
     } else if (pathname.startsWith('/articulos/')) {
-      const slug = pathname.replace('/articulos/', '');
-
-      title = `Agorá Revista | ${prettifySlug(slug)}`;
+      return;
     } else if (pathname.startsWith('/categoria/')) {
       const slug = pathname.replace('/categoria/', '');
 

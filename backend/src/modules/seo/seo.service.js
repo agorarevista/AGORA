@@ -1,13 +1,6 @@
 const supabase =
   require('../../config/supabase');
 
-/*
- * Estas consultas no incrementan vistas.
- *
- * Los bots de WhatsApp, Facebook, Google y X
- * pueden abrir una URL varias veces. No queremos
- * que eso altere las estadísticas del artículo.
- */
 
 const getArticleSeoBySlug =
   async slug => {
