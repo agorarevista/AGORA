@@ -226,17 +226,19 @@ app.use(
 app.use(compression());
 app.use(morgan('dev'));
 app.use(cookieParser());
+app.use(
+  '/admin',
+  (req, res, next) => {
+    res.set(
+      'X-Robots-Tag',
+      'noindex, nofollow'
+    );
 
-/*
- * CORS únicamente para la API.
- *
- * No debe ejecutarse sobre:
- *
- * /assets
- * /favicon.ico
- * /site.webmanifest
- * páginas públicas de React
- */
+    return next();
+  }
+);
+
+
 app.use(
   '/api',
   corsMiddleware

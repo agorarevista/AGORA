@@ -4,9 +4,7 @@ const PUBLIC_SITE_URL =
   process.env.PUBLIC_SITE_URL ||
   'https://agorarevista.mx';
 
-/**
- * Convierte caracteres especiales a entidades XML.
- */
+
 const escapeXml = (value = '') =>
   String(value)
     .replace(/&/g, '&amp;')
@@ -15,9 +13,6 @@ const escapeXml = (value = '') =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 
-/**
- * Normaliza fechas para el formato admitido por sitemap.xml.
- */
 const normalizeDate = (value) => {
   if (!value) {
     return null;
@@ -32,12 +27,7 @@ const normalizeDate = (value) => {
   return date.toISOString();
 };
 
-/**
- * Evita que una consulta fallida rompa todo el sitemap.
- *
- * Si una tabla todavía no existe o algún campo cambia,
- * la consulta se ignora y el resto del sitemap continúa.
- */
+
 const safeQuery = async (
   table,
   columns,
@@ -76,9 +66,7 @@ const safeQuery = async (
   }
 };
 
-/**
- * Genera una entrada individual del sitemap.
- */
+
 const createUrlEntry = ({
   location,
   lastModified,
@@ -116,9 +104,6 @@ const createUrlEntry = ({
   return tags.join('\n');
 };
 
-/**
- * Elimina URLs repetidas.
- */
 const removeDuplicateUrls = (urls) => {
   const uniqueUrls = new Map();
 
@@ -135,12 +120,7 @@ const removeDuplicateUrls = (urls) => {
 
 const getSitemap = async (req, res) => {
   try {
-    /*
-     * Artículos publicados.
-     *
-     * Si tu columna de publicación no se llama "status",
-     * revisa la sección de ajustes al final de esta respuesta.
-     */
+
     const articlesPromise = safeQuery(
       'articles',
       'slug, updated_at, created_at, published_at, status',
@@ -202,9 +182,7 @@ const getSitemap = async (req, res) => {
     ]);
 
     const urls = [
-      /*
-       * Páginas públicas fijas.
-       */
+  
       {
         location: `${PUBLIC_SITE_URL}/`,
         changeFrequency: 'daily',
@@ -241,22 +219,20 @@ const getSitemap = async (req, res) => {
         priority: 0.7,
       },
       {
-        location: `${PUBLIC_SITE_URL}/galerias`,
+        location: `${PUBLIC_SITE_URL}/galeria`,
         changeFrequency: 'weekly',
         priority: 0.7,
       },
       {
-        location: `${PUBLIC_SITE_URL}/nosotros`,
+        location: `${PUBLIC_SITE_URL}/quienes-somos`,
         changeFrequency: 'monthly',
         priority: 0.5,
       },
 
-      /*
-       * Artículos.
-       */
+
       ...articles.map((article) => ({
         location:
-          `${PUBLIC_SITE_URL}/articulo/${encodeURIComponent(
+          `${PUBLIC_SITE_URL}/articulos/${encodeURIComponent(
             article.slug
           )}`,
         lastModified:
@@ -269,9 +245,6 @@ const getSitemap = async (req, res) => {
         priority: 0.9,
       })),
 
-      /*
-       * Categorías.
-       */
       ...categories.map((category) => ({
         location:
           `${PUBLIC_SITE_URL}/categoria/${encodeURIComponent(
@@ -286,9 +259,7 @@ const getSitemap = async (req, res) => {
         priority: 0.7,
       })),
 
-      /*
-       * Colaboradores.
-       */
+
       ...collaborators.map((collaborator) => ({
         location:
           `${PUBLIC_SITE_URL}/colaborador/${encodeURIComponent(
@@ -303,9 +274,7 @@ const getSitemap = async (req, res) => {
         priority: 0.6,
       })),
 
-      /*
-       * Ediciones.
-       */
+
       ...editions.map((edition) => ({
         location:
           `${PUBLIC_SITE_URL}/edicion/${encodeURIComponent(
@@ -320,9 +289,7 @@ const getSitemap = async (req, res) => {
         priority: 0.8,
       })),
 
-      /*
-       * Galerías.
-       */
+      
       ...galleries.map((gallery) => ({
         location:
           `${PUBLIC_SITE_URL}/galeria/${encodeURIComponent(
@@ -337,9 +304,7 @@ const getSitemap = async (req, res) => {
         priority: 0.7,
       })),
 
-      /*
-       * Convocatorias.
-       */
+
       ...convocatorias.map((convocatoria) => ({
         location:
           `${PUBLIC_SITE_URL}/convocatoria/${encodeURIComponent(
@@ -369,9 +334,7 @@ const getSitemap = async (req, res) => {
       'Content-Type':
         'application/xml; charset=UTF-8',
 
-      /*
-       * El sitemap se puede cachear durante una hora.
-       */
+
       'Cache-Control':
         'public, max-age=3600, s-maxage=3600',
     });
@@ -393,9 +356,6 @@ const getRobots = (req, res) => {
   const robots = [
     'User-agent: *',
     'Allow: /',
-    '',
-    'Disallow: /admin',
-    'Disallow: /admin/',
     '',
     `Sitemap: ${PUBLIC_SITE_URL}/sitemap.xml`,
     '',
