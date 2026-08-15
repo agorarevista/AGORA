@@ -265,93 +265,61 @@ export default function ShareButtons({
       return;
     }
 
-    if (platform === 'instagram') {
+if (platform === 'instagram') {
+  try {
+    await navigator.clipboard.writeText(url);
 
-      if (
-        typeof navigator !== 'undefined' &&
-        typeof navigator.share === 'function'
-      ) {
-        try {
-          await navigator.share({
-            title,
-            text:
-              description ||
-              `${title} — Agorá Revista`,
-            url,
-          });
+    setCopied(true);
 
-          showAlert({
-            type: 'success',
-            title: 'Contenido compartido',
-            message:
-              `La ${contentLabel} se envió al menú de compartir del dispositivo.`,
-            duration: 3000,
-          });
+    setTimeout(
+      () => setCopied(false),
+      2500
+    );
 
-          setOpen(false);
+    showAlert({
+      type: 'success',
+      title: 'Enlace copiado',
+      message:
+        'Abrimos Instagram y dejamos el enlace listo en tu portapapeles.',
+      duration: 3500,
+    });
+  } catch {
+    showAlert({
+      type: 'info',
+      title: 'Instagram',
+      message:
+        'Abrimos Instagram. Copia el enlace manualmente si no quedó en tu portapapeles.',
+      duration: 4000,
+    });
+  }
 
-          return;
-        } catch (shareError) {
+  setOpen(false);
 
-          if (
-            shareError?.name ===
-            'AbortError'
-          ) {
-            return;
-          }
+  const isMobile =
+    /Android|iPhone|iPad|iPod/i.test(
+      navigator.userAgent
+    );
 
-          console.warn(
-            'Web Share no disponible para Instagram:',
-            shareError
-          );
-        }
-      }
+  if (isMobile) {
+    window.location.href =
+      'instagram://app';
 
-    
-      try {
-        await navigator.clipboard.writeText(
-          url
-        );
+    window.setTimeout(() => {
+      window.location.href =
+        'https://www.instagram.com/';
+    }, 1500);
 
-        setCopied(true);
+    return;
+  }
 
-        setTimeout(
-          () =>
-            setCopied(false),
-          2500
-        );
+  window.open(
+    'https://www.instagram.com/',
+    '_blank',
+    'noopener,noreferrer'
+  );
 
-        showAlert({
-          type: 'info',
-          title: 'Instagram',
-          message:
-            'Tu navegador no permite compartir directamente con Instagram. Copiamos el enlace y abrimos Instagram para que puedas publicarlo.',
-          duration: 5000,
-        });
-
-        window.open(
-          'https://www.instagram.com/',
-          '_blank',
-          'noopener,noreferrer'
-        );
-      } catch {
-        showAlert({
-          type: 'info',
-          title: 'Instagram',
-          message:
-            'No fue posible abrir el menú nativo de compartir. Puedes copiar manualmente el enlace de la publicación.',
-          duration: 4500,
-        });
-
-        window.open(
-          'https://www.instagram.com/',
-          '_blank',
-          'noopener,noreferrer'
-        );
-      }
-
-      return;
-    }
+  return;
+}
 
     if (urls[platform]) {
       window.open(urls[platform], '_blank', 'width=600,height=450');
