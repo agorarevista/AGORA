@@ -102,18 +102,7 @@ export default function ShareButtons({
         state.showAlert
     );
 
-  /*
-   * Mantiene compatibilidad con el uso actual:
-   *
-   * <ShareButtons article={article} />
-   *
-   * Y permite:
-   *
-   * <ShareButtons
-   *   content={gallery}
-   *   contentType="gallery"
-   * />
-   */
+
   const item =
     content ||
     article ||
@@ -131,12 +120,7 @@ export default function ShareButtons({
       ? `/galeria/${item?.slug || ''}`
       : `/articulos/${item?.slug || ''}`;
 
-  /*
-   * No usamos window.location.href.
-   *
-   * Así nunca se vuelve a compartir:
-   * agora-frontend.onrender.com
-   */
+
   const url =
     item?.slug
       ? `https://agorarevista.mx${canonicalPath}`
@@ -181,8 +165,7 @@ export default function ShareButtons({
             0
           );
         } catch {
-          // Compartir debe seguir funcionando
-          // aunque falle el contador.
+
         }
       },
       [
@@ -242,8 +225,7 @@ export default function ShareButtons({
             }
           })
           .catch(() => {
-            // Compartir debe funcionar aunque
-            // falle el contador.
+
           });
       }
 
@@ -284,26 +266,88 @@ export default function ShareButtons({
     }
 
     if (platform === 'instagram') {
+
+      if (
+        typeof navigator !== 'undefined' &&
+        typeof navigator.share === 'function'
+      ) {
+        try {
+          await navigator.share({
+            title,
+            text:
+              description ||
+              `${title} — Agorá Revista`,
+            url,
+          });
+
+          showAlert({
+            type: 'success',
+            title: 'Contenido compartido',
+            message:
+              `La ${contentLabel} se envió al menú de compartir del dispositivo.`,
+            duration: 3000,
+          });
+
+          setOpen(false);
+
+          return;
+        } catch (shareError) {
+
+          if (
+            shareError?.name ===
+            'AbortError'
+          ) {
+            return;
+          }
+
+          console.warn(
+            'Web Share no disponible para Instagram:',
+            shareError
+          );
+        }
+      }
+
+    
       try {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(
+          url
+        );
+
         setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
+
+        setTimeout(
+          () =>
+            setCopied(false),
+          2500
+        );
 
         showAlert({
           type: 'info',
-          title: 'Instagram Stories',
-          message: 'Instagram no permite abrir compartir a Stories desde web. Ya copiamos el enlace para que lo pegues manualmente en la app.',
+          title: 'Instagram',
+          message:
+            'Tu navegador no permite compartir directamente con Instagram. Copiamos el enlace y abrimos Instagram para que puedas publicarlo.',
           duration: 5000,
         });
 
-        window.open('https://www.instagram.com/', '_blank');
+        window.open(
+          'https://www.instagram.com/',
+          '_blank',
+          'noopener,noreferrer'
+        );
       } catch {
         showAlert({
           type: 'info',
-          title: 'Instagram Stories',
-          message: 'Instagram no permite abrir compartir a Stories desde web.',
+          title: 'Instagram',
+          message:
+            'No fue posible abrir el menú nativo de compartir. Puedes copiar manualmente el enlace de la publicación.',
           duration: 4500,
         });
+
+        window.open(
+          'https://www.instagram.com/',
+          '_blank',
+          'noopener,noreferrer'
+        );
       }
 
       return;
