@@ -1219,14 +1219,20 @@
     line-height: 1.45;
   }
 
-  .columnFooter,
-  .columnBanner:nth-child(even)
-  .columnFooter {
-    align-items: flex-start;
-    justify-content: flex-start;
-    flex-direction: column;
-    gap: 22px;
-  }
+.columnFooter {
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.columnBanner:nth-child(even)
+.columnFooter {
+  align-items: flex-end;
+  justify-content: flex-start;
+  flex-direction: column;
+  gap: 22px;
+}
 
   .filtersSection {
     width: min(

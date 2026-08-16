@@ -848,33 +848,58 @@ const handleDelete = async collaborator => {
 function CollabCard({ collab: c, index, onEdit, onDelete }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
       className={styles.card}
     >
-      <div className={styles.cardAvatar}>
-        {c.photo_url
-          ? <img src={c.photo_url} alt={c.name} />
-          : <div className={styles.cardAvatarEmpty}>{c.name?.[0]?.toUpperCase()}</div>
-        }
-      </div>
-      <div className={styles.cardInfo}>
-        <div className={styles.cardName}>{c.name}</div>
-        {c.section_name && (
-          <div className={styles.cardSection}>{c.section_name}</div>
+      <div className={styles.cardMedia}>
+        {c.photo_url ? (
+          <img
+            src={c.photo_url}
+            alt={c.name}
+            className={styles.cardImage}
+          />
+        ) : (
+          <div className={styles.cardImageEmpty}>
+            {c.name?.[0]?.toUpperCase()}
+          </div>
         )}
-        {c.bio && (
-          <p className={styles.cardBio}>{c.bio}</p>
-        )}
-      </div>
-      <div className={styles.cardActions}>
-        <button className={styles.actionBtn} onClick={() => onEdit(c)} title="Editar">
-          <Edit size={13} />
-        </button>
-        <button className={`${styles.actionBtn} ${styles.actionDanger}`} onClick={() => onDelete(c)} title="Eliminar">
-          <Trash2 size={13} />
-        </button>
+
+        <div className={styles.cardGradient} />
+
+        <div className={styles.cardActions}>
+          <button
+            type="button"
+            className={styles.actionBtn}
+            onClick={() => onEdit(c)}
+            title="Editar"
+          >
+            <Edit size={13} />
+          </button>
+
+          <button
+            type="button"
+            className={`${styles.actionBtn} ${styles.actionDanger}`}
+            onClick={() => onDelete(c)}
+            title="Eliminar"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+
+        <div className={styles.cardOverlayContent}>
+          <div className={styles.cardName}>
+            {c.name}
+          </div>
+
+          <div className={styles.cardSection}>
+            {c.section_name ||
+              (c.type === 'fixed'
+                ? 'Colaborador fijo'
+                : 'Colaborador ocasional')}
+          </div>
+        </div>
       </div>
     </motion.div>
   );
