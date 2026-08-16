@@ -315,6 +315,168 @@ const buildGalleryMetadata =
     };
   };
 
+const buildCategoryMetadata =
+  category => {
+    const canonicalUrl =
+      `${SITE_URL}/categoria/${category.slug}`;
+
+    const description =
+      category.description ||
+      `Artículos y contenidos de ${category.name} en Agorá Revista.`;
+
+    return {
+      pageType:
+        'website',
+
+      canonicalUrl,
+
+      seoTitle:
+        truncateText(
+          `${category.name} | Agorá Revista`,
+          70
+        ),
+
+      seoDescription:
+        truncateText(
+          description,
+          180
+        ),
+
+      socialTitle:
+        truncateText(
+          category.name,
+          100
+        ),
+
+      socialDescription:
+        truncateText(
+          description,
+          200
+        ),
+
+      socialImage:
+        ensureAbsoluteUrl(
+          category.cover_image_url
+        ),
+
+      publishedAt:
+        null,
+
+      author:
+        null,
+    };
+  };
+
+const buildCollaboratorMetadata =
+  collaborator => {
+    const canonicalUrl =
+      `${SITE_URL}/colaborador/${collaborator.slug}`;
+
+    const description =
+      collaborator.bio ||
+      collaborator.section_description ||
+      `Conoce el trabajo de ${collaborator.name} en Agorá Revista.`;
+
+    return {
+      pageType:
+        'profile',
+
+      canonicalUrl,
+
+      seoTitle:
+        truncateText(
+          `${collaborator.name} | Agorá Revista`,
+          70
+        ),
+
+      seoDescription:
+        truncateText(
+          description,
+          180
+        ),
+
+      socialTitle:
+        truncateText(
+          collaborator.name,
+          100
+        ),
+
+      socialDescription:
+        truncateText(
+          description,
+          200
+        ),
+
+      socialImage:
+        ensureAbsoluteUrl(
+          collaborator.photo_url
+        ),
+
+      publishedAt:
+        null,
+
+      author:
+        collaborator.name,
+    };
+  };
+
+const buildEditionMetadata =
+  edition => {
+    const canonicalUrl =
+      `${SITE_URL}/edicion/${edition.number}`;
+
+    const editionTitle =
+      edition.name ||
+      `Edición ${edition.number}`;
+
+    const description =
+      edition.description ||
+      `Explora la edición ${edition.number} de Agorá Revista.`;
+
+    return {
+      pageType:
+        'website',
+
+      canonicalUrl,
+
+      seoTitle:
+        truncateText(
+          `${editionTitle} | Agorá Revista`,
+          70
+        ),
+
+      seoDescription:
+        truncateText(
+          description,
+          180
+        ),
+
+      socialTitle:
+        truncateText(
+          editionTitle,
+          100
+        ),
+
+      socialDescription:
+        truncateText(
+          description,
+          200
+        ),
+
+      socialImage:
+        ensureAbsoluteUrl(
+          edition.cover_image_url
+        ),
+
+      publishedAt:
+        edition.published_at ||
+        null,
+
+      author:
+        null,
+    };
+  };
+
 const buildSeoTags =
   metadata => {
     const title =
@@ -539,5 +701,8 @@ const injectSeoIntoHtml = (
 module.exports = {
   buildArticleMetadata,
   buildGalleryMetadata,
+  buildCategoryMetadata,
+  buildCollaboratorMetadata,
+  buildEditionMetadata,
   injectSeoIntoHtml,
 };

@@ -13,6 +13,9 @@ const createSeoRouter =
     const {
       renderArticle,
       renderGallery,
+      renderCategory,
+      renderCollaborator,
+      renderEdition,
     } =
       createSeoController(
         frontendIndexPath
@@ -28,7 +31,22 @@ const createSeoRouter =
       renderGallery
     );
 
-    return router;
+    router.get(
+      '/categoria/:slug',
+      renderCategory
+    );
+
+    router.get(
+      '/colaborador/:slug',
+      renderCollaborator
+    );
+
+    router.get(
+      '/edicion/:number',
+      renderEdition
+    );
+
+    return router;  
   };
 
 module.exports =

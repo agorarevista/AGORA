@@ -27,18 +27,7 @@ const {
 
 const app = express();
 
-/* ══════════════════════════════════════════════════════
-   FRONTEND COMPILADO
-
-   Este archivo está ubicado en:
-
-   backend/src/app.js
-
-   Desde aquí subimos dos niveles hasta la raíz
-   y entramos a:
-
-   frontend/dist
-══════════════════════════════════════════════════════ */
+ 
 
 const frontendDistPath = path.resolve(
   __dirname,
@@ -159,10 +148,7 @@ app.use(
           'https://*.adtrafficquality.google',
         ],
 
-        /*
-         * Permite los Web Workers Blob utilizados
-         * por Three.js y el museo 3D.
-         */
+ 
         workerSrc: [
           "'self'",
           'blob:',
@@ -194,16 +180,12 @@ app.use(
           'https://*.google.com',
           'https://*.adtrafficquality.google',
         ],
-
-        /*
-         * Respaldo para navegadores que utilizan
-         * child-src cuando worker-src no aplica.
-         */
+ 
         childSrc: [
           "'self'",
           'blob:',
 
-          /* Contenido multimedia embebido */
+ 
           'https://www.youtube.com',
           'https://www.youtube-nocookie.com',
           'https://www.instagram.com',
@@ -211,7 +193,7 @@ app.use(
           'https://player.vimeo.com',
           'https://drive.google.com',
 
-          /* Google AdSense */
+ 
           'https://googleads.g.doubleclick.net',
           'https://*.doubleclick.net',
           'https://*.googlesyndication.com',
@@ -257,9 +239,7 @@ app.use(
   })
 );
 
-/* ══════════════════════════════════════════════════════
-   RUTAS DE API
-══════════════════════════════════════════════════════ */
+ 
 
 app.use(
   '/api/auth',
@@ -346,14 +326,7 @@ app.use(
   require('./modules/notifications/notifications.routes')
 );
 
-/* ══════════════════════════════════════════════════════
-   LIMPIEZA DEL HISTORIAL DE NOTIFICACIONES
-
-   Se ejecuta todos los días a las 03:00.
-   Elimina registros con más de 24 horas.
-
-   No elimina las suscripciones de los dispositivos.
-══════════════════════════════════════════════════════ */
+ 
 
 cron.schedule(
   '0 3 * * *',
@@ -373,10 +346,7 @@ cron.schedule(
   }
 );
 
-/* ══════════════════════════════════════════════════════
-   KEEP ALIVE
-   CONSULTA REAL A SUPABASE
-══════════════════════════════════════════════════════ */
+ 
 
 app.get(
   '/api/keep-alive',
@@ -421,10 +391,7 @@ app.get(
   }
 );
 
-/* ══════════════════════════════════════════════════════
-   HEALTH CHECK
-   SOLO COMPRUEBA EL SERVIDOR
-══════════════════════════════════════════════════════ */
+ 
 
 app.get(
   '/api/health',
@@ -443,24 +410,12 @@ app.get(
   }
 );
 
-/* ══════════════════════════════════════════════════════
-   FRONTEND REACT COMPILADO
-══════════════════════════════════════════════════════ */
-
+ 
 if (fs.existsSync(frontendIndexPath)) {
   console.log(
     `✅ Frontend encontrado en: ${frontendDistPath}`
   );
-
-  /*
-   * Entrega los archivos compilados por Vite:
-   *
-   * /assets/index.js
-   * /assets/index.css
-   * /fonts
-   * /favicon.ico
-   * /site.webmanifest
-   */
+ 
   app.use(
     express.static(
       frontendDistPath,
@@ -478,24 +433,54 @@ if (fs.existsSync(frontendIndexPath)) {
     )
   );
 
-  /* ══════════════════════════════════════════════════════
-     IMÁGENES OPEN GRAPH DINÁMICAS
-
-     Genera una tarjeta PNG de 1200 × 630 con:
-     fotografía, categoría, título, extracto y logo.
-  ═══════════════════════════════════════════════════════ */
+ 
 
   app.use(
     '/og',
     require('./modules/ogImages/ogImages.routes')
   );
 
-  /* ══════════════════════════════════════════════════════
-     HTML SEO DINÁMICO
+  app.use(
+    (req, res, next) => {
+      if (req.method !== 'GET') {
+        return next();
+      }
 
-     Debe ir después de los assets y antes del
-     fallback general de React Router.
-  ═══════════════════════════════════════════════════════ */
+      let match =
+        req.path.match(
+          /^\/articulo\/(.+)$/
+        );
+
+      if (match) {
+        const cleanSlug =
+          match[1].replace(
+            /-[0-9]{13}$/,
+            ''
+          );
+
+        return res.redirect(
+          301,
+          `/articulos/${cleanSlug}`
+        );
+      }
+
+      match =
+        req.path.match(
+          /^\/articulos\/(.+)-[0-9]{13}$/
+        );
+
+      if (match) {
+        return res.redirect(
+          301,
+          `/articulos/${match[1]}`
+        );
+      }
+
+      return next();
+    }
+  );
+
+ 
 
   app.use(
     '/',
@@ -503,33 +488,14 @@ if (fs.existsSync(frontendIndexPath)) {
       frontendIndexPath
     )
   );
-
-  /* ══════════════════════════════════════════════════════
-     SEO
-     SITEMAP Y ROBOTS
-
-     Se coloca después de los archivos estáticos para evitar
-     que /assets/*.css y /assets/*.js sean interceptados.
-  ═══════════════════════════════════════════════════════ */
+ 
 
   app.use(
     '/',
     require('./modules/sitemap/sitemap.routes')
   );
 
-  /*
-   * Fallback para React Router.
-   *
-   * Ejemplos:
-   *
-   * /
-   * /articulos/:slug
-   * /galeria/:slug
-   * /categoria/:slug
-   * /admin/login
-   *
-   * Las rutas /api ya fueron procesadas antes.
-   */
+ 
   app.use(
     (req, res, next) => {
       if (
@@ -568,11 +534,7 @@ if (fs.existsSync(frontendIndexPath)) {
   );
 }
 
-/* ══════════════════════════════════════════════════════
-   RUTA 404 PARA API
-
-   Evita que una ruta /api inexistente entregue React.
-══════════════════════════════════════════════════════ */
+ 
 
 app.use(
   '/api',
@@ -584,10 +546,7 @@ app.use(
   }
 );
 
-/* ══════════════════════════════════════════════════════
-   MANEJADOR GLOBAL DE ERRORES
-   SIEMPRE DEBE PERMANECER AL FINAL
-══════════════════════════════════════════════════════ */
+ 
 
 app.use(errorHandler);
 
