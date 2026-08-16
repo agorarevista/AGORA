@@ -1510,9 +1510,7 @@ const create = async (body) => {
   });
 
   const slug =
-    slugify(title) +
-    '-' +
-    Date.now();
+    slugify(title);
 
   const reading_time =
     content_html
@@ -1520,7 +1518,6 @@ const create = async (body) => {
           content_html
         )
       : 1;
-
   const { data: article, error } = await supabase
     .from('articles')
     .insert({
