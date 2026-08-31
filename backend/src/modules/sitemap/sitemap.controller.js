@@ -428,7 +428,7 @@ const getSitemap = async (
             ),
 
           changeFrequency:
-            'monthly',
+            'weekly',
 
           priority:
             0.9,

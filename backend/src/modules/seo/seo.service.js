@@ -23,6 +23,7 @@ const getArticleSeoBySlug =
         social_description,
         social_image_url,
         published_at,
+        updated_at,
         status,
 
         collaborators (

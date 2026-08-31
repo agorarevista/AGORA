@@ -29,24 +29,27 @@ const readFrontendHtml =
 
 const sendReactHtml = (
   res,
-  html
+  html,
+  statusCode = 200,
+  robotsDirective =
+    'index, follow'
 ) => {
   res.set({
     'Content-Type':
       'text/html; charset=utf-8',
 
-    /*
-     * Evita conservar durante demasiado tiempo
-     * el HTML SEO después de editar un artículo.
-     */
+ 
     'Cache-Control':
       'public, max-age=0, s-maxage=300',
+ 
+    'X-Robots-Tag':
+      robotsDirective,
   });
 
   return res
-    .status(200)
+    .status(statusCode)
     .send(html);
-  };
+};
 
 const createSeoController =
   frontendIndexPath => {
@@ -62,12 +65,19 @@ const createSeoController =
               req.params.slug
             );
 
-          /*
-           * Si no existe, dejamos que React abra
-           * su flujo normal y muestre el estado 404.
-           */
+ 
           if (!article) {
-            return next();
+            const html =
+              await readFrontendHtml(
+                frontendIndexPath
+              );
+
+            return sendReactHtml(
+              res,
+              html,
+              404,
+              'noindex, follow'
+            );
           }
 
           const html =
@@ -106,16 +116,24 @@ const createSeoController =
             await getGallerySeoBySlug(
               req.params.slug
             );
-
           if (!gallery) {
-            return next();
+            const html =
+              await readFrontendHtml(
+                frontendIndexPath
+              );
+
+            return sendReactHtml(
+              res,
+              html,
+              404,
+              'noindex, follow'
+            );
           }
 
           const html =
             await readFrontendHtml(
               frontendIndexPath
             );
-
           const metadata =
             buildGalleryMetadata(
               gallery
@@ -149,7 +167,17 @@ const createSeoController =
             );
 
           if (!category) {
-            return next();
+            const html =
+              await readFrontendHtml(
+                frontendIndexPath
+              );
+
+            return sendReactHtml(
+              res,
+              html,
+              404,
+              'noindex, follow'
+            );
           }
 
           const html =
@@ -190,7 +218,17 @@ const createSeoController =
             );
 
           if (!collaborator) {
-            return next();
+            const html =
+              await readFrontendHtml(
+                frontendIndexPath
+              );
+
+            return sendReactHtml(
+              res,
+              html,
+              404,
+              'noindex, follow'
+            );
           }
 
           const html =
@@ -231,7 +269,17 @@ const createSeoController =
             );
 
           if (!edition) {
-            return next();
+            const html =
+              await readFrontendHtml(
+                frontendIndexPath
+              );
+
+            return sendReactHtml(
+              res,
+              html,
+              404,
+              'noindex, follow'
+            );
           }
 
           const html =

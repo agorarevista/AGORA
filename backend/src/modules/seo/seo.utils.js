@@ -327,6 +327,25 @@ const buildArticleMetadata =
         article.slug
       )}.jpg`;
 
+    const authorName =
+      article.collaborators
+        ?.name ||
+      'Redacción Agorá';
+
+    const authorUrl =
+      article.collaborators
+        ?.slug
+        ? `${SITE_URL}/colaborador/${encodeURIComponent(
+            article.collaborators.slug
+          )}`
+        : `${SITE_URL}/quienes-somos`;
+
+    const coverImage =
+      ensureAbsoluteUrl(
+        article.cover_image_url,
+        DEFAULT_IMAGE
+      );
+
     return {
       pageType:
         'article',
@@ -342,10 +361,78 @@ const buildArticleMetadata =
         article.published_at ||
         null,
 
-      author:
-        article.collaborators
-          ?.name ||
+      modifiedAt:
+        article.updated_at ||
+        article.published_at ||
         null,
+
+      author:
+        authorName,
+
+      structuredData: {
+        '@context':
+          'https://schema.org',
+
+        '@type':
+          'Article',
+
+        headline:
+          article.title,
+
+        description:
+          seoDescription,
+
+        image: [
+          coverImage,
+        ],
+
+        datePublished:
+          article.published_at ||
+          undefined,
+
+        dateModified:
+          article.updated_at ||
+          article.published_at ||
+          undefined,
+
+        mainEntityOfPage: {
+          '@type':
+            'WebPage',
+
+          '@id':
+            canonicalUrl,
+        },
+
+        author: {
+          '@type':
+            'Person',
+
+          name:
+            authorName,
+
+          url:
+            authorUrl,
+        },
+
+        publisher: {
+          '@type':
+            'Organization',
+
+          name:
+            'Agorá Revista',
+
+          url:
+            SITE_URL,
+
+          logo: {
+            '@type':
+              'ImageObject',
+
+            url:
+              `${SITE_URL}/android-chrome-512x512.png`,
+          },
+        },
+      },
     };
   };
 
@@ -583,7 +670,30 @@ const buildEditionMetadata =
         null,
     };
   };
+const serializeJsonLd =
+  value => {
+    if (!value) {
+      return '';
+    }
 
+    return JSON.stringify(
+      value
+    )
+      .replace(
+        /</g,
+        '\\u003c'
+      )
+      .replace(
+        />/g,
+        '\\u003e'
+      )
+      .replace(
+        /&/g,
+        '\\u0026'
+      );
+  };
+
+ 
 const buildSeoTags =
   metadata => {
     const title =
@@ -629,6 +739,14 @@ const buildSeoTags =
     }
 
     ${
+      metadata.modifiedAt
+        ? `<meta property="article:modified_time" content="${escapeHtml(
+            metadata.modifiedAt
+          )}" />`
+        : ''
+    }
+
+    ${
       metadata.author
         ? `<meta name="author" content="${escapeHtml(
             metadata.author
@@ -636,6 +754,16 @@ const buildSeoTags =
         : ''
     }`
         : '';
+
+
+    const structuredDataTag =
+      metadata.structuredData
+        ? `
+    <script type="application/ld+json">${serializeJsonLd(
+      metadata.structuredData
+    )}</script>`
+        : '';
+
 
     return `
     <!-- SEO_DYNAMIC_START -->
@@ -743,6 +871,8 @@ const buildSeoTags =
     />
 
     ${extraArticleTags}
+
+    ${structuredDataTag}
 
     <!-- SEO_DYNAMIC_END -->
 `;
