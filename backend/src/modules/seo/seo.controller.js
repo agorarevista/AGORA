@@ -10,6 +10,7 @@ const {
 } = require('./seo.service');
 
 const {
+  buildStaticPageMetadata,
   buildArticleMetadata,
   buildGalleryMetadata,
   buildCategoryMetadata,
@@ -258,12 +259,51 @@ const createSeoController =
         }
       };
 
+
+    const renderStaticPage =
+      async (
+        req,
+        res,
+        next
+      ) => {
+        try {
+          const metadata =
+            buildStaticPageMetadata(
+              req.path
+            );
+
+          if (!metadata) {
+            return next();
+          }
+
+          const html =
+            await readFrontendHtml(
+              frontendIndexPath
+            );
+
+          const result =
+            injectSeoIntoHtml(
+              html,
+              metadata
+            );
+
+          return sendReactHtml(
+            res,
+            result
+          );
+        } catch (error) {
+          return next(error);
+        }
+      };
+
+
     return {
       renderArticle,
       renderGallery,
       renderCategory,
       renderCollaborator,
       renderEdition,
+      renderStaticPage,
     };
   };
 

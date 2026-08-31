@@ -13,13 +13,77 @@ const DEFAULT_DESCRIPTION =
   'Cultura, pensamiento y creación.';
 
 const DEFAULT_IMAGE =
-  `${SITE_URL}/android-chrome-512x512.png`;
+  `${SITE_URL}/AGORAWEB.png`;
 
-/*
- * Convierte caracteres peligrosos para que
- * ningún título o descripción pueda romper
- * el HTML del documento.
- */
+ 
+const STATIC_PAGE_METADATA = {
+  '/ediciones': {
+    title:
+      'Ediciones | Agorá Revista',
+
+    description:
+      'Consulta las ediciones publicadas de Agorá Revista.',
+  },
+
+  '/archivo': {
+    title:
+      'Archivo | Agorá Revista',
+
+    description:
+      'Explora el archivo editorial de Agorá Revista.',
+  },
+
+  '/columnas': {
+    title:
+      'Columnas | Agorá Revista',
+
+    description:
+      'Explora las columnas, autores y voces de Agorá Revista.',
+  },
+
+  '/convocatorias': {
+    title:
+      'Convocatorias | Agorá Revista',
+
+    description:
+      'Consulta convocatorias y oportunidades de colaboración con Agorá Revista.',
+  },
+
+  '/colaboradores': {
+    title:
+      'Colaboradores | Agorá Revista',
+
+    description:
+      'Conoce a las personas que escriben y colaboran en Agorá Revista.',
+  },
+
+  '/quienes-somos': {
+    title:
+      'Quiénes somos | Agorá Revista',
+
+    description:
+      'Conoce Agorá Revista, su proyecto editorial, identidad y propósito.',
+  },
+
+  '/ediciones-especiales': {
+    title:
+      'Ediciones especiales | Agorá Revista',
+
+    description:
+      'Explora las ediciones especiales publicadas por Agorá Revista.',
+  },
+
+  '/galeria': {
+    title:
+      'Galería | Agorá Revista',
+
+    description:
+      'Explora las galerías y proyectos visuales publicados por Agorá Revista.',
+  },
+};
+
+
+ 
 const escapeHtml = value => {
   return String(value || '')
     .replace(/&/g, '&amp;')
@@ -162,6 +226,49 @@ const ensureAbsoluteUrl = (
     `${SITE_URL}/${clean}`
   );
 };
+const buildStaticPageMetadata =
+  pathname => {
+    const metadata =
+      STATIC_PAGE_METADATA[
+        pathname
+      ];
+
+    if (!metadata) {
+      return null;
+    }
+
+    const canonicalUrl =
+      `${SITE_URL}${pathname}`;
+
+    return {
+      pageType:
+        'website',
+
+      canonicalUrl,
+
+      seoTitle:
+        metadata.title,
+
+      seoDescription:
+        metadata.description,
+
+      socialTitle:
+        metadata.title,
+
+      socialDescription:
+        metadata.description,
+
+      socialImage:
+        DEFAULT_IMAGE,
+
+      publishedAt:
+        null,
+
+      author:
+        null,
+    };
+  };
+
 
 const buildArticleMetadata =
   article => {
@@ -699,6 +806,7 @@ const injectSeoIntoHtml = (
   );
 };
 module.exports = {
+  buildStaticPageMetadata,
   buildArticleMetadata,
   buildGalleryMetadata,
   buildCategoryMetadata,

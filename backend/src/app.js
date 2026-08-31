@@ -39,6 +39,11 @@ const frontendIndexPath = path.join(
   'index.html'
 );
 
+const frontendAdsPath = path.join(
+  frontendDistPath,
+  'ads.txt'
+);
+
 /* ══════════════════════════════════════════════════════
    MIDDLEWARES GLOBALES
 ══════════════════════════════════════════════════════ */
@@ -214,6 +219,18 @@ app.use(
     res.set(
       'X-Robots-Tag',
       'noindex, nofollow'
+    );
+
+    return next();
+  }
+);
+
+app.use(
+  '/buscar',
+  (req, res, next) => {
+    res.set(
+      'X-Robots-Tag',
+      'noindex, follow'
     );
 
     return next();
@@ -415,7 +432,39 @@ if (fs.existsSync(frontendIndexPath)) {
   console.log(
     `✅ Frontend encontrado en: ${frontendDistPath}`
   );
- 
+
+   
+  app.get(
+    '/ads.txt',
+    (req, res, next) => {
+      if (!fs.existsSync(frontendAdsPath)) {
+        return res
+          .status(404)
+          .type('text/plain')
+          .send('ads.txt no encontrado');
+      }
+
+      res.set({
+        'Content-Type':
+          'text/plain; charset=UTF-8',
+
+        'Cache-Control':
+          'public, max-age=3600, s-maxage=3600',
+      });
+
+      return res.sendFile(
+        frontendAdsPath,
+        error => {
+          if (error) {
+            return next(error);
+          }
+
+          return undefined;
+        }
+      );
+    }
+  );
+
   app.use(
     express.static(
       frontendDistPath,
@@ -444,6 +493,27 @@ if (fs.existsSync(frontendIndexPath)) {
     (req, res, next) => {
       if (req.method !== 'GET') {
         return next();
+      }
+ 
+      if (
+        req.path ===
+        '/colaboraciones'
+      ) {
+        return res.redirect(
+          301,
+          '/convocatorias'
+        );
+      }
+
+ 
+      if (
+        req.path ===
+        '/categoria/galeria'
+      ) {
+        return res.redirect(
+          301,
+          '/galeria'
+        );
       }
 
       let match =

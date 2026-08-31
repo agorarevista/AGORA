@@ -5,6 +5,7 @@ const {
   createSeoController,
 } = require('./seo.controller');
 
+
 const createSeoRouter =
   frontendIndexPath => {
     const router =
@@ -16,10 +17,18 @@ const createSeoRouter =
       renderCategory,
       renderCollaborator,
       renderEdition,
+      renderStaticPage,
     } =
       createSeoController(
         frontendIndexPath
       );
+
+
+    /*
+     * ══════════════════════════════════════════════════
+     * PÁGINAS DINÁMICAS
+     * ══════════════════════════════════════════════════
+     */
 
     router.get(
       '/articulos/:slug',
@@ -46,8 +55,57 @@ const createSeoRouter =
       renderEdition
     );
 
-    return router;  
+
+    /*
+     * ══════════════════════════════════════════════════
+     * PÁGINAS PÚBLICAS ESTÁTICAS
+     * ══════════════════════════════════════════════════
+     */
+
+    router.get(
+      '/ediciones',
+      renderStaticPage
+    );
+
+    router.get(
+      '/archivo',
+      renderStaticPage
+    );
+
+    router.get(
+      '/columnas',
+      renderStaticPage
+    );
+
+    router.get(
+      '/convocatorias',
+      renderStaticPage
+    );
+
+    router.get(
+      '/colaboradores',
+      renderStaticPage
+    );
+
+    router.get(
+      '/quienes-somos',
+      renderStaticPage
+    );
+
+    router.get(
+      '/ediciones-especiales',
+      renderStaticPage
+    );
+
+    router.get(
+      '/galeria',
+      renderStaticPage
+    );
+
+
+    return router;
   };
+
 
 module.exports =
   createSeoRouter;

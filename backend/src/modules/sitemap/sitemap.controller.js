@@ -1,11 +1,14 @@
-const supabase = require('../../config/supabase');
+const supabase =
+  require('../../config/supabase');
 
 const PUBLIC_SITE_URL =
   process.env.PUBLIC_SITE_URL ||
   'https://agorarevista.mx';
 
 
-const escapeXml = (value = '') =>
+const escapeXml = (
+  value = ''
+) =>
   String(value)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -13,14 +16,22 @@ const escapeXml = (value = '') =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 
-const normalizeDate = (value) => {
+
+const normalizeDate = (
+  value
+) => {
   if (!value) {
     return null;
   }
 
-  const date = new Date(value);
+  const date =
+    new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return null;
   }
 
@@ -34,15 +45,23 @@ const safeQuery = async (
   configureQuery
 ) => {
   try {
-    let query = supabase
-      .from(table)
-      .select(columns);
+    let query =
+      supabase
+        .from(table)
+        .select(columns);
 
-    if (typeof configureQuery === 'function') {
-      query = configureQuery(query);
+    if (
+      typeof configureQuery ===
+      'function'
+    ) {
+      query =
+        configureQuery(query);
     }
 
-    const { data, error } = await query;
+    const {
+      data,
+      error,
+    } = await query;
 
     if (error) {
       console.error(
@@ -75,18 +94,24 @@ const createUrlEntry = ({
 }) => {
   const tags = [
     '  <url>',
-    `    <loc>${escapeXml(location)}</loc>`,
+    `    <loc>${escapeXml(
+      location
+    )}</loc>`,
   ];
 
   if (lastModified) {
     tags.push(
-      `    <lastmod>${escapeXml(lastModified)}</lastmod>`
+      `    <lastmod>${escapeXml(
+        lastModified
+      )}</lastmod>`
     );
   }
 
   if (changeFrequency) {
     tags.push(
-      `    <changefreq>${escapeXml(changeFrequency)}</changefreq>`
+      `    <changefreq>${escapeXml(
+        changeFrequency
+      )}</changefreq>`
     );
   }
 
@@ -95,75 +120,177 @@ const createUrlEntry = ({
     priority !== null
   ) {
     tags.push(
-      `    <priority>${Number(priority).toFixed(1)}</priority>`
+      `    <priority>${Number(
+        priority
+      ).toFixed(1)}</priority>`
     );
   }
 
-  tags.push('  </url>');
+  tags.push(
+    '  </url>'
+  );
 
-  return tags.join('\n');
+  return tags.join(
+    '\n'
+  );
 };
 
-const removeDuplicateUrls = (urls) => {
-  const uniqueUrls = new Map();
 
-  urls.forEach((item) => {
-    if (!item?.location) {
-      return;
+const removeDuplicateUrls = (
+  urls
+) => {
+  const uniqueUrls =
+    new Map();
+
+  urls.forEach(
+    item => {
+      if (
+        !item?.location
+      ) {
+        return;
+      }
+
+      uniqueUrls.set(
+        item.location,
+        item
+      );
     }
+  );
 
-    uniqueUrls.set(item.location, item);
-  });
-
-  return Array.from(uniqueUrls.values());
+  return Array.from(
+    uniqueUrls.values()
+  );
 };
 
-const getSitemap = async (req, res) => {
+
+const getSitemap = async (
+  req,
+  res
+) => {
   try {
+    /*
+     * ══════════════════════════════════════════════════
+     * CONTENIDO REALMENTE PÚBLICO
+     * ══════════════════════════════════════════════════
+     */
 
-    const articlesPromise = safeQuery(
-      'articles',
-      'slug, updated_at, created_at, published_at, status',
-      (query) =>
-        query
-          .eq('status', 'published')
-          .not('slug', 'is', null)
-    );
+    const articlesPromise =
+      safeQuery(
+        'articles',
+        `
+          slug,
+          updated_at,
+          created_at,
+          published_at,
+          status
+        `,
+        query =>
+          query
+            .eq(
+              'status',
+              'published'
+            )
+            .not(
+              'slug',
+              'is',
+              null
+            )
+      );
 
-    const categoriesPromise = safeQuery(
-      'categories',
-      'slug, updated_at, created_at',
-      (query) =>
-        query.not('slug', 'is', null)
-    );
 
-    const collaboratorsPromise = safeQuery(
-      'collaborators',
-      'slug, updated_at, created_at',
-      (query) =>
-        query.not('slug', 'is', null)
-    );
+    const categoriesPromise =
+      safeQuery(
+        'categories',
+        `
+          slug,
+          updated_at,
+          created_at,
+          is_active
+        `,
+        query =>
+          query
+            .eq(
+              'is_active',
+              true
+            )
+            .not(
+              'slug',
+              'is',
+              null
+            )
+      );
 
-    const editionsPromise = safeQuery(
-      'editions',
-      'number, updated_at, created_at',
-      (query) =>
-        query.not('number', 'is', null)
-    );
 
-    const galleriesPromise = safeQuery(
-      'galleries',
-      'slug, updated_at, created_at',
-      (query) =>
-        query.not('slug', 'is', null)
-    );
+    const collaboratorsPromise =
+      safeQuery(
+        'collaborators',
+        `
+          slug,
+          updated_at,
+          created_at,
+          is_active
+        `,
+        query =>
+          query
+            .eq(
+              'is_active',
+              true
+            )
+            .not(
+              'slug',
+              'is',
+              null
+            )
+      );
 
-    const convocatoriasPromise = safeQuery(
-      'convocatorias',
-      'slug, updated_at, created_at',
-      (query) =>
-        query.not('slug', 'is', null)
-    );
+
+    const editionsPromise =
+      safeQuery(
+        'editions',
+        `
+          number,
+          updated_at,
+          created_at,
+          published_at,
+          is_special
+        `,
+        query =>
+          query
+            .eq(
+              'is_special',
+              false
+            )
+            .not(
+              'number',
+              'is',
+              null
+            )
+      );
+
+
+    const galleriesPromise =
+      safeQuery(
+        'galleries',
+        `
+          slug,
+          updated_at,
+          created_at,
+          published_at,
+          status
+        `,
+        query =>
+          query
+            .eq(
+              'status',
+              'published'
+            )
+            .not(
+              'slug',
+              'is',
+              null
+            )
+      );
+
 
     const [
       articles,
@@ -171,195 +298,314 @@ const getSitemap = async (req, res) => {
       collaborators,
       editions,
       galleries,
-      convocatorias,
-    ] = await Promise.all([
-      articlesPromise,
-      categoriesPromise,
-      collaboratorsPromise,
-      editionsPromise,
-      galleriesPromise,
-      convocatoriasPromise,
-    ]);
+    ] =
+      await Promise.all([
+        articlesPromise,
+        categoriesPromise,
+        collaboratorsPromise,
+        editionsPromise,
+        galleriesPromise,
+      ]);
 
+
+ 
     const urls = [
-  
       {
-        location: `${PUBLIC_SITE_URL}/`,
-        changeFrequency: 'daily',
-        priority: 1,
-      },
-      {
-        location: `${PUBLIC_SITE_URL}/buscar`,
-        changeFrequency: 'weekly',
-        priority: 0.5,
-      },
-      {
-        location: `${PUBLIC_SITE_URL}/columnas`,
-        changeFrequency: 'weekly',
-        priority: 0.7,
-      },
-      {
-        location: `${PUBLIC_SITE_URL}/ediciones`,
-        changeFrequency: 'weekly',
-        priority: 0.8,
-      },
-      {
-        location: `${PUBLIC_SITE_URL}/archivo`,
-        changeFrequency: 'weekly',
-        priority: 0.7,
-      },
-      {
-        location: `${PUBLIC_SITE_URL}/ediciones-especiales`,
-        changeFrequency: 'monthly',
-        priority: 0.6,
-      },
-      {
-        location: `${PUBLIC_SITE_URL}/colaboraciones`,
-        changeFrequency: 'weekly',
-        priority: 0.7,
-      },
-      {
-        location: `${PUBLIC_SITE_URL}/galeria`,
-        changeFrequency: 'weekly',
-        priority: 0.7,
-      },
-      {
-        location: `${PUBLIC_SITE_URL}/quienes-somos`,
-        changeFrequency: 'monthly',
-        priority: 0.5,
-      },
-
-
-      ...articles.map((article) => ({
         location:
-          `${PUBLIC_SITE_URL}/articulos/${encodeURIComponent(
-            article.slug
-          )}`,
-        lastModified:
-          normalizeDate(
-            article.updated_at ||
-            article.published_at ||
-            article.created_at
-          ),
-        changeFrequency: 'monthly',
-        priority: 0.9,
-      })),
+          `${PUBLIC_SITE_URL}/`,
 
-      ...categories.map((category) => ({
+        changeFrequency:
+          'daily',
+
+        priority:
+          1,
+      },
+
+      {
         location:
-          `${PUBLIC_SITE_URL}/categoria/${encodeURIComponent(
-            category.slug
-          )}`,
-        lastModified:
-          normalizeDate(
-            category.updated_at ||
-            category.created_at
-          ),
-        changeFrequency: 'weekly',
-        priority: 0.7,
-      })),
+          `${PUBLIC_SITE_URL}/columnas`,
 
+        changeFrequency:
+          'weekly',
 
-      ...collaborators.map((collaborator) => ({
+        priority:
+          0.8,
+      },
+
+      {
         location:
-          `${PUBLIC_SITE_URL}/colaborador/${encodeURIComponent(
-            collaborator.slug
-          )}`,
-        lastModified:
-          normalizeDate(
-            collaborator.updated_at ||
-            collaborator.created_at
-          ),
-        changeFrequency: 'monthly',
-        priority: 0.6,
-      })),
+          `${PUBLIC_SITE_URL}/ediciones`,
 
+        changeFrequency:
+          'weekly',
 
-      ...editions.map((edition) => ({
+        priority:
+          0.8,
+      },
+
+      {
         location:
-          `${PUBLIC_SITE_URL}/edicion/${encodeURIComponent(
-            edition.number
-          )}`,
-        lastModified:
-          normalizeDate(
-            edition.updated_at ||
-            edition.created_at
-          ),
-        changeFrequency: 'monthly',
-        priority: 0.8,
-      })),
+          `${PUBLIC_SITE_URL}/archivo`,
 
-      
-      ...galleries.map((gallery) => ({
+        changeFrequency:
+          'weekly',
+
+        priority:
+          0.7,
+      },
+
+      {
         location:
-          `${PUBLIC_SITE_URL}/galeria/${encodeURIComponent(
-            gallery.slug
-          )}`,
-        lastModified:
-          normalizeDate(
-            gallery.updated_at ||
-            gallery.created_at
-          ),
-        changeFrequency: 'monthly',
-        priority: 0.7,
-      })),
+          `${PUBLIC_SITE_URL}/ediciones-especiales`,
 
+        changeFrequency:
+          'monthly',
 
-      ...convocatorias.map((convocatoria) => ({
+        priority:
+          0.7,
+      },
+
+      {
         location:
-          `${PUBLIC_SITE_URL}/convocatoria/${encodeURIComponent(
-            convocatoria.slug
-          )}`,
-        lastModified:
-          normalizeDate(
-            convocatoria.updated_at ||
-            convocatoria.created_at
-          ),
-        changeFrequency: 'weekly',
-        priority: 0.8,
-      })),
+          `${PUBLIC_SITE_URL}/convocatorias`,
+
+        changeFrequency:
+          'weekly',
+
+        priority:
+          0.7,
+      },
+
+      {
+        location:
+          `${PUBLIC_SITE_URL}/galeria`,
+
+        changeFrequency:
+          'weekly',
+
+        priority:
+          0.7,
+      },
+
+      {
+        location:
+          `${PUBLIC_SITE_URL}/colaboradores`,
+
+        changeFrequency:
+          'weekly',
+
+        priority:
+          0.7,
+      },
+
+      {
+        location:
+          `${PUBLIC_SITE_URL}/quienes-somos`,
+
+        changeFrequency:
+          'monthly',
+
+        priority:
+          0.6,
+      },
+
+
+      /*
+       * ARTÍCULOS PUBLICADOS
+       */
+      ...articles.map(
+        article => ({
+          location:
+            `${PUBLIC_SITE_URL}/articulos/${encodeURIComponent(
+              article.slug
+            )}`,
+
+          lastModified:
+            normalizeDate(
+              article.updated_at ||
+              article.published_at ||
+              article.created_at
+            ),
+
+          changeFrequency:
+            'monthly',
+
+          priority:
+            0.9,
+        })
+      ),
+
+
+      /*
+       * CATEGORÍAS ACTIVAS
+       */
+      ...categories.map(
+        category => ({
+          location:
+            `${PUBLIC_SITE_URL}/categoria/${encodeURIComponent(
+              category.slug
+            )}`,
+
+          lastModified:
+            normalizeDate(
+              category.updated_at ||
+              category.created_at
+            ),
+
+          changeFrequency:
+            'weekly',
+
+          priority:
+            0.7,
+        })
+      ),
+
+
+      /*
+       * COLABORADORES ACTIVOS
+       */
+      ...collaborators.map(
+        collaborator => ({
+          location:
+            `${PUBLIC_SITE_URL}/colaborador/${encodeURIComponent(
+              collaborator.slug
+            )}`,
+
+          lastModified:
+            normalizeDate(
+              collaborator.updated_at ||
+              collaborator.created_at
+            ),
+
+          changeFrequency:
+            'monthly',
+
+          priority:
+            0.6,
+        })
+      ),
+ 
+      ...editions.map(
+        edition => ({
+          location:
+            `${PUBLIC_SITE_URL}/edicion/${encodeURIComponent(
+              edition.number
+            )}`,
+
+          lastModified:
+            normalizeDate(
+              edition.updated_at ||
+              edition.published_at ||
+              edition.created_at
+            ),
+
+          changeFrequency:
+            'monthly',
+
+          priority:
+            0.8,
+        })
+      ),
+
+
+      /*
+       * GALERÍAS PUBLICADAS
+       */
+      ...galleries.map(
+        gallery => ({
+          location:
+            `${PUBLIC_SITE_URL}/galeria/${encodeURIComponent(
+              gallery.slug
+            )}`,
+
+          lastModified:
+            normalizeDate(
+              gallery.updated_at ||
+              gallery.published_at ||
+              gallery.created_at
+            ),
+
+          changeFrequency:
+            'monthly',
+
+          priority:
+            0.8,
+        })
+      ),
     ];
 
+
     const uniqueUrls =
-      removeDuplicateUrls(urls);
+      removeDuplicateUrls(
+        urls
+      );
+
 
     const xml = [
       '<?xml version="1.0" encoding="UTF-8"?>',
+
       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-      ...uniqueUrls.map(createUrlEntry),
+
+      ...uniqueUrls.map(
+        createUrlEntry
+      ),
+
       '</urlset>',
     ].join('\n');
+
 
     res.set({
       'Content-Type':
         'application/xml; charset=UTF-8',
 
-
       'Cache-Control':
         'public, max-age=3600, s-maxage=3600',
     });
 
-    return res.status(200).send(xml);
+
+    return res
+      .status(200)
+      .send(xml);
+
   } catch (error) {
     console.error(
       '[SITEMAP] Error generando sitemap:',
       error
     );
 
-    return res.status(500).type('text/plain').send(
-      'No fue posible generar el sitemap.'
-    );
+    return res
+      .status(500)
+      .type('text/plain')
+      .send(
+        'No fue posible generar el sitemap.'
+      );
   }
 };
 
-const getRobots = (req, res) => {
+
+const getRobots = (
+  req,
+  res
+) => {
   const robots = [
     'User-agent: *',
+
     'Allow: /',
+
     '',
+
+    'Disallow: /admin',
+    'Disallow: /admin/',
+    'Disallow: /api/',
+    'Disallow: /buscar',
+
+    '',
+
     `Sitemap: ${PUBLIC_SITE_URL}/sitemap.xml`,
+
     '',
   ].join('\n');
+
 
   res.set({
     'Content-Type':
@@ -369,8 +615,12 @@ const getRobots = (req, res) => {
       'public, max-age=3600, s-maxage=3600',
   });
 
-  return res.status(200).send(robots);
+
+  return res
+    .status(200)
+    .send(robots);
 };
+
 
 module.exports = {
   getSitemap,
