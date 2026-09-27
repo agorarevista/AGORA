@@ -1167,3 +1167,191 @@
     display: none;
   }
 }
+
+.authorSelector {
+  position: relative;
+  width: 100%;
+}
+
+.authorSelectorButton {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.authorSelectorButton:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.authorSelectorArrow {
+  opacity: 0.55;
+  flex-shrink: 0;
+}
+
+.authorDropdown {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: #151515;
+  box-shadow:
+    0 18px 45px
+    rgba(0, 0, 0, 0.35);
+}
+
+.authorSearchInput,
+.collaboratorSearchInput {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  font: inherit;
+}
+
+.authorSearchInput:focus,
+.collaboratorSearchInput:focus {
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.authorOptions {
+  max-height: 260px;
+  margin-top: 7px;
+  overflow-y: auto;
+}
+
+.authorOption {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.authorOption:hover,
+.authorOption[data-selected='true'] {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.authorOptionName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.authorOptionType {
+  flex-shrink: 0;
+  opacity: 0.5;
+  font-size: 11px;
+}
+
+.authorEmpty {
+  padding: 12px 10px;
+  opacity: 0.55;
+  font-size: 12px;
+  text-align: center;
+}
+
+.collaboratorsBox {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.collaboratorsToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.collaboratorsToggle input,
+.collaboratorOption input {
+  accent-color: currentColor;
+}
+
+.collaboratorsPicker {
+  display: grid;
+  gap: 9px;
+  margin-top: 12px;
+}
+
+.selectedCollaborators {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.selectedCollaboratorChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.selectedCollaboratorChip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collaboratorOptions {
+  max-height: 220px;
+  overflow-y: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 6px;
+}
+
+.collaboratorOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 5px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.collaboratorOption:hover {
+  background: rgba(255, 255, 255, 0.05);
+}

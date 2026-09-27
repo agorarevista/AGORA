@@ -231,6 +231,118 @@ const getBySlug = async slug => {
         )
       : [];
 
+  const {
+    data: articleCollaborations,
+    error: articleCollaborationsError,
+  } = await supabase
+    .from('article_collaborators')
+    .select(`
+      display_order,
+
+      articles (
+        id,
+        title,
+        slug,
+        cover_image_url,
+        excerpt,
+        published_at,
+        created_at,
+        status,
+        edition_id,
+
+        editions (
+          id,
+          number,
+          name
+        )
+      )
+    `)
+    .eq('collaborator_id', data.id);
+
+  if (articleCollaborationsError) {
+    throw articleCollaborationsError;
+  }
+
+  const {
+    data: galleryCollaborations,
+    error: galleryCollaborationsError,
+  } = await supabase
+    .from('gallery_collaborators')
+    .select(`
+      display_order,
+
+      galleries (
+        id,
+        title,
+        slug,
+        subtitle,
+        excerpt,
+        cover_image_url,
+        published_at,
+        created_at,
+        status,
+        edition_id,
+
+        editions (
+          id,
+          number,
+          name
+        )
+      )
+    `)
+    .eq('collaborator_id', data.id);
+
+  if (galleryCollaborationsError) {
+    throw galleryCollaborationsError;
+  }
+
+  const normalizedArticleCollaborations =
+    (articleCollaborations || [])
+      .map(item => item.articles)
+      .filter(
+        article =>
+          article &&
+          article.status === 'published'
+      )
+      .map(article => ({
+        ...article,
+        content_type: 'article',
+      }));
+
+  const normalizedGalleryCollaborations =
+    (galleryCollaborations || [])
+      .map(item => item.galleries)
+      .filter(
+        gallery =>
+          gallery &&
+          gallery.status === 'published'
+      )
+      .map(gallery => ({
+        ...gallery,
+        content_type: 'gallery',
+      }));
+
+  const collaborations = [
+    ...normalizedArticleCollaborations,
+    ...normalizedGalleryCollaborations,
+  ].sort((firstContent, secondContent) => {
+    const firstDate =
+      new Date(
+        firstContent.published_at ||
+        firstContent.created_at ||
+        0
+      ).getTime();
+
+    const secondDate =
+      new Date(
+        secondContent.published_at ||
+        secondContent.created_at ||
+        0
+      ).getTime();
+
+    return secondDate - firstDate;
+  });
+
   const [
     collaboratorWithCategory,
   ] =
@@ -240,6 +352,8 @@ const getBySlug = async slug => {
 
         galleries:
           normalizedGalleries,
+
+        collaborations,
       },
     ]);
 

@@ -82,6 +82,15 @@ import styles from './GalleryEditorPage.module.css';
 const MAX_TECHNICAL_PHOTOS = 99;
 const UPLOAD_BATCH_SIZE = 10;
 
+const AGORA_AUTHOR_VALUE =
+  '__agora__';
+
+const AGORA_AUTHOR = {
+  id: AGORA_AUTHOR_VALUE,
+  name: 'Redacción Agorá',
+  type: 'institutional',
+};
+
 const createLocalPhotoId = () => {
   if (
     typeof crypto !== 'undefined' &&
@@ -298,6 +307,33 @@ export default function GalleryEditorPage() {
   const [
     collaboratorId,
     setCollaboratorId,
+  ] = useState(
+    AGORA_AUTHOR_VALUE
+  );
+
+  const [
+    authorSearch,
+    setAuthorSearch,
+  ] = useState('');
+
+  const [
+    authorDropdownOpen,
+    setAuthorDropdownOpen,
+  ] = useState(false);
+
+  const [
+    collaboratorsEnabled,
+    setCollaboratorsEnabled,
+  ] = useState(false);
+
+  const [
+    collaboratorIds,
+    setCollaboratorIds,
+  ] = useState([]);
+
+  const [
+    collaboratorSearch,
+    setCollaboratorSearch,
   ] = useState('');
 
   const [
@@ -409,6 +445,9 @@ export default function GalleryEditorPage() {
   const coverInputRef =
     useRef(null);
 
+  const authorDropdownRef =
+    useRef(null);
+
   const sensors =
     useSensors(
       useSensor(
@@ -431,6 +470,13 @@ export default function GalleryEditorPage() {
 
   const selectedCollaborator =
     useMemo(() => {
+      if (
+        collaboratorId ===
+        AGORA_AUTHOR_VALUE
+      ) {
+        return AGORA_AUTHOR;
+      }
+
       return (
         collaborators.find(
           collaborator =>
@@ -446,6 +492,92 @@ export default function GalleryEditorPage() {
     }, [
       collaborators,
       collaboratorId,
+    ]);
+
+  const isAgoraAuthor =
+    collaboratorId ===
+    AGORA_AUTHOR_VALUE;
+
+  const filteredAuthors =
+    useMemo(() => {
+      const search =
+        authorSearch
+          .trim()
+          .toLocaleLowerCase(
+            'es-MX'
+          );
+
+      const source = [
+        AGORA_AUTHOR,
+        ...collaborators,
+      ];
+
+      if (!search) {
+        return source;
+      }
+
+      return source.filter(
+        collaborator =>
+          String(
+            collaborator.name ||
+            ''
+          )
+            .toLocaleLowerCase(
+              'es-MX'
+            )
+            .includes(search)
+      );
+    }, [
+      collaborators,
+      authorSearch,
+    ]);
+
+  const filteredAdditionalCollaborators =
+    useMemo(() => {
+      const search =
+        collaboratorSearch
+          .trim()
+          .toLocaleLowerCase(
+            'es-MX'
+          );
+
+      return collaborators.filter(
+        collaborator => {
+          const matchesSearch =
+            !search ||
+            String(
+              collaborator.name ||
+              ''
+            )
+              .toLocaleLowerCase(
+                'es-MX'
+              )
+              .includes(search);
+
+          return matchesSearch;
+        }
+      );
+    }, [
+      collaborators,
+      collaboratorSearch,
+    ]);
+
+  const selectedAdditionalCollaborators =
+    useMemo(() => {
+      return collaboratorIds
+        .map(id =>
+          collaborators.find(
+            collaborator =>
+              String(
+                collaborator.id
+              ) ===
+              String(id)
+          )
+        )
+        .filter(Boolean);
+    }, [
+      collaborators,
+      collaboratorIds,
     ]);
 
   const remainingSlots =
@@ -550,7 +682,43 @@ export default function GalleryEditorPage() {
 
           setCollaboratorId(
             gallery.collaborator_id ||
-            ''
+            AGORA_AUTHOR_VALUE
+          );
+
+          const loadedCollaboratorIds =
+            Array.isArray(
+              gallery.gallery_collaborators
+            )
+              ? gallery
+                  .gallery_collaborators
+                  .sort(
+                    (
+                      first,
+                      second
+                    ) =>
+                      Number(
+                        first.display_order ||
+                        0
+                      ) -
+                      Number(
+                        second.display_order ||
+                        0
+                      )
+                  )
+                  .map(
+                    relation =>
+                      relation.collaborator_id
+                  )
+                  .filter(Boolean)
+              : [];
+
+          setCollaboratorIds(
+            loadedCollaboratorIds
+          );
+
+          setCollaboratorsEnabled(
+            loadedCollaboratorIds.length >
+              0
           );
 
           setEditionId(
@@ -636,15 +804,6 @@ export default function GalleryEditorPage() {
         return false;
       }
 
-      if (!collaboratorId) {
-        alert.warning(
-          'Falta el autor',
-          'Selecciona el colaborador responsable de la galería'
-        );
-
-        return false;
-      }
-
       const normalizedMaximum =
         Number(maxPhotos);
 
@@ -701,12 +860,21 @@ export default function GalleryEditorPage() {
         null,
 
       collaborator_id:
-        collaboratorId,
+        collaboratorId ===
+        AGORA_AUTHOR_VALUE
+          ? null
+          : collaboratorId ||
+            null,
+
+      collaborator_ids:
+        isAgoraAuthor &&
+        collaboratorsEnabled
+          ? collaboratorIds
+          : [],
 
       edition_id:
         editionId ||
         null,
-
       edition_order:
         editionId &&
         Number.isInteger(
@@ -2208,52 +2376,378 @@ export default function GalleryEditorPage() {
                 Publicación
               </div>
 
-              <label
+              <div
                 className={
                   styles.field
+                }
+                ref={
+                  authorDropdownRef
                 }
               >
                 <span>
                   Autor
                 </span>
 
-                <select
-                  value={
-                    collaboratorId
+                <div
+                  className={
+                    styles.authorSelector
                   }
-                  onChange={event => {
-                    setCollaboratorId(
-                      event.target
-                        .value
-                    );
-                  }}
                 >
-                  <option value="">
-                    Selecciona un colaborador
-                  </option>
+                  <button
+                    type="button"
+                    className={
+                      styles.authorSelectorButton
+                    }
+                    onClick={() => {
+                      setAuthorDropdownOpen(
+                        current =>
+                          !current
+                      );
+                    }}
+                  >
+                    <span>
+                      {
+                        selectedCollaborator
+                          ?.name ||
+                        'Selecciona un autor'
+                      }
+                    </span>
 
-                  {collaborators.map(
-                    collaborator => (
-                      <option
-                        key={
-                          collaborator.id
-                        }
+                    <span
+                      className={
+                        styles.authorSelectorArrow
+                      }
+                    >
+                      ▾
+                    </span>
+                  </button>
+
+                  {authorDropdownOpen && (
+                    <div
+                      className={
+                        styles.authorDropdown
+                      }
+                    >
+                      <input
+                        type="text"
                         value={
-                          collaborator.id
+                          authorSearch
+                        }
+                        onChange={event => {
+                          setAuthorSearch(
+                            event.target
+                              .value
+                          );
+                        }}
+                        placeholder="Buscar autor..."
+                        className={
+                          styles.authorSearchInput
+                        }
+                        autoFocus
+                      />
+
+                      <div
+                        className={
+                          styles.authorOptions
                         }
                       >
-                        {
-                          collaborator.name
-                        }
-                        {collaborator.type ===
-                        'occasional'
-                          ? ' · Ocasional'
-                          : ' · Fijo'}
-                      </option>
-                    )
+                        {filteredAuthors.map(
+                          collaborator => {
+                            const isSelected =
+                              String(
+                                collaborator.id
+                              ) ===
+                              String(
+                                collaboratorId
+                              );
+
+                            return (
+                              <button
+                                type="button"
+                                key={
+                                  collaborator.id
+                                }
+                                className={
+                                  styles.authorOption
+                                }
+                                data-selected={
+                                  isSelected
+                                }
+                                onClick={() => {
+                                  setCollaboratorId(
+                                    collaborator.id
+                                  );
+
+                                  setAuthorSearch(
+                                    ''
+                                  );
+
+                                  setAuthorDropdownOpen(
+                                    false
+                                  );
+
+                                  if (
+                                    collaborator.id !==
+                                    AGORA_AUTHOR_VALUE
+                                  ) {
+                                    setCollaboratorsEnabled(
+                                      false
+                                    );
+
+                                    setCollaboratorIds(
+                                      []
+                                    );
+                                  }
+                                }}
+                              >
+                                <span
+                                  className={
+                                    styles.authorOptionName
+                                  }
+                                >
+                                  {
+                                    collaborator.name
+                                  }
+                                </span>
+
+                                <span
+                                  className={
+                                    styles.authorOptionType
+                                  }
+                                >
+                                  {collaborator.id ===
+                                  AGORA_AUTHOR_VALUE
+                                    ? 'Institucional'
+                                    : collaborator.type ===
+                                        'occasional'
+                                      ? 'Ocasional'
+                                      : 'Fijo'}
+                                </span>
+                              </button>
+                            );
+                          }
+                        )}
+
+                        {filteredAuthors.length ===
+                          0 && (
+                          <div
+                            className={
+                              styles.authorEmpty
+                            }
+                          >
+                            No se encontraron autores
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
-                </select>
-              </label>
+                </div>
+              </div>
+
+              {isAgoraAuthor && (
+                <div
+                  className={
+                    styles.collaboratorsBox
+                  }
+                >
+                  <label
+                    className={
+                      styles.collaboratorsToggle
+                    }
+                  >
+                    <input
+                      type="checkbox"
+                      checked={
+                        collaboratorsEnabled
+                      }
+                      onChange={event => {
+                        const checked =
+                          event.target
+                            .checked;
+
+                        setCollaboratorsEnabled(
+                          checked
+                        );
+
+                        if (!checked) {
+                          setCollaboratorIds(
+                            []
+                          );
+
+                          setCollaboratorSearch(
+                            ''
+                          );
+                        }
+                      }}
+                    />
+
+                    <span>
+                      Colaboradores
+                    </span>
+                  </label>
+
+                  {collaboratorsEnabled && (
+                    <div
+                      className={
+                        styles.collaboratorsPicker
+                      }
+                    >
+                      <input
+                        type="text"
+                        value={
+                          collaboratorSearch
+                        }
+                        onChange={event => {
+                          setCollaboratorSearch(
+                            event.target
+                              .value
+                          );
+                        }}
+                        placeholder="Buscar colaboradores..."
+                        className={
+                          styles.collaboratorSearchInput
+                        }
+                      />
+
+                      {selectedAdditionalCollaborators.length >
+                        0 && (
+                        <div
+                          className={
+                            styles.selectedCollaborators
+                          }
+                        >
+                          {selectedAdditionalCollaborators.map(
+                            collaborator => (
+                              <button
+                                type="button"
+                                key={
+                                  collaborator.id
+                                }
+                                className={
+                                  styles.selectedCollaboratorChip
+                                }
+                                onClick={() => {
+                                  setCollaboratorIds(
+                                    current =>
+                                      current.filter(
+                                        currentId =>
+                                          String(
+                                            currentId
+                                          ) !==
+                                          String(
+                                            collaborator.id
+                                          )
+                                      )
+                                  );
+                                }}
+                                title="Quitar colaborador"
+                              >
+                                <span>
+                                  {
+                                    collaborator.name
+                                  }
+                                </span>
+
+                                <X
+                                  size={12}
+                                />
+                              </button>
+                            )
+                          )}
+                        </div>
+                      )}
+
+                      <div
+                        className={
+                          styles.collaboratorOptions
+                        }
+                      >
+                        {filteredAdditionalCollaborators.map(
+                          collaborator => {
+                            const checked =
+                              collaboratorIds.some(
+                                currentId =>
+                                  String(
+                                    currentId
+                                  ) ===
+                                  String(
+                                    collaborator.id
+                                  )
+                              );
+
+                            return (
+                              <label
+                                key={
+                                  collaborator.id
+                                }
+                                className={
+                                  styles.collaboratorOption
+                                }
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={
+                                    checked
+                                  }
+                                  onChange={() => {
+                                    setCollaboratorIds(
+                                      current => {
+                                        if (
+                                          current.some(
+                                            currentId =>
+                                              String(
+                                                currentId
+                                              ) ===
+                                              String(
+                                                collaborator.id
+                                              )
+                                          )
+                                        ) {
+                                          return current.filter(
+                                            currentId =>
+                                              String(
+                                                currentId
+                                              ) !==
+                                              String(
+                                                collaborator.id
+                                              )
+                                          );
+                                        }
+
+                                        return [
+                                          ...current,
+                                          collaborator.id,
+                                        ];
+                                      }
+                                    );
+                                  }}
+                                />
+
+                                <span>
+                                  {
+                                    collaborator.name
+                                  }
+                                </span>
+                              </label>
+                            );
+                          }
+                        )}
+
+                        {filteredAdditionalCollaborators.length ===
+                          0 && (
+                          <div
+                            className={
+                              styles.authorEmpty
+                            }
+                          >
+                            No se encontraron colaboradores
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <label
                 className={

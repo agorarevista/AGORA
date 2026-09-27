@@ -749,6 +749,36 @@ const getOccasionalSections =
       setCollaborators,
     ] = useState([]);
 
+    const [
+      authorSearch,
+      setAuthorSearch,
+    ] = useState('');
+
+    const [
+      authorDropdownOpen,
+      setAuthorDropdownOpen,
+    ] = useState(false);
+
+    const [
+      collaboratorIds,
+      setCollaboratorIds,
+    ] = useState([]);
+
+    const [
+      collaboratorsEnabled,
+      setCollaboratorsEnabled,
+    ] = useState(false);
+
+    const [
+      collaboratorsDropdownOpen,
+      setCollaboratorsDropdownOpen,
+    ] = useState(false);
+
+    const [
+      collaboratorSearch,
+      setCollaboratorSearch,
+    ] = useState('');
+
   const [
     editions,
     setEditions,
@@ -761,6 +791,51 @@ const getOccasionalSections =
         String(collaboratorId)
       );
     }) || null;
+
+  const normalizedAuthorSearch =
+    authorSearch
+      .trim()
+      .toLocaleLowerCase('es');
+
+  const filteredAuthors =
+    collaborators.filter(collaborator => {
+      if (!normalizedAuthorSearch) {
+        return true;
+      }
+
+      return collaborator.name
+        ?.toLocaleLowerCase('es')
+        .includes(normalizedAuthorSearch);
+    });
+
+  const normalizedCollaboratorSearch =
+    collaboratorSearch
+      .trim()
+      .toLocaleLowerCase('es');
+
+  const availableAdditionalCollaborators =
+    collaborators.filter(collaborator => {
+      const matchesSearch =
+        !normalizedCollaboratorSearch ||
+        collaborator.name
+          ?.toLocaleLowerCase('es')
+          .includes(
+            normalizedCollaboratorSearch
+          );
+
+      return matchesSearch;
+    });
+
+  const selectedAdditionalCollaborators =
+    collaboratorIds
+      .map(collaboratorIdValue => {
+        return collaborators.find(
+          collaborator =>
+            String(collaborator.id) ===
+            String(collaboratorIdValue)
+        );
+      })
+      .filter(Boolean);
 
   const occasionalSections =
     getOccasionalSections(categories);
@@ -1168,6 +1243,27 @@ const hasGalleryCategorySelected =
               AGORA_AUTHOR_VALUE
           );
 
+          const loadedCollaboratorIds =
+            (
+              article.article_collaborators ||
+              []
+            )
+              .map(item => {
+                return (
+                  item.collaborator_id ||
+                  item.collaborators?.id
+                );
+              })
+              .filter(Boolean);
+
+          setCollaboratorIds(
+            loadedCollaboratorIds
+          );
+
+          setCollaboratorsEnabled(
+            loadedCollaboratorIds.length > 0
+          );
+
           setEditionId(
             article.edition_id || ''
           );
@@ -1270,6 +1366,13 @@ setCategoryIds(
           AGORA_AUTHOR_VALUE
             ? null
             : collaboratorId || null,
+
+        collaborator_ids:
+          collaboratorId ===
+            AGORA_AUTHOR_VALUE &&
+          collaboratorsEnabled
+            ? collaboratorIds
+            : [],
 
         edition_id:
           editionId || null,
@@ -2219,63 +2322,103 @@ const handlePublish = async () => {
       });
     };
 
-  const handleCollaboratorChange = event => {
-    const nextCollaboratorId =
-      event.target.value;
+  const handleCollaboratorChange =
+    nextCollaboratorId => {
+      setCollaboratorId(
+        nextCollaboratorId
+      );
 
-    setCollaboratorId(
-      nextCollaboratorId
-    );
+      setAuthorDropdownOpen(false);
+      setAuthorSearch('');
+      setSectionsDropdownOpen(false);
 
-    setSectionsDropdownOpen(false);
-
-    if (
-      nextCollaboratorId ===
-      AGORA_AUTHOR_VALUE
-    ) {
-      setCategoryIds([]);
-      return;
-    }
-
-    if (!nextCollaboratorId) {
-      setCategoryIds([]);
-      return;
-    }
-
-    const collaborator =
-      collaborators.find(item => {
-        return (
-          String(item.id) ===
-          String(nextCollaboratorId)
-        );
-      });
-
-    if (!collaborator) {
-      setCategoryIds([]);
-      return;
-    }
-
-    if (collaborator.type === 'fixed') {
       if (
-        collaborator.fixed_category_id
+        nextCollaboratorId ===
+        AGORA_AUTHOR_VALUE
       ) {
-        setCategoryIds([
-          collaborator.fixed_category_id,
-        ]);
-      } else {
         setCategoryIds([]);
-
-        alert.warning(
-          'Columna no asignada',
-          'Este autor fijo no tiene una columna vinculada'
-        );
+        return;
       }
 
-      return;
-    }
+      setCollaboratorsEnabled(false);
+      setCollaboratorIds([]);
+      setCollaboratorsDropdownOpen(false);
+      setCollaboratorSearch('');
 
-    setCategoryIds([]);
-  };
+      if (!nextCollaboratorId) {
+        setCategoryIds([]);
+        return;
+      }
+
+      const collaborator =
+        collaborators.find(item => {
+          return (
+            String(item.id) ===
+            String(nextCollaboratorId)
+          );
+        });
+
+      if (!collaborator) {
+        setCategoryIds([]);
+        return;
+      }
+
+      if (collaborator.type === 'fixed') {
+        if (
+          collaborator.fixed_category_id
+        ) {
+          setCategoryIds([
+            collaborator.fixed_category_id,
+          ]);
+        } else {
+          setCategoryIds([]);
+
+          alert.warning(
+            'Columna no asignada',
+            'Este autor fijo no tiene una columna vinculada'
+          );
+        }
+
+        return;
+      }
+
+      setCategoryIds([]);
+    };
+
+  const toggleAdditionalCollaborator =
+    collaboratorIdValue => {
+      setCollaboratorIds(previous => {
+        if (
+          previous.some(
+            idValue =>
+              String(idValue) ===
+              String(collaboratorIdValue)
+          )
+        ) {
+          return previous.filter(
+            idValue =>
+              String(idValue) !==
+              String(collaboratorIdValue)
+          );
+        }
+
+        return [
+          ...previous,
+          collaboratorIdValue,
+        ];
+      });
+    };
+
+  const removeAdditionalCollaborator =
+    collaboratorIdValue => {
+      setCollaboratorIds(previous => {
+        return previous.filter(
+          idValue =>
+            String(idValue) !==
+            String(collaboratorIdValue)
+        );
+      });
+    };
 
   const toggleOccasionalSection =
     categoryId => {
@@ -3641,285 +3784,7 @@ const handlePublish = async () => {
               </div>
             </SidePanel>
 
-  <SidePanel title="Autor">
-    <select
-      value={collaboratorId}
-      onChange={
-        handleCollaboratorChange
-      }
-      className={styles.sideSelect}
-    >
-      <option
-        value={AGORA_AUTHOR_VALUE}
-      >
-        Agorá Revista — Predeterminado
-      </option>
 
-      {collaborators.map(
-        collaborator => (
-          <option
-            key={collaborator.id}
-            value={collaborator.id}
-          >
-            {collaborator.name}
-          </option>
-        )
-      )}
-    </select>
-
-    {collaboratorId ===
-      AGORA_AUTHOR_VALUE && (
-      <div
-        className={
-          styles.authorCategoryBlock
-        }
-      >
-        <div
-          className={
-            styles.authorCategoryLabel
-          }
-        >
-          Publicación institucional
-        </div>
-
-        <div
-          className={
-            styles.fixedCategoryCard
-          }
-        >
-          <div
-            className={
-              styles.fixedCategoryMark
-            }
-          >
-            Α
-          </div>
-
-          <div
-            className={
-              styles.fixedCategoryContent
-            }
-          >
-            <strong>
-              Redacción Agorá
-            </strong>
-
-            <span>
-              Se mostrará el perfil oficial de la revista
-            </span>
-          </div>
-        </div>
-      </div>
-    )}
-
-    {selectedCollaborator?.type ===
-      'fixed' && (
-      <div
-        className={
-          styles.authorCategoryBlock
-        }
-      >
-        <div
-          className={
-            styles.authorCategoryLabel
-          }
-        >
-          Columna fija
-        </div>
-
-        {selectedCollaborator
-          .fixed_category ? (
-          <div
-            className={
-              styles.fixedCategoryCard
-            }
-          >
-            <div
-              className={
-                styles.fixedCategoryMark
-              }
-            >
-              Κ
-            </div>
-
-            <div
-              className={
-                styles.fixedCategoryContent
-              }
-            >
-              <strong>
-                {
-                  selectedCollaborator
-                    .fixed_category.name
-                }
-              </strong>
-
-              <span>
-                Asignada automáticamente
-              </span>
-            </div>
-          </div>
-        ) : (
-          <div
-            className={
-              styles.missingCategoryMessage
-            }
-          >
-            Este autor no tiene una
-            columna fija asignada.
-          </div>
-        )}
-      </div>
-    )}
-
-    {(
-      collaboratorId ===
-        AGORA_AUTHOR_VALUE ||
-      selectedCollaborator?.type ===
-        'occasional'
-    ) && (
-      <div
-        className={
-          styles.authorCategoryBlock
-        }
-      >
-        <div
-          className={
-            styles.authorCategoryLabel
-          }
-        >
-          {collaboratorId ===
-          AGORA_AUTHOR_VALUE
-            ? 'Secciones de la publicación'
-            : 'Secciones ocasionales'}
-        </div>
-
-        <div
-          className={
-            styles.multiSelect
-          }
-        >
-          <button
-            type="button"
-            className={
-              styles.multiSelectTrigger
-            }
-            onClick={() => {
-              setSectionsDropdownOpen(
-                previous => !previous
-              );
-            }}
-            aria-expanded={
-              sectionsDropdownOpen
-            }
-          >
-            <span>
-              {selectedOccasionalSections
-                .length > 0
-                ? `${selectedOccasionalSections.length} seleccionada${
-                    selectedOccasionalSections
-                      .length === 1
-                      ? ''
-                      : 's'
-                  }`
-                : 'Seleccionar secciones'}
-            </span>
-
-            <span
-              className={`${styles.multiSelectArrow} ${
-                sectionsDropdownOpen
-                  ? styles.multiSelectArrowOpen
-                  : ''
-              }`}
-            >
-              ▾
-            </span>
-          </button>
-
-          {sectionsDropdownOpen && (
-            <div
-              className={
-                styles.multiSelectMenu
-              }
-            >
-              {occasionalSections.length >
-              0 ? (
-                occasionalSections.map(
-                  category => (
-                    <label
-                      key={category.id}
-                      className={
-                        styles.multiSelectOption
-                      }
-                    >
-                      <input
-                        type="checkbox"
-                        checked={categoryIds.includes(
-                          category.id
-                        )}
-                        onChange={() => {
-                          toggleOccasionalSection(
-                            category.id
-                          );
-                        }}
-                      />
-
-                      <span>
-                        {category.name}
-                      </span>
-                    </label>
-                  )
-                )
-              ) : (
-                <div
-                  className={
-                    styles.multiSelectEmpty
-                  }
-                >
-                  No hay secciones
-                  disponibles.
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {selectedOccasionalSections
-          .length > 0 && (
-          <div
-            className={
-              styles.selectedSections
-            }
-          >
-            {selectedOccasionalSections.map(
-              category => (
-                <span
-                  key={category.id}
-                  className={
-                    styles.selectedSectionTag
-                  }
-                >
-                  {category.name}
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      removeOccasionalSection(
-                        category.id
-                      );
-                    }}
-                    aria-label={`Quitar ${category.name}`}
-                  >
-                    <X size={11} />
-                  </button>
-                </span>
-              )
-            )}
-          </div>
-        )}
-      </div>
-    )}
-  </SidePanel>
 
             <SidePanel title="Edición">
               <select

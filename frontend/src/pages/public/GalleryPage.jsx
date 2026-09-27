@@ -62,24 +62,23 @@ import {
 
 import styles from './GalleryPage.module.css';
 
-const normalizeSocialUrl = value => {
-  const clean =
-    String(value || '').trim();
-
-  if (!clean) {
-    return '';
-  }
-
-  if (
-    /^https?:\/\//i.test(clean)
-  ) {
-    return clean;
-  }
-
-  return `https://${clean}`;
+const AGORA_AUTHOR = {
+  id: '__agora__',
+  name: 'Redacción Agorá',
+  slug: null,
+  photo_url: '/agora-logo.png',
+  email: null,
+  type: 'institutional',
+  social_links: {
+    instagram:
+      'https://www.instagram.com/agorarevista.mx/',
+    facebook: '',
+    youtube: '',
+    tiktok: '',
+  },
 };
 
-const normalizePhotos = gallery => {
+const normalizeSocialUrl = value => {
   const source =
     Array.isArray(
       gallery?.gallery_photos
@@ -332,7 +331,42 @@ const museumRef =
   const author =
     gallery?.collaborators ||
     gallery?.collaborator ||
-    null;
+    AGORA_AUTHOR;
+
+  const additionalCollaborators =
+    useMemo(() => {
+      const relations =
+        Array.isArray(
+          gallery?.gallery_collaborators
+        )
+          ? [
+              ...gallery.gallery_collaborators,
+            ]
+          : [];
+
+      return relations
+        .sort(
+          (
+            first,
+            second
+          ) =>
+            Number(
+              first.display_order ||
+                0
+            ) -
+            Number(
+              second.display_order ||
+                0
+            )
+        )
+        .map(
+          relation =>
+            relation.collaborators ||
+            relation.collaborator ||
+            null
+        )
+        .filter(Boolean);
+    }, [gallery]);
 
   const photos =
     useMemo(
@@ -1399,6 +1433,9 @@ const openMuseumPhoto =
 
       <GalleryAuthorCard
         author={author}
+        collaborators={
+          additionalCollaborators
+        }
       />
 
       <section
@@ -1555,10 +1592,16 @@ const openMuseumPhoto =
 
 function GalleryAuthorCard({
   author,
+  collaborators = [],
 }) {
   if (!author) {
     return null;
   }
+
+  const isInstitutional =
+    author.id === '__agora__' ||
+    author.type ===
+      'institutional';
 
   const socials =
     author.social_links ||
@@ -1568,34 +1611,26 @@ function GalleryAuthorCard({
     {
       key: 'instagram',
       label: 'Instagram',
-      icon:
-        FaInstagram,
-      url:
-        socials.instagram,
+      icon: FaInstagram,
+      url: socials.instagram,
     },
     {
       key: 'facebook',
       label: 'Facebook',
-      icon:
-        FaFacebookF,
-      url:
-        socials.facebook,
+      icon: FaFacebookF,
+      url: socials.facebook,
     },
     {
       key: 'youtube',
       label: 'YouTube',
-      icon:
-        FaYoutube,
-      url:
-        socials.youtube,
+      icon: FaYoutube,
+      url: socials.youtube,
     },
     {
       key: 'tiktok',
       label: 'TikTok',
-      icon:
-        FaTiktok,
-      url:
-        socials.tiktok,
+      icon: FaTiktok,
+      url: socials.tiktok,
     },
   ].filter(
     item =>
@@ -1604,59 +1639,77 @@ function GalleryAuthorCard({
       )
   );
 
+  const authorContent = (
+    <>
+      <div
+        className={
+          styles.authorPhoto
+        }
+      >
+        {author.photo_url ? (
+          <img
+            src={
+              author.photo_url
+            }
+            alt={
+              author.name
+            }
+          />
+        ) : (
+          <span>
+            {author.name
+              ? author.name
+                  .charAt(0)
+                  .toUpperCase()
+              : 'A'}
+          </span>
+        )}
+      </div>
+
+      <span
+        className={
+          styles.authorEyebrow
+        }
+      >
+        {isInstitutional
+          ? 'Sobre la revista'
+          : 'Sobre el autor'}
+      </span>
+
+      <h2
+        className={
+          styles.authorName
+        }
+      >
+        {author.name}
+      </h2>
+    </>
+  );
+
   return (
     <section
       className={
         styles.authorSection
       }
     >
-      <Link
-        to={`/colaborador/${author.slug}`}
-        className={
-          styles.authorMainLink
-        }
-      >
+      {author.slug ? (
+        <Link
+          to={`/colaborador/${author.slug}`}
+          className={
+            styles.authorMainLink
+          }
+        >
+          {authorContent}
+        </Link>
+      ) : (
         <div
           className={
-            styles.authorPhoto
+            styles.authorMainLink
           }
         >
-          {author.photo_url ? (
-            <img
-              src={
-                author.photo_url
-              }
-              alt={
-                author.name
-              }
-            />
-          ) : (
-            <span>
-              {author.name
-                ? author.name
-                    .charAt(0)
-                    .toUpperCase()
-                : 'A'}
-            </span>
-          )}
+          {authorContent}
         </div>
-
-        <span
-          className={
-            styles.authorEyebrow
-          }
-        >
-          Sobre el autor
-        </span>
-
-        <h2
-          className={
-            styles.authorName
-          }
-        >
-          {author.name}
-        </h2>
-      </Link>
+      )}
 
       <div
         className={
@@ -1707,6 +1760,215 @@ function GalleryAuthorCard({
           </a>
         )}
       </div>
+
+      {collaborators.length >
+        0 && (
+        <div
+          className={
+            styles.collaborationSection
+          }
+        >
+          <span
+            className={
+              styles.collaborationEyebrow
+            }
+          >
+            Colaboradores
+          </span>
+
+          <div
+            className={
+              styles.collaboratorCollage
+            }
+          >
+            {collaborators.map(
+              collaborator => {
+                const collaboratorSocials =
+                  collaborator.social_links ||
+                  {};
+
+                const collaboratorSocialItems =
+                  [
+                    {
+                      key:
+                        'instagram',
+                      label:
+                        'Instagram',
+                      icon:
+                        FaInstagram,
+                      url:
+                        collaboratorSocials.instagram,
+                    },
+                    {
+                      key:
+                        'facebook',
+                      label:
+                        'Facebook',
+                      icon:
+                        FaFacebookF,
+                      url:
+                        collaboratorSocials.facebook,
+                    },
+                    {
+                      key:
+                        'youtube',
+                      label:
+                        'YouTube',
+                      icon:
+                        FaYoutube,
+                      url:
+                        collaboratorSocials.youtube,
+                    },
+                    {
+                      key:
+                        'tiktok',
+                      label:
+                        'TikTok',
+                      icon:
+                        FaTiktok,
+                      url:
+                        collaboratorSocials.tiktok,
+                    },
+                  ].filter(
+                    item =>
+                      Boolean(
+                        item.url
+                      )
+                  );
+
+                return (
+                  <div
+                    key={
+                      collaborator.id
+                    }
+                    className={
+                      styles.collaboratorItem
+                    }
+                  >
+                    {collaborator.slug ? (
+                      <Link
+                        to={`/colaborador/${collaborator.slug}`}
+                        className={
+                          styles.collaboratorImageLink
+                        }
+                        aria-label={`Ver perfil de ${collaborator.name}`}
+                      >
+                        {collaborator.photo_url ? (
+                          <img
+                            src={
+                              collaborator.photo_url
+                            }
+                            alt={
+                              collaborator.name
+                            }
+                          />
+                        ) : (
+                          <span>
+                            {String(
+                              collaborator.name ||
+                                'A'
+                            )
+                              .charAt(
+                                0
+                              )
+                              .toUpperCase()}
+                          </span>
+                        )}
+                      </Link>
+                    ) : (
+                      <div
+                        className={
+                          styles.collaboratorImageLink
+                        }
+                      >
+                        {collaborator.photo_url ? (
+                          <img
+                            src={
+                              collaborator.photo_url
+                            }
+                            alt={
+                              collaborator.name
+                            }
+                          />
+                        ) : (
+                          <span>
+                            {String(
+                              collaborator.name ||
+                                'A'
+                            )
+                              .charAt(
+                                0
+                              )
+                              .toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    <div
+                      className={
+                        styles.collaboratorHover
+                      }
+                    >
+                      <strong>
+                        {
+                          collaborator.name
+                        }
+                      </strong>
+
+                      {collaboratorSocialItems.length >
+                        0 && (
+                        <div
+                          className={
+                            styles.collaboratorSocials
+                          }
+                        >
+                          {collaboratorSocialItems.map(
+                            item => {
+                              const Icon =
+                                item.icon;
+
+                              return (
+                                <a
+                                  key={
+                                    item.key
+                                  }
+                                  href={
+                                    normalizeSocialUrl(
+                                      item.url
+                                    )
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title={
+                                    item.label
+                                  }
+                                  aria-label={`${item.label} de ${collaborator.name}`}
+                                  onClick={
+                                    event => {
+                                      event.stopPropagation();
+                                    }
+                                  }
+                                >
+                                  <Icon
+                                    size={
+                                      15
+                                    }
+                                  />
+                                </a>
+                              );
+                            }
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

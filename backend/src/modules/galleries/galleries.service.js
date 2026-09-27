@@ -12,33 +12,60 @@ const {
 } = require('../notifications/notifications.service');
 
 const GALLERY_BASE_SELECT = `
+
   id,
+
   title,
+
   slug,
+
   subtitle,
+
   excerpt,
+
   cover_image_url,
+
   cover_image_key,
+
   seo_title,
+
   seo_description,
+
   social_title,
+
   social_description,
+
   social_image_url,
+
   collaborator_id,
+
   edition_id,
+
   edition_order,
+
   status,
+
   views,
+
   max_photos,
+
   is_featured,
+
   featured_order,
+
   museum_seed,
+
   museum_layout,
+
   published_at,
+
   created_at,
+
   updated_at,
 
-  collaborators (
+
+
+  collaborators!galleries_collaborator_id_fkey (
     id,
     name,
     slug,
@@ -52,48 +79,107 @@ const GALLERY_BASE_SELECT = `
     is_active
   ),
 
-  editions (
-    id,
-    number,
-    name,
-    cover_image_url,
-    is_current,
-    is_special
+  gallery_collaborators (
+    collaborator_id,
+    display_order,
+    collaborators!gallery_collaborators_collaborator_id_fkey (
+      id,
+      name,
+      slug,
+      photo_url,
+      bio,
+      email,
+      type,
+      section_name,
+      section_slug,
+      social_links,
+      is_active
+    )
   ),
 
+
+
+  editions (
+
+    id,
+
+    number,
+
+    name,
+
+    cover_image_url,
+
+    is_current,
+
+    is_special
+
+  ),
+
+
+
   gallery_photos (
+
     id
+
   )
+
 `;
 
 const GALLERY_COMPLETE_SELECT = `
+
   id,
+
   title,
+
   slug,
+
   subtitle,
+
   excerpt,
+
   cover_image_url,
+
   cover_image_key,
+
   seo_title,
+
   seo_description,
+
   social_title,
+
   social_description,
+
   social_image_url,
+
   collaborator_id,
+
   edition_id,
+
   edition_order,
+
   status,
+
   views,
+
   max_photos,
+
   is_featured,
+
   featured_order,
+
   museum_seed,
+
   museum_layout,
+
   published_at,
+
   created_at,
+
   updated_at,
 
-  collaborators (
+
+
+  collaborators!galleries_collaborator_id_fkey (
     id,
     name,
     slug,
@@ -109,31 +195,78 @@ const GALLERY_COMPLETE_SELECT = `
     is_active
   ),
 
-  editions (
-    id,
-    number,
-    name,
-    description,
-    cover_image_url,
-    is_current,
-    is_special
+  gallery_collaborators (
+    collaborator_id,
+    display_order,
+    collaborators!gallery_collaborators_collaborator_id_fkey (
+      id,
+      name,
+      slug,
+      photo_url,
+      bio,
+      email,
+      phone,
+      type,
+      section_name,
+      section_slug,
+      section_description,
+      social_links,
+      is_active
+    )
   ),
 
-  gallery_photos (
+
+
+  editions (
+
     id,
-    gallery_id,
-    image_url,
-    image_key,
-    title,
+
+    number,
+
+    name,
+
     description,
+
+    cover_image_url,
+
+    is_current,
+
+    is_special
+
+  ),
+
+
+
+  gallery_photos (
+
+    id,
+
+    gallery_id,
+
+    image_url,
+
+    image_key,
+
+    title,
+
+    description,
+
     photo_author,
+
     alt_text,
+
     display_order,
+
     width,
+
     height,
+
     created_at,
+
     updated_at
+
   )
+
 `;
 
 const createHttpError = (
@@ -486,43 +619,80 @@ const validateEditionHighlight =
   };
 
 const validateCollaborator =
+
   async collaboratorId => {
+
+    /*
+     * collaborator_id = null
+     * representa a Redacción Agorá.
+     */
+
     if (!collaboratorId) {
-      throw createHttpError(
-        400,
-        'Selecciona el autor de la galería'
-      );
+
+      return null;
+
     }
+
+
 
     const {
+
       data,
+
       error,
+
     } = await supabase
+
       .from('collaborators')
+
       .select(
+
         'id, name, type, is_active'
+
       )
+
       .eq(
+
         'id',
+
         collaboratorId
+
       )
+
       .maybeSingle();
 
+
+
     if (error) {
+
       throw error;
+
     }
+
+
 
     if (
+
       !data ||
+
       data.is_active === false
+
     ) {
+
       throw createHttpError(
+
         400,
+
         'El colaborador seleccionado no está disponible'
+
       );
+
     }
 
+
+
     return data;
+
   };
 
 const generateGallerySlug =
@@ -596,13 +766,31 @@ const buildGalleryPayload =
       );
 
     const collaboratorId =
-      body.collaborator_id ||
-      currentGallery
-        ?.collaborator_id ||
-      null;
+
+      Object.prototype
+
+        .hasOwnProperty.call(
+
+          body,
+
+          'collaborator_id'
+
+        )
+
+        ? body.collaborator_id || null
+
+        : currentGallery
+
+            ?.collaborator_id ||
+
+          null;
+
+
 
     await validateCollaborator(
+
       collaboratorId
+
     );
 
     const slug =
@@ -1052,149 +1240,588 @@ const getById = async id => {
 };
 
 const create = async body => {
-  const payload =
-    await buildGalleryPayload(
-      body
-    );
 
   const {
+
+    collaborator_ids = [],
+
+    ...galleryBody
+
+  } = body;
+
+
+
+  const payload =
+
+    await buildGalleryPayload(
+
+      galleryBody
+
+    );
+
+
+
+  const {
+
     data: gallery,
+
     error,
+
   } = await supabase
+
     .from('galleries')
+
     .insert({
+
       ...payload,
+
       status: 'draft',
+
     })
+
     .select('*')
+
     .single();
 
+
+
   if (error) {
+
     throw error;
+
   }
+
+
 
   try {
-    const photos =
-      await replaceGalleryPhotos(
-        gallery.id,
-        body.photos ||
-          body.gallery_photos ||
-          [],
-        gallery.max_photos
+
+    await replaceGalleryPhotos(
+
+      gallery.id,
+
+      body.photos ||
+
+        body.gallery_photos ||
+
+        [],
+
+      gallery.max_photos
+
+    );
+
+
+
+    const cleanCollaboratorIds = [
+
+      ...new Set(
+
+        (
+
+          Array.isArray(
+
+            collaborator_ids
+
+          )
+
+            ? collaborator_ids
+
+            : []
+
+        )
+
+          .filter(Boolean)
+
+          .map(String)
+
+      ),
+
+    ].filter(
+
+      additionalCollaboratorId =>
+
+        !gallery.collaborator_id ||
+
+        String(
+
+          additionalCollaboratorId
+
+        ) !==
+
+          String(
+
+            gallery.collaborator_id
+
+          )
+
+    );
+
+
+
+    if (
+
+      cleanCollaboratorIds.length >
+
+      0
+
+    ) {
+
+      const collaboratorRows =
+
+        cleanCollaboratorIds.map(
+
+          (
+
+            additionalCollaboratorId,
+
+            index
+
+          ) => ({
+
+            gallery_id:
+
+              gallery.id,
+
+            collaborator_id:
+
+              additionalCollaboratorId,
+
+            display_order:
+
+              index,
+
+          })
+
+        );
+
+
+
+      const {
+
+        error:
+
+          collaboratorsInsertError,
+
+      } = await supabase
+
+        .from(
+
+          'gallery_collaborators'
+
+        )
+
+        .insert(
+
+          collaboratorRows
+
+        );
+
+
+
+      if (
+
+        collaboratorsInsertError
+
+      ) {
+
+        throw collaboratorsInsertError;
+
+      }
+
+    }
+
+
+
+    return getById(
+
+      gallery.id
+
+    );
+
+  } catch (error) {
+
+    await supabase
+
+      .from('galleries')
+
+      .delete()
+
+      .eq(
+
+        'id',
+
+        gallery.id
+
       );
 
-    return {
-      ...gallery,
-      gallery_photos:
-        photos,
-      photos_count:
-        photos.length,
-    };
-  } catch (error) {
-    await supabase
-      .from('galleries')
-      .delete()
-      .eq(
-        'id',
-        gallery.id
-      );
+
 
     throw error;
+
   }
+
 };
 
 const update = async (
+
   id,
+
   body
+
 ) => {
+
   const {
+
     data: currentGallery,
+
     error: currentError,
+
   } = await supabase
+
     .from('galleries')
+
     .select('*')
+
     .eq(
+
       'id',
+
       id
+
     )
+
     .maybeSingle();
 
+
+
   if (currentError) {
+
     throw currentError;
+
   }
+
+
 
   if (!currentGallery) {
+
     throw createHttpError(
+
       404,
+
       'Galería no encontrada'
+
     );
+
   }
 
-  const payload =
-    await buildGalleryPayload(
-      {
-        ...currentGallery,
-        ...body,
-      },
-      currentGallery
-    );
+
+
+  const hasCollaboratorIds =
+
+    Object.prototype
+
+      .hasOwnProperty.call(
+
+        body,
+
+        'collaborator_ids'
+
+      );
+
+
+
+  const collaboratorIds =
+
+    hasCollaboratorIds
+
+      ? body.collaborator_ids
+
+      : undefined;
+
+
 
   const {
+
+    collaborator_ids:
+
+      _ignoredCollaboratorIds,
+
+    ...galleryBody
+
+  } = body;
+
+
+
+  const payload =
+
+    await buildGalleryPayload(
+
+      {
+
+        ...currentGallery,
+
+        ...galleryBody,
+
+      },
+
+      currentGallery
+
+    );
+
+
+
+  const {
+
     data: gallery,
+
     error,
+
   } = await supabase
+
     .from('galleries')
+
     .update(payload)
+
     .eq(
+
       'id',
+
       id
+
     )
+
     .select('*')
+
     .single();
 
+
+
   if (error) {
+
     throw error;
+
   }
+
+
 
   if (
+
     Object.prototype
+
       .hasOwnProperty.call(
+
         body,
+
         'photos'
+
       ) ||
+
     Object.prototype
+
       .hasOwnProperty.call(
+
         body,
+
         'gallery_photos'
+
       )
+
   ) {
+
     await replaceGalleryPhotos(
+
       id,
+
       body.photos ||
+
         body.gallery_photos ||
+
         [],
+
       gallery.max_photos
+
     );
+
   }
 
+
+
+  if (hasCollaboratorIds) {
+
+    const {
+
+      error:
+
+        collaboratorsDeleteError,
+
+    } = await supabase
+
+      .from(
+
+        'gallery_collaborators'
+
+      )
+
+      .delete()
+
+      .eq(
+
+        'gallery_id',
+
+        id
+
+      );
+
+
+
+    if (
+
+      collaboratorsDeleteError
+
+    ) {
+
+      throw collaboratorsDeleteError;
+
+    }
+
+
+
+    const cleanCollaboratorIds = [
+
+      ...new Set(
+
+        (
+
+          Array.isArray(
+
+            collaboratorIds
+
+          )
+
+            ? collaboratorIds
+
+            : []
+
+        )
+
+          .filter(Boolean)
+
+          .map(String)
+
+      ),
+
+    ].filter(
+
+      additionalCollaboratorId =>
+
+        !gallery.collaborator_id ||
+
+        String(
+
+          additionalCollaboratorId
+
+        ) !==
+
+          String(
+
+            gallery.collaborator_id
+
+          )
+
+    );
+
+
+
+    if (
+
+      cleanCollaboratorIds.length >
+
+      0
+
+    ) {
+
+      const collaboratorRows =
+
+        cleanCollaboratorIds.map(
+
+          (
+
+            additionalCollaboratorId,
+
+            index
+
+          ) => ({
+
+            gallery_id:
+
+              id,
+
+            collaborator_id:
+
+              additionalCollaboratorId,
+
+            display_order:
+
+              index,
+
+          })
+
+        );
+
+
+
+      const {
+
+        error:
+
+          collaboratorsInsertError,
+
+      } = await supabase
+
+        .from(
+
+          'gallery_collaborators'
+
+        )
+
+        .insert(
+
+          collaboratorRows
+
+        );
+
+
+
+      if (
+
+        collaboratorsInsertError
+
+      ) {
+
+        throw collaboratorsInsertError;
+
+      }
+
+    }
+
+  }
+
+
+
   return getById(id);
+
 };
 
 const publish = async id => {
+
   const gallery =
+
     await getById(id);
 
-  if (
-    !gallery.collaborator_id
-  ) {
-    throw createHttpError(
-      400,
-      'La galería necesita un autor antes de publicarse'
-    );
-  }
 
   if (
+
     !gallery.cover_image_url
+
   ) {
     throw createHttpError(
       400,

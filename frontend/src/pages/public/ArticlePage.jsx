@@ -1042,11 +1042,50 @@ export default function ArticlePage() {
     );
 
 
+  /*
+   * Colaboradores adicionales.
+   *
+   * Solamente se muestran públicamente cuando
+   * el autor principal es Redacción Agorá.
+   *
+   * El backend entrega:
+   *
+   * article_collaborators: [
+   *   {
+   *     collaborator_id,
+   *     display_order,
+   *     collaborators: {...}
+   *   }
+   * ]
+   */
+  const additionalCollaborators =
+    isAgoraArticle
+      ? (
+          article.article_collaborators ||
+          []
+        )
+          .slice()
+          .sort(
+            (first, second) =>
+              Number(
+                first.display_order ?? 0
+              ) -
+              Number(
+                second.display_order ?? 0
+              )
+          )
+          .map(
+            item =>
+              item?.collaborators
+          )
+          .filter(Boolean)
+      : [];
+
+
   const effectiveDuration =
     audioDuration ||
     Number(storedAudioDuration) ||
     0;
-
 
   return (
     <div className={styles.page}>
@@ -1796,6 +1835,184 @@ export default function ArticlePage() {
                 )}
               </div>
             )}
+
+            {isAgoraArticle &&
+              additionalCollaborators.length > 0 && (
+                <div
+                  className={
+                    styles.articleCollaborators
+                  }
+                >
+                  <div
+                    className={
+                      styles.articleCollaboratorsHeader
+                    }
+                  >
+                    <span
+                      className={
+                        styles.articleCollaboratorsLabel
+                      }
+                    >
+                      Colaboradores
+                    </span>
+
+                    <span
+                      className={
+                        styles.articleCollaboratorsCount
+                      }
+                    >
+                      {
+                        additionalCollaborators.length
+                      }
+                    </span>
+                  </div>
+
+                  <div
+                    className={
+                      styles.articleCollaboratorsGrid
+                    }
+                  >
+                    {additionalCollaborators.map(
+                      (
+                        collaborator,
+                        index
+                      ) => {
+                        const collaboratorSocials =
+                          Object.entries(
+                            collaborator
+                              ?.social_links ||
+                              {}
+                          ).filter(
+                            ([, url]) =>
+                              Boolean(url)
+                          );
+
+                        return (
+                          <div
+                            key={
+                              collaborator.id ||
+                              collaborator.slug ||
+                              index
+                            }
+                            className={
+                              styles.articleCollaborator
+                            }
+                          >
+                            <Link
+                              to={
+                                collaborator.slug
+                                  ? `/colaborador/${collaborator.slug}`
+                                  : '#'
+                              }
+                              className={
+                                styles.articleCollaboratorImageLink
+                              }
+                              aria-label={
+                                `Ver perfil de ${collaborator.name}`
+                              }
+                            >
+                              {collaborator.photo_url ? (
+                                <img
+                                  src={
+                                    collaborator.photo_url
+                                  }
+                                  alt={
+                                    collaborator.name
+                                  }
+                                  className={
+                                    styles.articleCollaboratorImage
+                                  }
+                                />
+                              ) : (
+                                <div
+                                  className={
+                                    styles.articleCollaboratorFallback
+                                  }
+                                >
+                                  {collaborator
+                                    .name?.[0]
+                                    ?.toUpperCase()}
+                                </div>
+                              )}
+
+                              <div
+                                className={
+                                  styles.articleCollaboratorOverlay
+                                }
+                              >
+                                <span
+                                  className={
+                                    styles.articleCollaboratorName
+                                  }
+                                >
+                                  {
+                                    collaborator.name
+                                  }
+                                </span>
+
+                                {collaboratorSocials.length >
+                                  0 && (
+                                  <div
+                                    className={
+                                      styles.articleCollaboratorSocials
+                                    }
+                                  >
+                                    {collaboratorSocials.map(
+                                      (
+                                        [
+                                          network,
+                                          url,
+                                        ],
+                                        socialIndex
+                                      ) => (
+                                        <a
+                                          key={
+                                            `${network}-${socialIndex}`
+                                          }
+                                          href={
+                                            url
+                                          }
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className={
+                                            styles.articleCollaboratorSocial
+                                          }
+                                          aria-label={
+                                            `${network} de ${collaborator.name}`
+                                          }
+                                          title={
+                                            network
+                                          }
+                                          onClick={(
+                                            event
+                                          ) => {
+                                            event.preventDefault();
+                                            event.stopPropagation();
+
+                                            window.open(
+                                              url,
+                                              '_blank',
+                                              'noopener,noreferrer'
+                                            );
+                                          }}
+                                        >
+                                          {renderSocialIcon(
+                                            network
+                                          )}
+                                        </a>
+                                      )
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </Link>
+                          </div>
+                        );
+                      }
+                    )}
+                  </div>
+                </div>
+              )}
           </motion.div>
         )}
 

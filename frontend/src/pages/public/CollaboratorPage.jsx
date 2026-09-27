@@ -110,6 +110,12 @@ export default function CollaboratorPage() {
     contents,
     setContents,
   ] = useState([]);
+
+  const [
+    collaborations,
+    setCollaborations,
+  ] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -128,6 +134,12 @@ export default function CollaboratorPage() {
         if (!mounted) return;
 
         setCollab(c);
+
+        setCollaborations(
+          Array.isArray(c?.collaborations)
+            ? c.collaborations
+            : []
+        );
 
         const collaboratorSlug =
           c?.slug ||
@@ -450,13 +462,13 @@ export default function CollaboratorPage() {
   <aside className={styles.profileSide}>
     <div className={styles.articleCount}>
       <span className={styles.articleCountNum}>
-        {contents.length}
+        {contents.length + collaborations.length}
       </span>
 
       <span className={styles.articleCountLabel}>
-        {contents.length === 1
-          ? 'publicación'
-          : 'publicaciones'}
+        {contents.length + collaborations.length === 1
+          ? 'participación'
+          : 'participaciones'}
       </span>
     </div>
 
@@ -722,6 +734,71 @@ export default function CollaboratorPage() {
               </section>
             ))}
           </div>
+        )}
+
+        {collaborations.length > 0 && (
+          <section className={styles.collaborationsSection}>
+            <div className={styles.collaborationsHeader}>
+              <div>
+                <span className={styles.collaborationsEyebrow}>
+                  Participaciones editoriales
+                </span>
+
+                <h2 className={styles.collaborationsTitle}>
+                  Colaboraciones
+                </h2>
+
+                <p className={styles.collaborationsDescription}>
+                  Publicaciones de Redacción Agorá en las que{' '}
+                  {collab.name} participó como colaborador.
+                </p>
+              </div>
+
+              <span className={styles.collaborationsCount}>
+                {collaborations.length}{' '}
+                {collaborations.length === 1
+                  ? 'colaboración'
+                  : 'colaboraciones'}
+              </span>
+            </div>
+
+            <div className={styles.collaborationsDivider} />
+
+            <div className={styles.grid}>
+              {collaborations.map(
+                (content, index) => (
+                  <motion.div
+                    key={`collaboration-${content.content_type}-${content.id}`}
+                    className={styles.cardWrapper}
+                    initial={{
+                      opacity: 0,
+                      y: 16,
+                    }}
+                    whileInView={{
+                      opacity: 1,
+                      y: 0,
+                    }}
+                    viewport={{
+                      once: true,
+                      amount: 0.12,
+                    }}
+                    transition={{
+                      delay:
+                        Math.min(
+                          index % 5,
+                          4
+                        ) * 0.06,
+                    }}
+                  >
+                    <CollaboratorContentCard
+                      content={content}
+                      authorName="Redacción Agorá"
+                    />
+                  </motion.div>
+                )
+              )}
+            </div>
+          </section>
         )}
       </div>
     </div>

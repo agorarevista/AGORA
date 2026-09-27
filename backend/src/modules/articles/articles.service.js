@@ -349,98 +349,252 @@ const validateArticleCategories =
     }
   };
 // Campos base para listados
+
 const BASE_SELECT = `
+
   id,
+
   title,
+
   slug,
+
   subtitle,
+
   excerpt,
+
   cover_image_url,
+
   cover_caption,
+
   cover_caption_format,
+
   seo_title,
+
   seo_description,
+
   social_title,
+
   social_description,
+
   social_image_url,
+
   published_at,
+
   created_at,
+
   status,
+
   views,
+
   reading_time,
+
   collaborator_id,
+
   edition_id,
+
   edition_order,
-  published_at,
-  created_at,
-  status,
-  views,
-  reading_time,
+
   is_featured,
+
   featured_order,
+
   audio_female_url,
+
   audio_male_duration,
+
   audio_female_duration,
+
   audio_status,
+
   audio_error,
+
   audio_updated_at,
-  collaborators ( id, name, slug, photo_url, type, section_name, section_slug, social_links ),
-  editions (
+
+  collaborators!articles_collaborator_id_fkey (
     id,
-    number,
     name,
-    is_current,
-    is_special
+    slug,
+    photo_url,
+    type,
+    section_name,
+    section_slug,
+    social_links
   ),
-  article_categories ( categories ( id, name, slug, color ) ),
-  article_tags ( tag, tag_type )
+
+  article_collaborators (
+    collaborator_id,
+    display_order,
+
+    collaborators!article_collaborators_collaborator_id_fkey (
+      id,
+      name,
+      slug,
+      photo_url,
+      type,
+      section_name,
+      section_slug,
+      social_links
+    )
+  ),
+
+  editions (
+
+    id,
+
+    number,
+
+    name,
+
+    is_current,
+
+    is_special
+
+  ),
+
+  article_categories (
+    categories (
+      id,
+      name,
+      slug,
+      color
+    )
+  ),
+
+  article_tags (
+    tag,
+    tag_type
+  )
+
 `;
 
+
+
 // Campos completos para edición individual
+
 const EDITOR_SELECT = `
+
   id,
+
   title,
+
   slug,
+
   subtitle,
+
   excerpt,
+
   content,
+
   content_html,
+
   cover_image_url,
+
   cover_caption,
+
   cover_caption_format,
+
   seo_title,
+
   seo_description,
+
   social_title,
+
   social_description,
+
   social_image_url,
+
   collaborator_id,
+
   edition_id,
+
   published_at,
+
   created_at,
+
   status,
+
   views,
+
   reading_time,
+
   is_featured,
+
   featured_order,
+
   audio_male_url,
+
   audio_female_url,
+
   audio_male_duration,
+
   audio_female_duration,
+
   audio_male_hash,
+
   audio_female_hash,
+
   audio_status,
+
   audio_error,
+
   audio_updated_at,
-  collaborators ( id, name, slug, photo_url, type, section_name, section_slug, social_links ),
-  editions (
+
+  collaborators!articles_collaborator_id_fkey (
     id,
-    number,
     name,
-    is_current,
-    is_special
+    slug,
+    photo_url,
+    type,
+    section_name,
+    section_slug,
+    social_links
   ),
-  article_categories ( categories ( id, name, slug, color ) ),
-  article_tags ( id, tag, tag_type )
+
+  article_collaborators (
+    collaborator_id,
+    display_order,
+
+    collaborators!article_collaborators_collaborator_id_fkey (
+      id,
+      name,
+      slug,
+      photo_url,
+      type,
+      section_name,
+      section_slug,
+      social_links
+    )
+  ),
+
+  editions (
+
+    id,
+
+    number,
+
+    name,
+
+    is_current,
+
+    is_special
+
+  ),
+
+  article_categories (
+    categories (
+      id,
+      name,
+      slug,
+      color
+    )
+  ),
+
+  article_tags (
+    id,
+    tag,
+    tag_type
+  )
+
 `;
 
 const getAll = async ({
@@ -1044,7 +1198,7 @@ const getHome = async () => {
     published_at,
     created_at,
 
-    collaborators (
+    collaborators!galleries_collaborator_id_fkey (
       id,
       name,
       slug,
@@ -1486,9 +1640,15 @@ const create = async (body) => {
     edition_id,
     edition_order,
     is_featured,
+
     featured_order,
+
     category_ids = [],
+
     tags = [],
+
+    collaborator_ids = [],
+
   } = body;
 
   await validateArticleCategories(
@@ -1613,18 +1773,89 @@ const create = async (body) => {
   }
 
   // Insertar tags
+
   if (tags.length > 0) {
+
     const tagRows = tags.map(t => ({
+
       article_id: article.id,
+
       tag: t.tag,
+
       tag_type: t.tag_type || null
+
     }));
-    await supabase.from('article_tags').insert(tagRows);
+
+    const {
+      error: tagsInsertError,
+    } = await supabase
+      .from('article_tags')
+      .insert(tagRows);
+
+    if (tagsInsertError) {
+      throw tagsInsertError;
+    }
+
   }
 
-    invalidateHomeCache();
 
-  return article;
+
+  // Insertar colaboradores adicionales
+
+  const cleanCollaboratorIds = [
+    ...new Set(
+      (Array.isArray(collaborator_ids)
+        ? collaborator_ids
+        : []
+      )
+        .filter(Boolean)
+        .map(String)
+    ),
+  ].filter(collaboratorId => {
+    return (
+      !collaborator_id ||
+      String(collaboratorId) !==
+        String(collaborator_id)
+    );
+  });
+
+
+
+  if (cleanCollaboratorIds.length > 0) {
+
+    const collaboratorRows =
+      cleanCollaboratorIds.map(
+        additionalCollaboratorId => ({
+
+          article_id: article.id,
+
+          collaborator_id:
+            additionalCollaboratorId,
+
+        })
+      );
+
+
+
+    const {
+      error: collaboratorsInsertError,
+    } = await supabase
+      .from('article_collaborators')
+      .insert(collaboratorRows);
+
+
+
+    if (collaboratorsInsertError) {
+      throw collaboratorsInsertError;
+    }
+
+  }
+
+
+
+  invalidateHomeCache();
+
+  return getById(article.id);
 };
 
 const update = async (
@@ -1639,6 +1870,7 @@ const update = async (
     .select(
       `
         id,
+        collaborator_id,
         edition_id,
         is_featured,
         featured_order
@@ -1657,14 +1889,14 @@ const update = async (
   if (!currentArticle) {
     throw {
       status: 404,
-      message:
-        'Artículo no encontrado',
+      message: 'Artículo no encontrado',
     };
   }
 
   const {
     category_ids,
     tags,
+    collaborator_ids,
     content_html,
     ...rest
   } = body;
@@ -1878,9 +2110,120 @@ const update = async (
     }
   }
 
+  if (
+    collaborator_ids !==
+    undefined
+  ) {
+
+    const {
+      error: collaboratorsDeleteError,
+    } = await supabase
+      .from('article_collaborators')
+      .delete()
+      .eq(
+        'article_id',
+        id
+      );
+
+
+
+    if (
+      collaboratorsDeleteError
+    ) {
+      throw collaboratorsDeleteError;
+    }
+
+
+
+    const primaryCollaboratorId =
+      Object.prototype
+        .hasOwnProperty.call(
+          rest,
+          'collaborator_id'
+        )
+        ? rest.collaborator_id
+        : currentArticle
+            .collaborator_id;
+
+
+
+    const cleanCollaboratorIds = [
+      ...new Set(
+        (
+          Array.isArray(
+            collaborator_ids
+          )
+            ? collaborator_ids
+            : []
+        )
+          .filter(Boolean)
+          .map(String)
+      ),
+    ].filter(
+      additionalCollaboratorId => {
+        return (
+          !primaryCollaboratorId ||
+          String(
+            additionalCollaboratorId
+          ) !==
+            String(
+              primaryCollaboratorId
+            )
+        );
+      }
+    );
+
+
+
+    if (
+      cleanCollaboratorIds.length >
+      0
+    ) {
+
+      const collaboratorRows =
+        cleanCollaboratorIds.map(
+          additionalCollaboratorId => ({
+
+            article_id: id,
+
+            collaborator_id:
+              additionalCollaboratorId,
+
+          })
+        );
+
+
+
+      const {
+        error:
+          collaboratorsInsertError,
+      } = await supabase
+        .from(
+          'article_collaborators'
+        )
+        .insert(
+          collaboratorRows
+        );
+
+
+
+      if (
+        collaboratorsInsertError
+      ) {
+        throw collaboratorsInsertError;
+      }
+
+    }
+
+  }
+
+
+
   invalidateHomeCache();
 
-  return article;
+
+
+  return getById(id);
 };
 
 const publish = async id => {
