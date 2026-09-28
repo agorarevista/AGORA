@@ -1993,6 +1993,100 @@
   cursor: pointer;
 }
 
+.collaboratorsToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.collaboratorsToggle input {
+  flex-shrink: 0;
+  accent-color: var(--color-accent);
+}
+
+.collaboratorSearchBox {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  min-height: 40px;
+  margin-top: 9px;
+  padding: 5px 8px;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  background: white;
+  cursor: text;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.collaboratorSearchBox:focus-within {
+  border-color: var(--color-accent);
+  box-shadow:
+    0 0 0 3px
+    rgba(139, 26, 74, 0.08);
+}
+
+.collaboratorSearchInput {
+  flex: 1 1 90px;
+  min-width: 70px;
+  height: 27px;
+  padding: 0;
+  border: 0;
+  outline: none;
+  color: var(--color-primary);
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  box-shadow: none;
+}
+
+.collaboratorSearchInput::placeholder {
+  color: var(--color-gray-400);
+}
+
+.selectedCollaboratorChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  min-height: 26px;
+  padding: 4px 7px;
+  border: 1px solid
+    rgba(139, 26, 74, 0.18);
+  border-radius: 999px;
+  color: var(--color-accent);
+  background:
+    rgba(139, 26, 74, 0.08);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.selectedCollaboratorChip:hover {
+  background:
+    rgba(139, 26, 74, 0.14);
+}
+
+.selectedCollaboratorChip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectedCollaboratorChip svg {
+  flex-shrink: 0;
+}
+
 .multiSelectTrigger {
   display: flex;
   align-items: center;

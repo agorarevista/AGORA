@@ -551,10 +551,12 @@ const EDITOR_SELECT = `
   ),
 
   article_collaborators (
+
     collaborator_id,
+
     display_order,
 
-    collaborators!article_collaborators_collaborator_id_fkey (
+    collaborators (
       id,
       name,
       slug,
@@ -1825,12 +1827,18 @@ const create = async (body) => {
 
     const collaboratorRows =
       cleanCollaboratorIds.map(
-        additionalCollaboratorId => ({
+        (
+          additionalCollaboratorId,
+          index
+        ) => ({
 
           article_id: article.id,
 
           collaborator_id:
             additionalCollaboratorId,
+
+          display_order:
+            index,
 
         })
       );
@@ -2182,12 +2190,18 @@ const update = async (
 
       const collaboratorRows =
         cleanCollaboratorIds.map(
-          additionalCollaboratorId => ({
+          (
+            additionalCollaboratorId,
+            index
+          ) => ({
 
             article_id: id,
 
             collaborator_id:
               additionalCollaboratorId,
+
+            display_order:
+              index,
 
           })
         );

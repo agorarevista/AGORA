@@ -55,6 +55,7 @@ import ShareButtons from '../../components/common/ShareButtons/ShareButtons';
 import Comments from '../../components/common/Comments/Comments';
 import AdSenseUnit from '../../components/common/AdSenseUnit/AdSenseUnit';
 import AdBlockNotice from '../../components/common/AdBlockNotice/AdBlockNotice';
+import agoraIcon from '../../assets/ICON.png';
 
 import {
   getComments,
@@ -66,7 +67,7 @@ const AGORA_AUTHOR = {
   id: '__agora__',
   name: 'Redacción Agorá',
   slug: null,
-  photo_url: '/agora-logo.png',
+  photo_url: agoraIcon,
   email: null,
   type: 'institutional',
   social_links: {
@@ -76,9 +77,28 @@ const AGORA_AUTHOR = {
     youtube: '',
     tiktok: '',
   },
+  is_agora: true,
 };
 
 const normalizeSocialUrl = value => {
+  const clean =
+    String(value || '').trim();
+
+  if (!clean) {
+    return '';
+  }
+
+  if (
+    /^https?:\/\//i.test(clean)
+  ) {
+    return clean;
+  }
+
+  return `https://${clean}`;
+};
+
+
+const normalizePhotos = gallery => {
   const source =
     Array.isArray(
       gallery?.gallery_photos
@@ -106,6 +126,7 @@ const normalizeSocialUrl = value => {
   );
 };
 
+
 const getPhotoAuthor = (
   photo,
   galleryAuthor
@@ -116,7 +137,6 @@ const getPhotoAuthor = (
     'Agorá Revista'
   );
 };
-
 export default function GalleryPage() {
   const {
     slug,
@@ -328,10 +348,21 @@ const museumRef =
     loadCommentCount,
   ]);
 
-  const author =
-    gallery?.collaborators ||
-    gallery?.collaborator ||
-    AGORA_AUTHOR;
+const rawAuthor =
+  gallery?.collaborators ||
+  gallery?.collaborator ||
+  null;
+
+const isAgoraAuthor =
+  !rawAuthor ||
+  rawAuthor?.is_agora === true ||
+  rawAuthor?.id === '__agora__' ||
+  rawAuthor?.name === 'Redacción Agorá';
+
+const author =
+  isAgoraAuthor
+    ? AGORA_AUTHOR
+    : rawAuthor;
 
   const additionalCollaborators =
     useMemo(() => {
@@ -1768,13 +1799,29 @@ function GalleryAuthorCard({
             styles.collaborationSection
           }
         >
-          <span
+          <div
             className={
-              styles.collaborationEyebrow
+              styles.collaborationHeader
             }
           >
-            Colaboradores
-          </span>
+            <span
+              className={
+                styles.collaborationEyebrow
+              }
+            >
+              Colaboradores
+            </span>
+
+            <span
+              className={
+                styles.collaborationCount
+              }
+            >
+              {
+                collaborators.length
+              }
+            </span>
+          </div>
 
           <div
             className={
@@ -1782,12 +1829,11 @@ function GalleryAuthorCard({
             }
           >
             {collaborators.map(
-              collaborator => {
+              (
+                collaborator,
+                index
+              ) => {
                 const collaboratorSocials =
-                  collaborator.social_links ||
-                  {};
-
-                const collaboratorSocialItems =
                   [
                     {
                       key:
@@ -1797,7 +1843,9 @@ function GalleryAuthorCard({
                       icon:
                         FaInstagram,
                       url:
-                        collaboratorSocials.instagram,
+                        collaborator
+                          ?.social_links
+                          ?.instagram,
                     },
                     {
                       key:
@@ -1807,7 +1855,9 @@ function GalleryAuthorCard({
                       icon:
                         FaFacebookF,
                       url:
-                        collaboratorSocials.facebook,
+                        collaborator
+                          ?.social_links
+                          ?.facebook,
                     },
                     {
                       key:
@@ -1817,7 +1867,9 @@ function GalleryAuthorCard({
                       icon:
                         FaYoutube,
                       url:
-                        collaboratorSocials.youtube,
+                        collaborator
+                          ?.social_links
+                          ?.youtube,
                     },
                     {
                       key:
@@ -1827,7 +1879,9 @@ function GalleryAuthorCard({
                       icon:
                         FaTiktok,
                       url:
-                        collaboratorSocials.tiktok,
+                        collaborator
+                          ?.social_links
+                          ?.tiktok,
                     },
                   ].filter(
                     item =>
@@ -1836,18 +1890,27 @@ function GalleryAuthorCard({
                       )
                   );
 
+                const collaboratorRoute =
+                  collaborator.slug
+                    ? `/colaborador/${collaborator.slug}`
+                    : null;
+
                 return (
                   <div
                     key={
-                      collaborator.id
+                      collaborator.id ||
+                      collaborator.slug ||
+                      index
                     }
                     className={
                       styles.collaboratorItem
                     }
                   >
-                    {collaborator.slug ? (
+                    {collaboratorRoute ? (
                       <Link
-                        to={`/colaborador/${collaborator.slug}`}
+                        to={
+                          collaboratorRoute
+                        }
                         className={
                           styles.collaboratorImageLink
                         }
@@ -1861,18 +1924,20 @@ function GalleryAuthorCard({
                             alt={
                               collaborator.name
                             }
+                            className={
+                              styles.collaboratorImage
+                            }
                           />
                         ) : (
-                          <span>
-                            {String(
-                              collaborator.name ||
-                                'A'
-                            )
-                              .charAt(
-                                0
-                              )
-                              .toUpperCase()}
-                          </span>
+                          <div
+                            className={
+                              styles.collaboratorFallback
+                            }
+                          >
+                            {collaborator
+                              .name?.[0]
+                              ?.toUpperCase()}
+                          </div>
                         )}
                       </Link>
                     ) : (
@@ -1889,18 +1954,20 @@ function GalleryAuthorCard({
                             alt={
                               collaborator.name
                             }
+                            className={
+                              styles.collaboratorImage
+                            }
                           />
                         ) : (
-                          <span>
-                            {String(
-                              collaborator.name ||
-                                'A'
-                            )
-                              .charAt(
-                                0
-                              )
-                              .toUpperCase()}
-                          </span>
+                          <div
+                            className={
+                              styles.collaboratorFallback
+                            }
+                          >
+                            {collaborator
+                              .name?.[0]
+                              ?.toUpperCase()}
+                          </div>
                         )}
                       </div>
                     )}
@@ -1910,20 +1977,39 @@ function GalleryAuthorCard({
                         styles.collaboratorHover
                       }
                     >
-                      <strong>
-                        {
-                          collaborator.name
-                        }
-                      </strong>
+                      {collaboratorRoute ? (
+                        <Link
+                          to={
+                            collaboratorRoute
+                          }
+                          className={
+                            styles.collaboratorName
+                          }
+                        >
+                          {
+                            collaborator.name
+                          }
+                        </Link>
+                      ) : (
+                        <span
+                          className={
+                            styles.collaboratorName
+                          }
+                        >
+                          {
+                            collaborator.name
+                          }
+                        </span>
+                      )}
 
-                      {collaboratorSocialItems.length >
+                      {collaboratorSocials.length >
                         0 && (
                         <div
                           className={
                             styles.collaboratorSocials
                           }
                         >
-                          {collaboratorSocialItems.map(
+                          {collaboratorSocials.map(
                             item => {
                               const Icon =
                                 item.icon;
@@ -1933,26 +2019,19 @@ function GalleryAuthorCard({
                                   key={
                                     item.key
                                   }
-                                  href={
-                                    normalizeSocialUrl(
-                                      item.url
-                                    )
-                                  }
+                                  href={normalizeSocialUrl(
+                                    item.url
+                                  )}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   title={
                                     item.label
                                   }
                                   aria-label={`${item.label} de ${collaborator.name}`}
-                                  onClick={
-                                    event => {
-                                      event.stopPropagation();
-                                    }
-                                  }
                                 >
                                   <Icon
                                     size={
-                                      15
+                                      12
                                     }
                                   />
                                 </a>

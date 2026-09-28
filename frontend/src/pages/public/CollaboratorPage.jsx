@@ -737,68 +737,63 @@ export default function CollaboratorPage() {
         )}
 
         {collaborations.length > 0 && (
-          <section className={styles.collaborationsSection}>
-            <div className={styles.collaborationsHeader}>
-              <div>
-                <span className={styles.collaborationsEyebrow}>
-                  Participaciones editoriales
+          <div className={styles.collaborationsBlock}>
+            <section
+              className={`${styles.editionGroup} ${styles.collaborationsSection}`}
+            >
+              <header className={styles.editionHeader}>
+                <div>
+                  <h3 className={styles.editionTitle}>
+                    Colaboraciones
+                  </h3>
+                </div>
+
+                <span className={styles.editionCount}>
+                  {collaborations.length}{' '}
+                  {collaborations.length === 1
+                    ? 'colaboración'
+                    : 'colaboraciones'}
                 </span>
+              </header>
 
-                <h2 className={styles.collaborationsTitle}>
-                  Colaboraciones
-                </h2>
+              <div className={styles.editionDivider} />
 
-                <p className={styles.collaborationsDescription}>
-                  Publicaciones de Redacción Agorá en las que{' '}
-                  {collab.name} participó como colaborador.
-                </p>
+              <div className={styles.collaborationsGrid}>
+                {collaborations.map(
+                  (content, index) => (
+                    <motion.div
+                      key={`collaboration-${content.content_type}-${content.id}`}
+                      className={styles.cardWrapper}
+                      initial={{
+                        opacity: 0,
+                        y: 16,
+                      }}
+                      whileInView={{
+                        opacity: 1,
+                        y: 0,
+                      }}
+                      viewport={{
+                        once: true,
+                        amount: 0.12,
+                      }}
+                      transition={{
+                        delay:
+                          Math.min(
+                            index % 4,
+                            3
+                          ) * 0.06,
+                      }}
+                    >
+                      <CollaboratorContentCard
+                        content={content}
+                        authorName="Redacción Agorá"
+                      />
+                    </motion.div>
+                  )
+                )}
               </div>
-
-              <span className={styles.collaborationsCount}>
-                {collaborations.length}{' '}
-                {collaborations.length === 1
-                  ? 'colaboración'
-                  : 'colaboraciones'}
-              </span>
-            </div>
-
-            <div className={styles.collaborationsDivider} />
-
-            <div className={styles.grid}>
-              {collaborations.map(
-                (content, index) => (
-                  <motion.div
-                    key={`collaboration-${content.content_type}-${content.id}`}
-                    className={styles.cardWrapper}
-                    initial={{
-                      opacity: 0,
-                      y: 16,
-                    }}
-                    whileInView={{
-                      opacity: 1,
-                      y: 0,
-                    }}
-                    viewport={{
-                      once: true,
-                      amount: 0.12,
-                    }}
-                    transition={{
-                      delay:
-                        Math.min(
-                          index % 5,
-                          4
-                        ) * 0.06,
-                    }}
-                  >
-                    <CollaboratorContentCard
-                      content={content}
-                      authorName="Redacción Agorá"
-                    />
-                  </motion.div>
-                )
-              )}
-            </div>
-          </section>
+            </section>
+          </div>
         )}
       </div>
     </div>

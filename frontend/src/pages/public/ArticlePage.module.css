@@ -907,228 +907,542 @@
 .articleCollaborators {
   width: 100%;
   max-width: 620px;
-  margin: 30px auto 0;
-  padding-top: 24px;
-  border-top: 1px solid var(--color-gray-200);
+
+  margin: 34px auto 0;
+  padding-top: 26px;
+
+  border-top:
+    1px solid
+    var(--color-gray-200);
 }
 
 .articleCollaboratorsHeader {
   display: flex;
   align-items: center;
   justify-content: center;
+
   gap: 9px;
-  margin-bottom: 18px;
+
+  margin-bottom: 20px;
 }
 
 .articleCollaboratorsLabel {
-  font-family: var(--font-sans);
+  font-family:
+    var(--font-sans);
+
   font-size: 10px;
   font-weight: 800;
+
   letter-spacing: 2px;
+
   text-transform: uppercase;
-  color: var(--color-accent);
+
+  color:
+    var(--color-accent);
 }
 
 .articleCollaboratorsCount {
   min-width: 20px;
   height: 20px;
+
   padding: 0 6px;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
   border-radius: 999px;
-  background: rgba(139, 26, 74, 0.10);
-  color: var(--color-accent);
-  font-family: var(--font-sans);
+
+  background:
+    rgba(
+      139,
+      26,
+      74,
+      0.10
+    );
+
+  color:
+    var(--color-accent);
+
+  font-family:
+    var(--font-sans);
+
   font-size: 10px;
   font-weight: 800;
 }
 
+
+/* ── Collage ───────────────────────────────────────── */
+
 .articleCollaboratorsGrid {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 12px;
+  position: relative;
+
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+
+  gap: 10px;
+
+  align-items: stretch;
+
+  overflow: visible;
 }
+
+
+/* ── Retrato ───────────────────────────────────────── */
 
 .articleCollaborator {
   position: relative;
-  width: 112px;
-  height: 112px;
-  flex: 0 0 112px;
-  border-radius: 50%;
+
+  z-index: 1;
+
+  width: 100%;
+  min-width: 0;
+
+  aspect-ratio: 1 / 1;
+
+  overflow: hidden;
+
+  border:
+    1px solid
+    var(--color-gray-200);
+
+  border-radius: 2px;
+
+  background:
+    var(--color-gray-100);
+
+  box-shadow:
+    0 6px 16px
+    rgba(
+      0,
+      0,
+      0,
+      0.09
+    );
+
+  transform:
+    translateZ(0)
+    scale(1);
+
+  transform-origin:
+    center center;
+
+  transition:
+    transform 0.28s
+      cubic-bezier(
+        0.22,
+        1,
+        0.36,
+        1
+      ),
+    box-shadow 0.28s ease,
+    border-color 0.24s ease;
 }
+
+.articleCollaborator:hover,
+.articleCollaborator:focus-within {
+  z-index: 30;
+
+  transform:
+    translateY(-8px)
+    scale(1.65);
+
+  border-color:
+    var(--color-accent);
+
+  box-shadow:
+    0 24px 52px
+    rgba(
+      0,
+      0,
+      0,
+      0.30
+    );
+}
+
+
+/* ── Link / imagen ─────────────────────────────────── */
 
 .articleCollaboratorImageLink {
-  position: relative;
+  position: absolute;
+
+  inset: 0;
+
+  z-index: 1;
+
   width: 100%;
   height: 100%;
+
   display: block;
+
   overflow: hidden;
-  border-radius: 50%;
-  text-decoration: none;
-  color: inherit;
-  background: var(--color-gray-100);
-  box-shadow:
-    0 6px 18px
-    rgba(17, 17, 17, 0.10);
-  transition:
-    transform 0.22s ease,
-    box-shadow 0.22s ease;
-}
 
-.articleCollaboratorImageLink:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 12px 28px
-    rgba(17, 17, 17, 0.18);
+  border-radius: 0;
+
+  text-decoration: none;
+
+  color: inherit;
+
+  background:
+    var(--color-gray-100);
 }
 
 .articleCollaboratorImage {
   width: 100%;
   height: 100%;
+
   display: block;
+
   object-fit: cover;
+  object-position: center 20%;
+
+  transform:
+    scale(1);
+
   transition:
-    transform 0.35s ease,
-    filter 0.35s ease;
+    transform 0.38s
+      cubic-bezier(
+        0.22,
+        1,
+        0.36,
+        1
+      ),
+    filter 0.30s ease;
 }
 
-.articleCollaboratorImageLink:hover
+.articleCollaborator:hover
+.articleCollaboratorImage,
+.articleCollaborator:focus-within
 .articleCollaboratorImage {
-  transform: scale(1.07);
-  filter: brightness(0.52);
+  transform:
+    scale(1.05);
+
+  filter:
+    brightness(0.66)
+    saturate(0.9);
 }
+
+
+/* ── Fallback sin fotografía ───────────────────────── */
 
 .articleCollaboratorFallback {
   width: 100%;
   height: 100%;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   background:
     linear-gradient(
       135deg,
       var(--color-accent),
       var(--color-accent-light)
     );
+
   color: #ffffff;
-  font-family: var(--font-display);
-  font-size: 32px;
+
+  font-family:
+    var(--font-display);
+
+  font-size:
+    clamp(
+      25px,
+      2.7vw,
+      40px
+    );
+
   font-weight: 700;
 }
 
+
+/* ── Overlay ───────────────────────────────────────── */
+
 .articleCollaboratorOverlay {
   position: absolute;
+
   inset: 0;
+
+  z-index: 3;
+
   display: flex;
+
   flex-direction: column;
+
   align-items: center;
-  justify-content: center;
+
+  justify-content: flex-end;
+
   gap: 8px;
-  padding: 12px;
-  border-radius: 50%;
+
+  padding:
+    26px 10px
+    14px;
+
+  border-radius: 0;
+
   background:
     linear-gradient(
-      180deg,
-      rgba(0, 0, 0, 0.08) 0%,
-      rgba(0, 0, 0, 0.76) 100%
+      to top,
+      rgba(
+        0,
+        0,
+        0,
+        0.96
+      ) 0%,
+      rgba(
+        0,
+        0,
+        0,
+        0.74
+      ) 42%,
+      rgba(
+        0,
+        0,
+        0,
+        0.25
+      ) 72%,
+      transparent 100%
     );
+
   opacity: 0;
+
+  pointer-events: none;
+
+  transform:
+    translateY(10px);
+
   transition:
-    opacity 0.25s ease;
+    opacity 0.22s ease,
+    transform 0.28s
+      cubic-bezier(
+        0.22,
+        1,
+        0.36,
+        1
+      );
 }
 
-.articleCollaboratorImageLink:hover
+.articleCollaborator:hover
+.articleCollaboratorOverlay,
+.articleCollaborator:focus-within
 .articleCollaboratorOverlay {
   opacity: 1;
+
+  pointer-events: none;
+
+  transform:
+    translateY(0);
 }
+
+
+/* ── Nombre ────────────────────────────────────────── */
 
 .articleCollaboratorName {
   width: 100%;
+
   color: #ffffff;
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 800;
-  line-height: 1.25;
+
+  font-family:
+    var(--font-display);
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  line-height: 1.08;
+
   text-align: center;
+
+  text-decoration: none;
+
+  white-space: normal;
+
+  overflow-wrap: anywhere;
+
   text-shadow:
-    0 1px 4px
-    rgba(0, 0, 0, 0.55);
+    0 4px 14px
+    rgba(
+      0,
+      0,
+      0,
+      0.92
+    );
+
+  transition:
+    color 0.18s ease;
 }
 
+.articleCollaboratorName:hover {
+  color: #D274BC;
+}
+
+.articleCollaboratorName,
+.articleCollaboratorSocial {
+  pointer-events: auto;
+}
+
+
+
+/* ── Redes ─────────────────────────────────────────── */
 .articleCollaboratorSocials {
   display: flex;
+
   align-items: center;
   justify-content: center;
-  gap: 7px;
+
+  gap: 4px;
+
   flex-wrap: wrap;
 }
 
 .articleCollaboratorSocial {
-  width: 23px;
-  height: 23px;
+  width: 24px;
+  height: 24px;
+
   display: inline-flex;
+
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+
   color: #ffffff;
+
   background:
-    rgba(255, 255, 255, 0.16);
+    rgba(
+      0,
+      0,
+      0,
+      0.42
+    );
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.72
+    );
+
+  border-radius: 50%;
+
   text-decoration: none;
+
+  backdrop-filter:
+    blur(4px);
+
   transition:
+    color 0.18s ease,
     background-color 0.18s ease,
+    border-color 0.18s ease,
     transform 0.18s ease;
+}
+
+.articleCollaboratorSocial:hover {
+  color: #ffffff;
+
+  background:
+    var(--color-accent);
+
+  border-color:
+    var(--color-accent);
+
+  transform:
+    translateY(-2px)
+    scale(1.08);
 }
 
 .articleCollaboratorSocial svg {
   width: 12px;
   height: 12px;
-}
 
-.articleCollaboratorSocial:hover {
-  background: var(--color-accent);
-  transform: scale(1.12);
+  display: block;
 }
 
 
-/* Dark mode */
+/* ── Dark mode ────────────────────────────────────── */
 
 :global(html.dark)
 .articleCollaborators {
   border-top-color:
-    rgba(255, 255, 255, 0.10);
+    rgba(
+      255,
+      255,
+      255,
+      0.10
+    );
 }
 
 :global(html.dark)
 .articleCollaboratorsCount {
   background:
-    rgba(255, 141, 179, 0.12);
+    rgba(
+      255,
+      141,
+      179,
+      0.12
+    );
+
   color: #ff8db3;
 }
 
 :global(html.dark)
-.articleCollaboratorImageLink {
-  background: var(--color-gray-100);
+.articleCollaborator {
+  border-color:
+    rgba(
+      255,
+      255,
+      255,
+      0.10
+    );
+
   box-shadow:
     0 8px 22px
-    rgba(0, 0, 0, 0.28);
+    rgba(
+      0,
+      0,
+      0,
+      0.28
+    );
+}
+
+:global(html.dark)
+.articleCollaborator:hover,
+:global(html.dark)
+.articleCollaborator:focus-within {
+  border-color:
+    var(--color-accent);
 }
 
 
-/* Responsive */
+/* ── Responsive ───────────────────────────────────── */
 
 @media (max-width: 768px) {
   .articleCollaborators {
-    margin-top: 26px;
+    margin-top: 28px;
     padding-top: 22px;
   }
 
-  .articleCollaborator {
-    width: 100px;
-    height: 100px;
-    flex-basis: 100px;
+  .articleCollaboratorsGrid {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0, 1fr)
+      );
+  }
+
+  .articleCollaborator:hover,
+  .articleCollaborator:focus-within {
+    transform:
+      translateY(-5px)
+      scale(1.28);
   }
 }
 
@@ -1139,36 +1453,29 @@
   }
 
   .articleCollaboratorsGrid {
-    gap: 9px;
-  }
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
 
-  .articleCollaborator {
-    width: 88px;
-    height: 88px;
-    flex-basis: 88px;
+    gap: 8px;
   }
 
   .articleCollaboratorName {
-    font-size: 9px;
-  }
-
-  .articleCollaboratorSocials {
-    gap: 4px;
+    font-size: 11px;
   }
 
   .articleCollaboratorSocial {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
   }
 
   .articleCollaboratorSocial svg {
-    width: 10px;
-    height: 10px;
+    width: 11px;
+    height: 11px;
   }
 }
-
-
-/* ── Barra de acciones centrada ───────────────────────── */
 .actionsBar {
   display: flex;
   align-items: center;

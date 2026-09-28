@@ -337,6 +337,11 @@ export default function GalleryEditorPage() {
   ] = useState('');
 
   const [
+    collaboratorsDropdownOpen,
+    setCollaboratorsDropdownOpen,
+  ] = useState(false);
+
+  const [
     editionId,
     setEditionId,
   ] = useState('');
@@ -446,6 +451,9 @@ export default function GalleryEditorPage() {
     useRef(null);
 
   const authorDropdownRef =
+    useRef(null);
+
+  const collaboratorsDropdownRef =
     useRef(null);
 
   const sensors =
@@ -586,6 +594,46 @@ export default function GalleryEditorPage() {
       Number(maxPhotos) -
       photos.length
     );
+
+  useEffect(() => {
+    const handleOutsideClick =
+      event => {
+        if (
+          authorDropdownRef.current &&
+          !authorDropdownRef.current.contains(
+            event.target
+          )
+        ) {
+          setAuthorDropdownOpen(false);
+          setAuthorSearch('');
+        }
+
+        if (
+          collaboratorsDropdownRef.current &&
+          !collaboratorsDropdownRef.current.contains(
+            event.target
+          )
+        ) {
+          setCollaboratorsDropdownOpen(
+            false
+          );
+
+          setCollaboratorSearch('');
+        }
+      };
+
+    document.addEventListener(
+      'mousedown',
+      handleOutsideClick
+    );
+
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        handleOutsideClick
+      );
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -2588,162 +2636,184 @@ export default function GalleryEditorPage() {
 
                   {collaboratorsEnabled && (
                     <div
+                      ref={
+                        collaboratorsDropdownRef
+                      }
                       className={
                         styles.collaboratorsPicker
                       }
                     >
-                      <input
-                        type="text"
-                        value={
-                          collaboratorSearch
+                      <div
+                        className={
+                          styles.collaboratorSearchBox
                         }
-                        onChange={event => {
-                          setCollaboratorSearch(
-                            event.target
-                              .value
+                        onClick={() => {
+                          setCollaboratorsDropdownOpen(
+                            true
                           );
                         }}
-                        placeholder="Buscar colaboradores..."
-                        className={
-                          styles.collaboratorSearchInput
-                        }
-                      />
+                      >
+                        {selectedAdditionalCollaborators.map(
+                          collaborator => (
+                            <button
+                              type="button"
+                              key={
+                                collaborator.id
+                              }
+                              className={
+                                styles.selectedCollaboratorChip
+                              }
+                              onClick={event => {
+                                event.stopPropagation();
 
-                      {selectedAdditionalCollaborators.length >
-                        0 && (
+                                setCollaboratorIds(
+                                  current =>
+                                    current.filter(
+                                      currentId =>
+                                        String(
+                                          currentId
+                                        ) !==
+                                        String(
+                                          collaborator.id
+                                        )
+                                    )
+                                );
+                              }}
+                              title="Quitar colaborador"
+                            >
+                              <span>
+                                {
+                                  collaborator.name
+                                }
+                              </span>
+
+                              <X
+                                size={12}
+                              />
+                            </button>
+                          )
+                        )}
+
+                        <input
+                          type="text"
+                          value={
+                            collaboratorSearch
+                          }
+                          onFocus={() => {
+                            setCollaboratorsDropdownOpen(
+                              true
+                            );
+                          }}
+                          onChange={event => {
+                            setCollaboratorSearch(
+                              event.target.value
+                            );
+
+                            setCollaboratorsDropdownOpen(
+                              true
+                            );
+                          }}
+                          placeholder={
+                            selectedAdditionalCollaborators.length >
+                            0
+                              ? 'Buscar...'
+                              : 'Buscar colaboradores...'
+                          }
+                          className={
+                            styles.collaboratorSearchInput
+                          }
+                        />
+                      </div>
+
+                      {collaboratorsDropdownOpen && (
                         <div
                           className={
-                            styles.selectedCollaborators
+                            styles.collaboratorOptions
                           }
                         >
-                          {selectedAdditionalCollaborators.map(
-                            collaborator => (
-                              <button
-                                type="button"
-                                key={
-                                  collaborator.id
-                                }
-                                className={
-                                  styles.selectedCollaboratorChip
-                                }
-                                onClick={() => {
-                                  setCollaboratorIds(
-                                    current =>
-                                      current.filter(
-                                        currentId =>
-                                          String(
-                                            currentId
-                                          ) !==
-                                          String(
-                                            collaborator.id
-                                          )
-                                      )
-                                  );
-                                }}
-                                title="Quitar colaborador"
-                              >
-                                <span>
-                                  {
-                                    collaborator.name
-                                  }
-                                </span>
+                          {filteredAdditionalCollaborators.map(
+                            collaborator => {
+                              const checked =
+                                collaboratorIds.some(
+                                  currentId =>
+                                    String(
+                                      currentId
+                                    ) ===
+                                    String(
+                                      collaborator.id
+                                    )
+                                );
 
-                                <X
-                                  size={12}
-                                />
-                              </button>
-                            )
+                              return (
+                                <label
+                                  key={
+                                    collaborator.id
+                                  }
+                                  className={
+                                    styles.collaboratorOption
+                                  }
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={
+                                      checked
+                                    }
+                                    onChange={() => {
+                                      setCollaboratorIds(
+                                        current => {
+                                          if (
+                                            current.some(
+                                              currentId =>
+                                                String(
+                                                  currentId
+                                                ) ===
+                                                String(
+                                                  collaborator.id
+                                                )
+                                            )
+                                          ) {
+                                            return current.filter(
+                                              currentId =>
+                                                String(
+                                                  currentId
+                                                ) !==
+                                                String(
+                                                  collaborator.id
+                                                )
+                                            );
+                                          }
+
+                                          return [
+                                            ...current,
+                                            collaborator.id,
+                                          ];
+                                        }
+                                      );
+                                    }}
+                                  />
+
+                                  <span>
+                                    {
+                                      collaborator.name
+                                    }
+                                  </span>
+                                </label>
+                              );
+                            }
+                          )}
+
+                          {filteredAdditionalCollaborators.length ===
+                            0 && (
+                            <div
+                              className={
+                                styles.authorEmpty
+                              }
+                            >
+                              No se encontraron colaboradores
+                            </div>
                           )}
                         </div>
                       )}
-
-                      <div
-                        className={
-                          styles.collaboratorOptions
-                        }
-                      >
-                        {filteredAdditionalCollaborators.map(
-                          collaborator => {
-                            const checked =
-                              collaboratorIds.some(
-                                currentId =>
-                                  String(
-                                    currentId
-                                  ) ===
-                                  String(
-                                    collaborator.id
-                                  )
-                              );
-
-                            return (
-                              <label
-                                key={
-                                  collaborator.id
-                                }
-                                className={
-                                  styles.collaboratorOption
-                                }
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={
-                                    checked
-                                  }
-                                  onChange={() => {
-                                    setCollaboratorIds(
-                                      current => {
-                                        if (
-                                          current.some(
-                                            currentId =>
-                                              String(
-                                                currentId
-                                              ) ===
-                                              String(
-                                                collaborator.id
-                                              )
-                                          )
-                                        ) {
-                                          return current.filter(
-                                            currentId =>
-                                              String(
-                                                currentId
-                                              ) !==
-                                              String(
-                                                collaborator.id
-                                              )
-                                          );
-                                        }
-
-                                        return [
-                                          ...current,
-                                          collaborator.id,
-                                        ];
-                                      }
-                                    );
-                                  }}
-                                />
-
-                                <span>
-                                  {
-                                    collaborator.name
-                                  }
-                                </span>
-                              </label>
-                            );
-                          }
-                        )}
-
-                        {filteredAdditionalCollaborators.length ===
-                          0 && (
-                          <div
-                            className={
-                              styles.authorEmpty
-                            }
-                          >
-                            No se encontraron colaboradores
-                          </div>
-                        )}
-                      </div>
                     </div>
                   )}
                 </div>

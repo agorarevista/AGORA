@@ -737,7 +737,15 @@ const getOccasionalSections =
     articleId,
     setArticleId,
   ] = useState(id || null);
-    const loadedArticleIdRef = useRef(null);
+
+  const loadedArticleIdRef =
+    useRef(null);
+
+  const authorDropdownRef =
+    useRef(null);
+
+  const collaboratorsDropdownRef =
+    useRef(null);
 
     const [
       categories,
@@ -836,6 +844,46 @@ const getOccasionalSections =
         );
       })
       .filter(Boolean);
+
+  useEffect(() => {
+    const handleOutsideClick =
+      event => {
+        if (
+          authorDropdownRef.current &&
+          !authorDropdownRef.current.contains(
+            event.target
+          )
+        ) {
+          setAuthorDropdownOpen(false);
+          setAuthorSearch('');
+        }
+
+        if (
+          collaboratorsDropdownRef.current &&
+          !collaboratorsDropdownRef.current.contains(
+            event.target
+          )
+        ) {
+          setCollaboratorsDropdownOpen(
+            false
+          );
+
+          setCollaboratorSearch('');
+        }
+      };
+
+    document.addEventListener(
+      'mousedown',
+      handleOutsideClick
+    );
+
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        handleOutsideClick
+      );
+    };
+  }, []);
 
   const occasionalSections =
     getOccasionalSections(categories);
@@ -1248,6 +1296,18 @@ const hasGalleryCategorySelected =
               article.article_collaborators ||
               []
             )
+              .slice()
+              .sort(
+                (first, second) =>
+                  Number(
+                    first.display_order ??
+                      0
+                  ) -
+                  Number(
+                    second.display_order ??
+                      0
+                  )
+              )
               .map(item => {
                 return (
                   item.collaborator_id ||
@@ -3784,7 +3844,625 @@ const handlePublish = async () => {
               </div>
             </SidePanel>
 
+            <SidePanel title="Autor">
+              <div
+                ref={authorDropdownRef}
+                className={
+                  styles.searchSelect
+                }
+              >
+                <button
+                  type="button"
+                  className={
+                    styles.searchSelectTrigger
+                  }
+                  onClick={() => {
+                    setAuthorDropdownOpen(
+                      current => !current
+                    );
+                  }}
+                  aria-expanded={
+                    authorDropdownOpen
+                  }
+                >
+                  <span>
+                    {collaboratorId ===
+                    AGORA_AUTHOR_VALUE
+                      ? 'Redacción Agorá'
+                      : selectedCollaborator
+                          ?.name ||
+                        'Selecciona un autor'}
+                  </span>
 
+                  <span
+                    className={`${styles.multiSelectArrow} ${
+                      authorDropdownOpen
+                        ? styles.multiSelectArrowOpen
+                        : ''
+                    }`}
+                  >
+                    ▾
+                  </span>
+                </button>
+
+                {authorDropdownOpen && (
+                  <div
+                    className={
+                      styles.searchSelectMenu
+                    }
+                  >
+                    <input
+                      type="text"
+                      value={authorSearch}
+                      onChange={event => {
+                        setAuthorSearch(
+                          event.target.value
+                        );
+                      }}
+                      placeholder="Buscar autor..."
+                      className={
+                        styles.searchSelectInput
+                      }
+                      autoFocus
+                    />
+
+                    <div
+                      className={
+                        styles.searchSelectOptions
+                      }
+                    >
+                      {(
+                        !normalizedAuthorSearch ||
+                        'redacción agorá'.includes(
+                          normalizedAuthorSearch
+                        ) ||
+                        'agorá revista'.includes(
+                          normalizedAuthorSearch
+                        )
+                      ) && (
+                        <button
+                          type="button"
+                          className={
+                            styles.searchSelectOption
+                          }
+                          onClick={() => {
+                            handleCollaboratorChange(
+                              AGORA_AUTHOR_VALUE
+                            );
+                          }}
+                        >
+                          <strong>
+                            Redacción Agorá
+                          </strong>
+
+                          <span>
+                            Institucional
+                          </span>
+                        </button>
+                      )}
+
+                      {filteredAuthors.map(
+                        collaborator => (
+                          <button
+                            type="button"
+                            key={
+                              collaborator.id
+                            }
+                            className={
+                              styles.searchSelectOption
+                            }
+                            onClick={() => {
+                              handleCollaboratorChange(
+                                collaborator.id
+                              );
+                            }}
+                          >
+                            <strong>
+                              {
+                                collaborator.name
+                              }
+                            </strong>
+
+                            <span>
+                              {collaborator.type ===
+                              'occasional'
+                                ? 'Ocasional'
+                                : 'Fijo'}
+                            </span>
+                          </button>
+                        )
+                      )}
+
+                      {filteredAuthors.length ===
+                        0 &&
+                        normalizedAuthorSearch &&
+                        !'redacción agorá'.includes(
+                          normalizedAuthorSearch
+                        ) &&
+                        !'agorá revista'.includes(
+                          normalizedAuthorSearch
+                        ) && (
+                          <div
+                            className={
+                              styles.multiSelectEmpty
+                            }
+                          >
+                            No se encontraron autores
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {collaboratorId ===
+                AGORA_AUTHOR_VALUE && (
+                <>
+                  <div
+                    className={
+                      styles.authorCategoryBlock
+                    }
+                  >
+                    <div
+                      className={
+                        styles.authorCategoryLabel
+                      }
+                    >
+                      Publicación institucional
+                    </div>
+
+                    <div
+                      className={
+                        styles.fixedCategoryCard
+                      }
+                    >
+                      <div
+                        className={
+                          styles.fixedCategoryMark
+                        }
+                      >
+                        Α
+                      </div>
+
+                      <div
+                        className={
+                          styles.fixedCategoryContent
+                        }
+                      >
+                        <strong>
+                          Redacción Agorá
+                        </strong>
+
+                        <span>
+                          Se mostrará el perfil oficial de la revista
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className={
+                      styles.authorCategoryBlock
+                    }
+                  >
+                    <label
+                      className={
+                        styles.collaboratorsToggle
+                      }
+                    >
+                      <input
+                        type="checkbox"
+                        checked={
+                          collaboratorsEnabled
+                        }
+                        onChange={event => {
+                          const checked =
+                            event.target
+                              .checked;
+
+                          setCollaboratorsEnabled(
+                            checked
+                          );
+
+                          if (!checked) {
+                            setCollaboratorIds(
+                              []
+                            );
+
+                            setCollaboratorSearch(
+                              ''
+                            );
+
+                            setCollaboratorsDropdownOpen(
+                              false
+                            );
+                          }
+                        }}
+                      />
+
+                      <span>
+                        Colaboradores
+                      </span>
+                    </label>
+
+                    {collaboratorsEnabled && (
+                      <div
+                        ref={
+                          collaboratorsDropdownRef
+                        }
+                        className={
+                          styles.collaboratorSelector
+                        }
+                      >
+                        <div
+                          className={
+                            styles.collaboratorSearchBox
+                          }
+                          onClick={() => {
+                            setCollaboratorsDropdownOpen(
+                              true
+                            );
+                          }}
+                        >
+                          {selectedAdditionalCollaborators.map(
+                            collaborator => (
+                              <button
+                                type="button"
+                                key={
+                                  collaborator.id
+                                }
+                                className={
+                                  styles.selectedCollaboratorChip
+                                }
+                                onClick={event => {
+                                  event.stopPropagation();
+
+                                  removeAdditionalCollaborator(
+                                    collaborator.id
+                                  );
+                                }}
+                                title={`Quitar ${collaborator.name}`}
+                              >
+                                <span>
+                                  {
+                                    collaborator.name
+                                  }
+                                </span>
+
+                                <X
+                                  size={11}
+                                />
+                              </button>
+                            )
+                          )}
+
+                          <input
+                            type="text"
+                            value={
+                              collaboratorSearch
+                            }
+                            onFocus={() => {
+                              setCollaboratorsDropdownOpen(
+                                true
+                              );
+                            }}
+                            onChange={event => {
+                              setCollaboratorSearch(
+                                event.target
+                                  .value
+                              );
+
+                              setCollaboratorsDropdownOpen(
+                                true
+                              );
+                            }}
+                            placeholder={
+                              selectedAdditionalCollaborators
+                                .length > 0
+                                ? 'Buscar...'
+                                : 'Buscar colaboradores...'
+                            }
+                            className={
+                              styles.collaboratorSearchInput
+                            }
+                          />
+                        </div>
+
+                        {collaboratorsDropdownOpen && (
+                          <div
+                            className={
+                              styles.collaboratorMenu
+                            }
+                          >
+                            <div
+                              className={
+                                styles.collaboratorOptions
+                              }
+                            >
+                              {availableAdditionalCollaborators.map(
+                                collaborator => {
+                                  const checked =
+                                    collaboratorIds.some(
+                                      currentId =>
+                                        String(
+                                          currentId
+                                        ) ===
+                                        String(
+                                          collaborator.id
+                                        )
+                                    );
+
+                                  return (
+                                    <label
+                                      key={
+                                        collaborator.id
+                                      }
+                                      className={
+                                        styles.multiSelectOption
+                                      }
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={
+                                          checked
+                                        }
+                                        onChange={() => {
+                                          toggleAdditionalCollaborator(
+                                            collaborator.id
+                                          );
+                                        }}
+                                      />
+
+                                      <span>
+                                        {
+                                          collaborator.name
+                                        }
+                                      </span>
+                                    </label>
+                                  );
+                                }
+                              )}
+
+                              {availableAdditionalCollaborators
+                                .length ===
+                                0 && (
+                                <div
+                                  className={
+                                    styles.multiSelectEmpty
+                                  }
+                                >
+                                  No se encontraron colaboradores
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {selectedCollaborator?.type ===
+                'fixed' && (
+                <div
+                  className={
+                    styles.authorCategoryBlock
+                  }
+                >
+                  <div
+                    className={
+                      styles.authorCategoryLabel
+                    }
+                  >
+                    Columna fija
+                  </div>
+
+                  {selectedCollaborator
+                    .fixed_category ? (
+                    <div
+                      className={
+                        styles.fixedCategoryCard
+                      }
+                    >
+                      <div
+                        className={
+                          styles.fixedCategoryMark
+                        }
+                      >
+                        Κ
+                      </div>
+
+                      <div
+                        className={
+                          styles.fixedCategoryContent
+                        }
+                      >
+                        <strong>
+                          {
+                            selectedCollaborator
+                              .fixed_category
+                              .name
+                          }
+                        </strong>
+
+                        <span>
+                          Asignada automáticamente
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className={
+                        styles.missingCategoryMessage
+                      }
+                    >
+                      Este autor no tiene una
+                      columna fija asignada.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {(
+                collaboratorId ===
+                  AGORA_AUTHOR_VALUE ||
+                selectedCollaborator?.type ===
+                  'occasional'
+              ) && (
+                <div
+                  className={
+                    styles.authorCategoryBlock
+                  }
+                >
+                  <div
+                    className={
+                      styles.authorCategoryLabel
+                    }
+                  >
+                    {collaboratorId ===
+                    AGORA_AUTHOR_VALUE
+                      ? 'Secciones de la publicación'
+                      : 'Secciones ocasionales'}
+                  </div>
+
+                  <div
+                    className={
+                      styles.multiSelect
+                    }
+                  >
+                    <button
+                      type="button"
+                      className={
+                        styles.multiSelectTrigger
+                      }
+                      onClick={() => {
+                        setSectionsDropdownOpen(
+                          previous =>
+                            !previous
+                        );
+                      }}
+                      aria-expanded={
+                        sectionsDropdownOpen
+                      }
+                    >
+                      <span>
+                        {selectedOccasionalSections
+                          .length > 0
+                          ? `${selectedOccasionalSections.length} seleccionada${
+                              selectedOccasionalSections
+                                .length === 1
+                                ? ''
+                                : 's'
+                            }`
+                          : 'Seleccionar secciones'}
+                      </span>
+
+                      <span
+                        className={`${styles.multiSelectArrow} ${
+                          sectionsDropdownOpen
+                            ? styles.multiSelectArrowOpen
+                            : ''
+                        }`}
+                      >
+                        ▾
+                      </span>
+                    </button>
+
+                    {sectionsDropdownOpen && (
+                      <div
+                        className={
+                          styles.multiSelectMenu
+                        }
+                      >
+                        {occasionalSections.length >
+                        0 ? (
+                          occasionalSections.map(
+                            category => (
+                              <label
+                                key={
+                                  category.id
+                                }
+                                className={
+                                  styles.multiSelectOption
+                                }
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={categoryIds.includes(
+                                    category.id
+                                  )}
+                                  onChange={() => {
+                                    toggleOccasionalSection(
+                                      category.id
+                                    );
+                                  }}
+                                />
+
+                                <span>
+                                  {
+                                    category.name
+                                  }
+                                </span>
+                              </label>
+                            )
+                          )
+                        ) : (
+                          <div
+                            className={
+                              styles.multiSelectEmpty
+                            }
+                          >
+                            No hay secciones
+                            disponibles.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedOccasionalSections
+                    .length > 0 && (
+                    <div
+                      className={
+                        styles.selectedSections
+                      }
+                    >
+                      {selectedOccasionalSections.map(
+                        category => (
+                          <span
+                            key={
+                              category.id
+                            }
+                            className={
+                              styles.selectedSectionTag
+                            }
+                          >
+                            {
+                              category.name
+                            }
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                removeOccasionalSection(
+                                  category.id
+                                );
+                              }}
+                              aria-label={`Quitar ${category.name}`}
+                            >
+                              <X
+                                size={11}
+                              />
+                            </button>
+                          </span>
+                        )
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </SidePanel>
 
             <SidePanel title="Edición">
               <select

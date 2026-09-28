@@ -154,7 +154,7 @@ const getBySlug = async slug => {
     .select(`
       *,
 
-      articles (
+      articles!articles_collaborator_id_fkey (
         id,
         title,
         slug,
@@ -171,7 +171,7 @@ const getBySlug = async slug => {
         )
       ),
 
-      galleries (
+      galleries!galleries_collaborator_id_fkey (
         id,
         title,
         slug,
