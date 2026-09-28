@@ -193,8 +193,8 @@ const getCurrent = async () => {
       *,
       articles (
         id, title, slug, cover_image_url, excerpt,
-        published_at, is_featured, featured_order, status,
-        collaborators ( name, slug, photo_url ),
+        published_at, edition_order, is_featured, featured_order, status,
+        collaborators!articles_collaborator_id_fkey ( name, slug, photo_url ),
         article_categories ( categories ( name, slug ) )
       )
     `)
@@ -216,8 +216,9 @@ const getByNumber = async (number) => {
     .select(`
       *,
       articles (
-        id, title, slug, cover_image_url, excerpt, published_at, status,
-        collaborators ( name, slug, photo_url ),
+        id, title, slug, cover_image_url, excerpt,
+        published_at, edition_order, status,
+        collaborators!articles_collaborator_id_fkey ( name, slug, photo_url ),
         article_categories ( categories ( name, slug ) )
       )
     `)
