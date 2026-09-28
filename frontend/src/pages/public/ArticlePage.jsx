@@ -1770,50 +1770,18 @@ export default function ArticlePage() {
                 )}
               </div>
 
-              <div
-                className={
-                  styles.authorCardInfo
-                }
-              >
-                <div
-                  className={
-                    styles.authorCardLabel
-                  }
-                >
-                  {isAgoraArticle
-                    ? 'Sobre la revista'
-                    : 'Sobre el autor'}
-                </div>
+<div className={styles.authorCardInfo}>
+  <span className={styles.authorCardLabel}>
+    {isAgoraArticle
+      ? 'Sobre la revista'
+      : 'Sobre el autor'}
+  </span>
 
-                <div
-                  className={
-                    styles.authorCardName
-                  }
-                >
-                  {collab.name}
-                </div>
-
-                {collab.section_name && (
-                  <div
-                    className={
-                      styles.authorCardSection
-                    }
-                  >
-                    {collab.section_name}
-                  </div>
-                )}
-
-                {collab.bio && (
-                  <p
-                    className={
-                      styles.authorCardBio
-                    }
-                  >
-                    {collab.bio}
-                  </p>
-                )}
-              </div>
-            </Link>
+  <h2 className={styles.authorCardName}>
+    {collab.name}
+  </h2>
+</div>
+</Link>
 
             {socialEntries.length > 0 && (
               <div
