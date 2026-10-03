@@ -96,6 +96,14 @@ connectSrc: [
   'https://*.doubleclick.net',
   'https://*.adtrafficquality.google',
 ],
+
+        imgSrc: [
+          "'self'",
+          'data:',
+          'blob:',
+          'https:',
+        ],
+
         mediaSrc: [
           "'self'",
           'blob:',
