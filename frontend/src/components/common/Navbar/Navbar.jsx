@@ -109,10 +109,10 @@ const NAV_GROUPS = [
     key: 'secciones',
     label: 'Secciones',
     items: [
+      { name: 'Stoas',       to: '/categoria/stoas' },
       { name: 'Poesía',      to: '/categoria/poesia' },
       { name: 'Narrativa',   to: '/categoria/narrativa' },
       { name: 'Ensayo',      to: '/categoria/ensayo' },
-      { name: 'Crítica',     to: '/categoria/critica' },
       { name: 'Pensamiento', to: '/categoria/pensamiento' },
       { name: 'Galería',     to: '/categoria/galeria' },
       { name: 'Entrevista',  to: '/categoria/entrevista' },

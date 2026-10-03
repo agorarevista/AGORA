@@ -395,7 +395,7 @@ const BASE_SELECT = `
   edition_order,
 
   is_featured,
-
+  is_stoas,
   featured_order,
 
   audio_female_url,
@@ -855,11 +855,35 @@ const getByCategory = async (
     throw categoryError;
   }
 
-  if (!category) {
+  if (
+    !category ||
+    slug === 'critica'
+  ) {
     throw {
       status: 404,
       message:
         'Categoría no encontrada',
+    };
+  }
+
+  if (slug === 'stoas') {
+    const result = await getAll({
+      page:
+        normalizedPage,
+
+      limit:
+        normalizedLimit,
+
+      status:
+        'published',
+
+      editionId:
+        'without-edition',
+    });
+
+    return {
+      ...result,
+      category,
     };
   }
 
@@ -1133,6 +1157,77 @@ const getFeatured = async () => {
   return data;
 };
 
+const getStoasCarouselArticles = async () => {
+  const articles = [];
+  const batchSize = 100;
+
+  for (
+    let from = 0;
+    ;
+    from += batchSize
+  ) {
+    const {
+      data,
+      error,
+    } = await supabase
+      .from('articles')
+      .select(BASE_SELECT)
+      .eq(
+        'status',
+        'published'
+      )
+      .is(
+        'edition_id',
+        null
+      )
+      .eq(
+        'is_stoas',
+        true
+      )
+      .order(
+        'published_at',
+        {
+          ascending: false,
+          nullsFirst: false,
+        }
+      )
+      .order(
+        'created_at',
+        {
+          ascending: false,
+        }
+      )
+      .order(
+        'id',
+        {
+          ascending: true,
+        }
+      )
+      .range(
+        from,
+        from + batchSize - 1
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    const batch = data || [];
+
+    articles.push(
+      ...batch.map(
+        normalizeArticleContent
+      )
+    );
+
+    if (
+      batch.length < batchSize
+    ) {
+      return articles;
+    }
+  }
+};
+
 const getHome = async () => {
   let cached = null;
 
@@ -1230,6 +1325,7 @@ const getHome = async () => {
     latestGalleriesResult,
     convocatoriaResult,
     collaboratorsResult,
+    stoasResult,
   ] = await Promise.allSettled([
     currentEditionId
       ? supabase
@@ -1371,6 +1467,8 @@ const getHome = async () => {
         }
       )
       .limit(12),
+
+    getStoasCarouselArticles(),
   ]);
 
   if (
@@ -1537,7 +1635,23 @@ const getHome = async () => {
       )
       .slice(0, 5);
 
+  if (
+    stoasResult.status ===
+    'rejected'
+  ) {
+    console.error(
+      'HOME Stoas error:',
+      stoasResult.reason
+    );
+  }
+
   const payload = {
+    stoas:
+      stoasResult.status ===
+      'fulfilled'
+        ? stoasResult.value
+        : [],
+
     featured,
 
     latest:
@@ -1624,6 +1738,32 @@ const search = async (query, { page = 1, limit = 12 } = {}) => {
 };
 
 const create = async (body) => {
+  body = {
+    ...body,
+
+    edition_id:
+      body.edition_id || null,
+
+    edition_order:
+      body.edition_id
+        ? body.edition_order
+        : null,
+
+    is_featured:
+      Boolean(body.edition_id) &&
+      body.is_featured === true,
+
+    featured_order:
+      body.edition_id &&
+      body.is_featured === true
+        ? body.featured_order
+        : null,
+
+    is_stoas:
+      !body.edition_id &&
+      body.is_stoas === true,
+  };
+
   const {
     title,
     subtitle,
@@ -1757,6 +1897,9 @@ const create = async (body) => {
         is_featured || false,
 
       featured_order,
+      is_stoas:
+        body.is_stoas,
+
       reading_time,
       status: 'draft'
     })
@@ -1908,6 +2051,34 @@ const update = async (
     content_html,
     ...rest
   } = body;
+
+  const hasField = field =>
+    Object.prototype.hasOwnProperty.call(
+      rest,
+      field
+    );
+
+  const nextEditionId =
+    hasField('edition_id')
+      ? rest.edition_id || null
+      : currentArticle.edition_id;
+
+  if (hasField('edition_id')) {
+    rest.edition_id = nextEditionId;
+  }
+
+  if (nextEditionId) {
+    rest.is_stoas = false;
+  } else {
+    rest.is_featured = false;
+    rest.featured_order = null;
+    rest.edition_order = null;
+
+    if (hasField('is_stoas')) {
+      rest.is_stoas =
+        rest.is_stoas === true;
+    }
+  }
 
   const stringFields = [
     'seo_title',

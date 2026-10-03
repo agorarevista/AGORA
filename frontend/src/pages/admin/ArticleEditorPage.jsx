@@ -490,55 +490,59 @@ const isGalleryCategory =
     );
   };
 
-const getOccasionalSections =
-  categories => {
-    const flattened =
-      flattenCategories(
-        categories
-      );
+const getOccasionalSections = categories => {
+  const flattened = flattenCategories(categories);
 
-    return flattened.filter(
-      category => {
-        const belongsToSections =
-          category.parent_slug ===
-            'secciones' ||
-          category.parent?.slug ===
-            'secciones';
+  const normalizeSlug = category =>
+    String(category?.slug || '')
+      .trim()
+      .toLowerCase();
 
-        const isChild =
-          category.nav_type
-            ? category.nav_type ===
-              'child'
-            : Boolean(
-                category.parent_id ||
-                category.parent_slug
-              );
+  return flattened
+    .filter(category => {
+      const belongsToSections =
+        category.parent_slug === 'secciones' ||
+        category.parent?.slug === 'secciones';
 
-        const isActive =
-          category.is_active !==
-          false;
-
-        /*
-         * Galería no admite artículos
-         * tradicionales. Se administra
-         * exclusivamente desde:
-         *
-         * /admin/galerias
-         */
-        const isTraditionalArticleSection =
-          !isGalleryCategory(
-            category
+      const isChild = category.nav_type
+        ? category.nav_type === 'child'
+        : Boolean(
+            category.parent_id ||
+            category.parent_slug
           );
 
-        return (
-          belongsToSections &&
-          isChild &&
-          isActive &&
-          isTraditionalArticleSection
-        );
+      const isActive =
+        category.is_active !== false;
+
+      const isTraditionalArticleSection =
+        !isGalleryCategory(category) &&
+        normalizeSlug(category) !== 'critica';
+
+      return (
+        belongsToSections &&
+        isChild &&
+        isActive &&
+        isTraditionalArticleSection
+      );
+    })
+    .sort((a, b) => {
+      const aIsStoas = normalizeSlug(a) === 'stoas';
+      const bIsStoas = normalizeSlug(b) === 'stoas';
+
+      if (aIsStoas && !bIsStoas) {
+        return -1;
       }
-    );
-  };
+
+      if (!aIsStoas && bIsStoas) {
+        return 1;
+      }
+
+      return (
+        Number(a.display_order || 0) -
+        Number(b.display_order || 0)
+      );
+    });
+};
   const transformSelectedText = (editor, mode) => {
     const {
       from,
@@ -666,6 +670,11 @@ const getOccasionalSections =
     const [
       isFeatured,
       setIsFeatured,
+    ] = useState(false);
+
+    const [
+      isStoas,
+      setIsStoas,
     ] = useState(false);
 
     const [
@@ -1360,7 +1369,15 @@ setCategoryIds(
           );
 
           setIsFeatured(
-            article.is_featured || false
+            Boolean(
+              article.edition_id
+            ) &&
+            article.is_featured === true
+          );
+
+          setIsStoas(
+            !article.edition_id &&
+            article.is_stoas === true
           );
 
           setFeaturedOrder(
@@ -1464,9 +1481,15 @@ setCategoryIds(
         }),
 
         is_featured:
+          Boolean(editionId) &&
           isFeatured,
 
+        is_stoas:
+          !editionId &&
+          isStoas,
+
         featured_order:
+          editionId &&
           isFeatured
             ? Number(featuredOrder)
             : null,
@@ -4475,8 +4498,12 @@ const handlePublish = async () => {
                     nextEditionId
                   );
 
-                  if (!nextEditionId) {
+                  if (nextEditionId) {
+                    setIsStoas(false);
+                  } else {
                     setEditionOrder('');
+                    setIsFeatured(false);
+                    setFeaturedOrder(0);
                   }
                 }}
                 className={styles.sideSelect}
@@ -4577,66 +4604,102 @@ const handlePublish = async () => {
             </SidePanel>
 
             <SidePanel title="Opciones">
-              <label className={styles.checkLabel}>
-                <input
-                  type="checkbox"
-                  checked={isFeatured}
-                  onChange={event => {
-                    setIsFeatured(
-                      event.target.checked
-                    );
-                  }}
-                />
-
-                <span>
-                  Destacado / Highlight
-                  (rodea la portada en el home)
-                </span>
-              </label>
-
-              {isFeatured && (
-                <div className={styles.featuredOrder}>
+              {editionId ? (
+                <>
                   <label
                     className={
-                      styles.featuredOrderLabel
+                      styles.checkLabel
                     }
                   >
-                    Posición en el home
-                    (1 a 4)
+                    <input
+                      type="checkbox"
+                      checked={isFeatured}
+                      onChange={event => {
+                        setIsFeatured(
+                          event.target.checked
+                        );
+                      }}
+                    />
+
+                    <span>
+                      Destacado / Highlight
+                      (rodea la portada en el home)
+                    </span>
                   </label>
 
-                  <select
-                    value={featuredOrder}
+                  {isFeatured && (
+                    <div
+                      className={
+                        styles.featuredOrder
+                      }
+                    >
+                      <label
+                        className={
+                          styles.featuredOrderLabel
+                        }
+                      >
+                        Posición en el home
+                        (1 a 4)
+                      </label>
+
+                      <select
+                        value={featuredOrder}
+                        onChange={event => {
+                          setFeaturedOrder(
+                            event.target.value
+                          );
+                        }}
+                        className={
+                          styles.sideSelect
+                        }
+                      >
+                        <option value={0}>
+                          Sin posición fija
+                        </option>
+
+                        <option value={1}>
+                          1 — Arriba izquierda
+                        </option>
+
+                        <option value={2}>
+                          2 — Abajo izquierda
+                        </option>
+
+                        <option value={3}>
+                          3 — Arriba derecha
+                        </option>
+
+                        <option value={4}>
+                          4 — Abajo derecha
+                        </option>
+                      </select>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <label
+                  className={
+                    styles.checkLabel
+                  }
+                >
+                  <input
+                    type="checkbox"
+                    checked={isStoas}
                     onChange={event => {
-                      setFeaturedOrder(
-                        event.target.value
+                      setIsStoas(
+                        event.target.checked
                       );
                     }}
-                    className={styles.sideSelect}
-                  >
-                    <option value={0}>
-                      Sin posición fija
-                    </option>
+                  />
 
-                    <option value={1}>
-                      1 — Arriba izquierda
-                    </option>
-
-                    <option value={2}>
-                      2 — Abajo izquierda
-                    </option>
-
-                    <option value={3}>
-                      3 — Arriba derecha
-                    </option>
-
-                    <option value={4}>
-                      4 — Abajo derecha
-                    </option>
-                  </select>
-                </div>
+                  <span>
+                    Stoas
+                    (aparece en Conversaciones
+                    bajo el pórtico del home)
+                  </span>
+                </label>
               )}
-            </SidePanel>
+            </SidePanel>  
           </aside>
         </div>
 

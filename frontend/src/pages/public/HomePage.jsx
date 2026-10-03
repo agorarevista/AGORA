@@ -141,8 +141,194 @@ function useCarousel(items, perPage = 3, autoMs = 0) {
   return { page, idx, total, prev, next, setIdx };
 }
 
+function StoasCarousel({ articles }) {
+  const [
+    perPage,
+    setPerPage,
+  ] = useState(3);
+
+  const [
+    pageIndex,
+    setPageIndex,
+  ] = useState(0);
+
+  useEffect(() => {
+    const media = window.matchMedia(
+      '(max-width: 640px)'
+    );
+
+    const updateLayout = () => {
+      setPerPage(
+        media.matches ? 1 : 3
+      );
+
+      setPageIndex(0);
+    };
+
+    updateLayout();
+
+    media.addEventListener(
+      'change',
+      updateLayout
+    );
+
+    return () => {
+      media.removeEventListener(
+        'change',
+        updateLayout
+      );
+    };
+  }, []);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(
+      articles.length / perPage
+    )
+  );
+
+  const currentPage = Math.min(
+    pageIndex,
+    totalPages - 1
+  );
+
+  const visibleArticles =
+    articles.slice(
+      currentPage * perPage,
+      currentPage * perPage + perPage
+    );
+
+  const goPrevious = () => {
+    setPageIndex(
+      (
+        currentPage - 1 +
+        totalPages
+      ) % totalPages
+    );
+  };
+
+  const goNext = () => {
+    setPageIndex(
+      (
+        currentPage + 1
+      ) % totalPages
+    );
+  };
+
+  return (
+    <section
+      className={
+        styles.stoasSection
+      }
+      aria-labelledby="stoas-home-title"
+      aria-roledescription="carrusel"
+    >
+      <h2
+        id="stoas-home-title"
+        className={
+          styles.stoasHeading
+        }
+      >
+        <Link to="/categoria/stoas">
+          Conversaciones bajo el pórtico
+        </Link>
+      </h2>
+
+      <div
+        className={
+          styles.stoasViewport
+        }
+      >
+        <div
+          className={
+            styles.stoasGrid
+          }
+          style={{
+            gridTemplateColumns:
+              `repeat(${perPage}, minmax(0, 1fr))`,
+          }}
+        >
+          {visibleArticles.map(article => (
+            <div
+              key={article.id}
+              className={
+                styles.stoasItem
+              }
+            >
+              <HighlightCard
+                art={article}
+              />
+            </div>
+          ))}
+        </div>
+
+        {totalPages > 1 && (
+          <>
+            <button
+              type="button"
+              className={`${styles.stoasArrow} ${styles.stoasArrowLeft}`}
+              onClick={goPrevious}
+              aria-label="Artículos anteriores"
+            >
+              <ChevronLeft size={25} />
+            </button>
+
+            <button
+              type="button"
+              className={`${styles.stoasArrow} ${styles.stoasArrowRight}`}
+              onClick={goNext}
+              aria-label="Artículos siguientes"
+            >
+              <ChevronRight size={25} />
+            </button>
+          </>
+        )}
+      </div>
+
+      {totalPages > 1 && (
+        <div
+          className={
+            styles.stoasPagination
+          }
+        >
+          {Array.from(
+            {
+              length: totalPages,
+            },
+            (_, index) => (
+              <button
+                key={index}
+                type="button"
+                className={
+                  index === currentPage
+                    ? styles.stoasDotActive
+                    : styles.stoasDot
+                }
+                onClick={() => {
+                  setPageIndex(index);
+                }}
+                aria-label={
+                  `Mostrar grupo ${index + 1}`
+                }
+                aria-current={
+                  index === currentPage
+                    ? 'true'
+                    : undefined
+                }
+              />
+            )
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function HomePage() {
   const [featured, setFeatured] =
+    useState([]);
+
+  const [stoas, setStoas] =
     useState([]);
 
   const [latest, setLatest] =
@@ -207,6 +393,14 @@ export default function HomePage() {
       ) {
         return;
       }
+
+      setStoas(
+        Array.isArray(
+          payload.stoas
+        )
+          ? payload.stoas
+          : []
+      );
 
       setFeatured(
         Array.isArray(
@@ -308,6 +502,13 @@ export default function HomePage() {
         if (!mounted) return;
 
         const safePayload = {
+          stoas:
+            Array.isArray(
+              data?.stoas
+            )
+              ? data.stoas
+              : [],
+
           featured:
             Array.isArray(
               data?.featured
@@ -370,6 +571,14 @@ export default function HomePage() {
                const cachedHome = cacheGet(HOME_CACHE_KEY);
 
         if (cachedHome) {
+          setStoas(
+            Array.isArray(
+              cachedHome.stoas
+            )
+              ? cachedHome.stoas
+              : []
+          );
+
           setFeatured(
             Array.isArray(
               cachedHome.featured
@@ -412,6 +621,7 @@ export default function HomePage() {
               : []
           );
         } else {
+          setStoas([]);
           setFeatured([]);
           setLatest([]);
           setMostRead([]);
@@ -500,6 +710,11 @@ if (loading && !featured.length && !latest.length && !edition && !collaborators.
 return (
   <div className={styles.page}>
     <div className={styles.shell}>
+      {stoas.length > 0 && (
+        <StoasCarousel
+          articles={stoas}
+        />
+      )}
 
       {/* ── PORTADA CENTRAL + HIGHLIGHTS ──────────────── */}
       {edition && (

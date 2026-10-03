@@ -128,6 +128,7 @@ app.use(
 
         scriptSrc: [
           "'self'",
+          'blob:',
 
           /* YouTube */
           'https://www.youtube.com',
@@ -153,7 +154,6 @@ app.use(
           'https://*.adtrafficquality.google',
         ],
 
- 
         workerSrc: [
           "'self'",
           'blob:',

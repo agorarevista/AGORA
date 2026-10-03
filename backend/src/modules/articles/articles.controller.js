@@ -65,6 +65,13 @@ const getHome = async (
       await service.getHome();
 
     return res.json({
+      stoas:
+        Array.isArray(
+          payload?.stoas
+        )
+          ? payload.stoas
+          : [],
+
       featured:
         Array.isArray(
           payload?.featured
