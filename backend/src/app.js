@@ -60,54 +60,42 @@ app.use(
           "'self'",
         ],
 
-        connectSrc: [
-          "'self'",
-          'https://agora-backend-jdpx.onrender.com',
-          'https://*.supabase.co',
-          'wss://*.supabase.co',
-          'http://localhost:3001',
-          'http://localhost:5173',
+connectSrc: [
+  "'self'",
+  'https://agora-backend-jdpx.onrender.com',
+  'https://*.supabase.co',
+  'wss://*.supabase.co',
+  'http://localhost:3001',
+  'http://localhost:5173',
 
-          /* YouTube */
-          'https://www.youtube.com',
-          'https://www.youtube-nocookie.com',
+  /* Datos Unicode y fuentes del museo 3D */
+  'https://cdn.jsdelivr.net',
 
-          /* Instagram */
-          'https://www.instagram.com',
+  /* YouTube */
+  'https://www.youtube.com',
+  'https://www.youtube-nocookie.com',
 
-          /* TikTok */
-          'https://www.tiktok.com',
+  /* Instagram */
+  'https://www.instagram.com',
 
-          /* Vimeo */
-          'https://player.vimeo.com',
+  /* TikTok */
+  'https://www.tiktok.com',
 
-          /* Google Drive */
-          'https://drive.google.com',
+  /* Vimeo */
+  'https://player.vimeo.com',
 
-          /* Google AdSense */
-          'https://pagead2.googlesyndication.com',
-          'https://googleads.g.doubleclick.net',
-          'https://*.google.com',
-          'https://*.googleusercontent.com',
-          'https://*.googlesyndication.com',
-          'https://*.doubleclick.net',
-          'https://*.adtrafficquality.google',
-        ],
+  /* Google Drive */
+  'https://drive.google.com',
 
-        imgSrc: [
-          "'self'",
-          'data:',
-          'blob:',
-          'https:',
-
-          /* Google AdSense */
-          'https://*.googlesyndication.com',
-          'https://*.doubleclick.net',
-          'https://*.googleusercontent.com',
-          'https://*.google.com',
-          'https://*.adtrafficquality.google',
-        ],
-
+  /* Google AdSense */
+  'https://pagead2.googlesyndication.com',
+  'https://googleads.g.doubleclick.net',
+  'https://*.google.com',
+  'https://*.googleusercontent.com',
+  'https://*.googlesyndication.com',
+  'https://*.doubleclick.net',
+  'https://*.adtrafficquality.google',
+],
         mediaSrc: [
           "'self'",
           'blob:',
