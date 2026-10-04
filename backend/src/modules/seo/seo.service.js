@@ -26,7 +26,7 @@ const getArticleSeoBySlug =
         updated_at,
         status,
 
-        collaborators (
+        collaborators!articles_collaborator_id_fkey (
           id,
           name,
           slug
@@ -71,7 +71,7 @@ const getGallerySeoBySlug =
         published_at,
         status,
 
-        collaborators (
+        collaborators!galleries_collaborator_id_fkey (
           id,
           name,
           slug
